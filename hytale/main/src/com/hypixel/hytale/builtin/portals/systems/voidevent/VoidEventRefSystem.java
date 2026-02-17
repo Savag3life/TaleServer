@@ -50,7 +50,7 @@ public final class VoidEventRefSystem extends RefSystem<EntityStore> {
          VoidEvent voidEvent = commandBuffer.getComponent(ref, VoidEvent.getComponentType());
          VoidEventStage activeStage = voidEvent.getActiveStage();
          if (activeStage != null) {
-            VoidEventStagesSystem.stopStage(activeStage, world, store, commandBuffer);
+            VoidEventStagesSystem.stopStage(activeStage, store, commandBuffer);
             voidEvent.setActiveStage(null);
          }
       }

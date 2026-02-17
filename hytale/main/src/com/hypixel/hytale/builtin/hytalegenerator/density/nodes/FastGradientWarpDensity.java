@@ -13,6 +13,12 @@ public class FastGradientWarpDensity extends Density {
    private final double warpScale;
    @Nonnull
    private final FastNoiseLite warper;
+   @Nonnull
+   private final FastNoiseLite.Vector3 rWarpedPosition;
+   @Nonnull
+   private final Density.Context rChildContext;
+   @Nonnull
+   private final Vector3d rPosition;
 
    public FastGradientWarpDensity(
       @Nonnull Density input, float warpLacunarity, float warpPersistence, int warpOctaves, float warpScale, float warpFactor, int seed
@@ -30,6 +36,9 @@ public class FastGradientWarpDensity extends Density {
          this.warper.setFractalOctaves(warpOctaves);
          this.warper.setDomainWarpAmp(warpFactor);
          this.warper.setDomainWarpFreq(warpScale);
+         this.rWarpedPosition = new FastNoiseLite.Vector3(0.0, 0.0, 0.0);
+         this.rChildContext = new Density.Context();
+         this.rPosition = new Vector3d();
       }
    }
 
@@ -38,11 +47,15 @@ public class FastGradientWarpDensity extends Density {
       if (this.input == null) {
          return 0.0;
       } else {
-         FastNoiseLite.Vector3 warpedPosition = new FastNoiseLite.Vector3(context.position.x, context.position.y, context.position.z);
-         this.warper.DomainWarpFractalProgressive(warpedPosition);
-         Density.Context childContext = new Density.Context(context);
-         childContext.position = new Vector3d(warpedPosition.x, warpedPosition.y, warpedPosition.z);
-         return this.input.process(childContext);
+         this.rWarpedPosition.x = context.position.x;
+         this.rWarpedPosition.y = context.position.y;
+         this.rWarpedPosition.z = context.position.z;
+         this.warper.DomainWarpFractalProgressive(this.rWarpedPosition);
+         this.rPosition.assign(context.position);
+         this.rChildContext.assign(context);
+         this.rChildContext.position = this.rPosition;
+         this.rChildContext.position.assign(this.rWarpedPosition.x, this.rWarpedPosition.y, this.rWarpedPosition.z);
+         return this.input.process(this.rChildContext);
       }
    }
 

@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 
 public class ClusterPropAsset extends PropAsset {
+   @Nonnull
    public static final BuilderCodec<ClusterPropAsset> CODEC = BuilderCodec.builder(ClusterPropAsset.class, ClusterPropAsset::new, PropAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Range", Codec.INTEGER, false), (asset, v) -> asset.range = v, asset -> asset.range)
       .addValidator(Validators.greaterThanOrEqual(0))
@@ -95,6 +96,7 @@ public class ClusterPropAsset extends PropAsset {
    }
 
    public static class WeightedPropAsset implements Cleanable, JsonAssetWithMap<String, DefaultAssetMap<String, ClusterPropAsset.WeightedPropAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, ClusterPropAsset.WeightedPropAsset> CODEC = AssetBuilderCodec.builder(
             ClusterPropAsset.WeightedPropAsset.class,
             ClusterPropAsset.WeightedPropAsset::new,

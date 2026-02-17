@@ -21,7 +21,7 @@ import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.util.PositionUtil;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MapMarkerBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import java.nio.file.Path;
 import java.util.Map;
@@ -252,13 +252,8 @@ public class PrefabEditSession implements Resource<EntityStore> {
    public static MapMarker createPrefabMarker(@Nonnull PrefabEditingMetadata metadata) {
       String fileName = metadata.getPrefabPath().getFileName().toString();
       String prefabName = fileName.replace(".prefab.json", "");
-      return new MapMarker(
-         "prefab-" + metadata.getUuid(),
-         prefabName,
-         "Prefab.png",
-         PositionUtil.toTransformPacket(new Transform(metadata.getAnchorEntityPosition().toVector3d())),
-         null
-      );
+      Transform transform = new Transform(metadata.getAnchorEntityPosition());
+      return new MapMarkerBuilder("prefab-" + metadata.getUuid(), "Prefab.png", transform).withCustomName(prefabName).build();
    }
 
    @Nonnull

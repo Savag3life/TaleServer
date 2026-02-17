@@ -1,8 +1,5 @@
 package com.hypixel.hytale.server.core.universe.world.worldmap.markers;
 
-import com.hypixel.hytale.function.function.TriFunction;
-import com.hypixel.hytale.math.util.MathUtil;
-import com.hypixel.hytale.math.vector.Vector2d;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.protocol.Position;
 import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
@@ -14,11 +11,13 @@ import com.hypixel.hytale.server.core.universe.world.WorldMapTracker;
 import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class MapMarkerTracker {
    private final WorldMapTracker worldMapTracker;
@@ -70,9 +69,10 @@ public class MapMarkerTracker {
          Map<String, WorldMapManager.MarkerProvider> markerProviders = worldMapManager.getMarkerProviders();
          this.tempToAdd.clear();
          this.tempTestedMarkers.clear();
+         MarkersCollectorImpl markersCollector = new MarkersCollectorImpl(this, chunkViewRadius, playerChunkX, playerChunkZ);
 
          for (WorldMapManager.MarkerProvider provider : markerProviders.values()) {
-            provider.update(world, this, chunkViewRadius, playerChunkX, playerChunkZ);
+            provider.update(world, this.player, markersCollector);
          }
 
          if (this.isSendingSmallMovements()) {
@@ -97,76 +97,31 @@ public class MapMarkerTracker {
       }
    }
 
-   public void trySendMarker(int chunkViewRadius, int playerChunkX, int playerChunkZ, @Nonnull MapMarker marker) {
-      this.trySendMarker(
-         chunkViewRadius,
-         playerChunkX,
-         playerChunkZ,
-         marker.transform.position.x,
-         marker.transform.position.z,
-         marker.transform.orientation.yaw,
-         marker.id,
-         marker.name,
-         marker,
-         (id, name, m) -> m
-      );
+   public void sendMapMarker(MapMarker marker) {
+      this.tempTestedMarkers.add(marker.id);
+      MapMarker oldMarker = this.sentToClientById.get(marker.id);
+      if (this.doesMarkerNeedNetworkUpdate(oldMarker, marker)) {
+         this.sentToClientById.put(marker.id, marker);
+         this.tempToAdd.add(marker);
+      }
    }
 
-   public <T> void trySendMarker(
-      int chunkViewRadius,
-      int playerChunkX,
-      int playerChunkZ,
-      @Nonnull Vector3d markerPos,
-      float markerYaw,
-      @Nonnull String markerId,
-      @Nonnull String markerDisplayName,
-      @Nonnull T param,
-      @Nonnull TriFunction<String, String, T, MapMarker> markerSupplier
-   ) {
-      this.trySendMarker(chunkViewRadius, playerChunkX, playerChunkZ, markerPos.x, markerPos.z, markerYaw, markerId, markerDisplayName, param, markerSupplier);
-   }
-
-   private <T> void trySendMarker(
-      int chunkViewRadius,
-      int playerChunkX,
-      int playerChunkZ,
-      double markerX,
-      double markerZ,
-      float markerYaw,
-      @Nonnull String markerId,
-      @Nonnull String markerName,
-      @Nonnull T param,
-      @Nonnull TriFunction<String, String, T, MapMarker> markerSupplier
-   ) {
-      boolean shouldBeVisible = chunkViewRadius == -1
-         || WorldMapTracker.shouldBeVisible(chunkViewRadius, MathUtil.floor(markerX) >> 5, MathUtil.floor(markerZ) >> 5, playerChunkX, playerChunkZ);
-      if (shouldBeVisible) {
-         this.tempTestedMarkers.add(markerId);
-         boolean needsUpdate = false;
-         MapMarker oldMarker = this.sentToClientById.get(markerId);
-         if (oldMarker != null) {
-            if (!markerName.equals(oldMarker.name)) {
-               needsUpdate = true;
-            }
-
-            if (!needsUpdate) {
-               double distance = Math.abs(oldMarker.transform.orientation.yaw - markerYaw);
-               needsUpdate = distance > 0.05 || this.isSendingSmallMovements() && distance > 0.001;
-            }
-
-            if (!needsUpdate) {
-               Position oldPosition = oldMarker.transform.position;
-               double distance = Vector2d.distance(oldPosition.x, oldPosition.z, markerX, markerZ);
-               needsUpdate = distance > 5.0 || this.isSendingSmallMovements() && distance > 0.1;
-            }
+   private boolean doesMarkerNeedNetworkUpdate(@Nullable MapMarker oldMarker, MapMarker newMarker) {
+      if (oldMarker == null) {
+         return true;
+      } else if (!Objects.equals(oldMarker.name, newMarker.name)) {
+         return true;
+      } else if (!Objects.equals(oldMarker.customName, newMarker.customName)) {
+         return true;
+      } else {
+         double yawDistance = Math.abs(oldMarker.transform.orientation.yaw - newMarker.transform.orientation.yaw);
+         if (!(yawDistance > 0.05) && (!this.isSendingSmallMovements() || !(yawDistance > 0.001))) {
+            Position oldPosition = oldMarker.transform.position;
+            Position newPosition = newMarker.transform.position;
+            double distanceSq = Vector3d.distanceSquared(oldPosition.x, oldPosition.y, oldPosition.z, newPosition.x, newPosition.y, newPosition.z);
+            return distanceSq > 25.0 || this.isSendingSmallMovements() && distanceSq > 0.01;
          } else {
-            needsUpdate = true;
-         }
-
-         if (needsUpdate) {
-            MapMarker marker = markerSupplier.apply(markerId, markerName, param);
-            this.sentToClientById.put(markerId, marker);
-            this.tempToAdd.add(marker);
+            return true;
          }
       }
    }

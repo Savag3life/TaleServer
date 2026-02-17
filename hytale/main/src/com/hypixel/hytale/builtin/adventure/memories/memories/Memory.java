@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public abstract class Memory {
+   @Nonnull
    public static final CodecMapCodec<Memory> CODEC = new CodecMapCodec<>();
 
    public abstract String getId();

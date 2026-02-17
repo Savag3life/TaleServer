@@ -6,8 +6,10 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Set;
 import java.util.UUID;
+import javax.annotation.Nonnull;
 
 public abstract class TaskConditionAsset {
+   @Nonnull
    public static final CodecMapCodec<TaskConditionAsset> CODEC = new CodecMapCodec<>("Type");
 
    protected TaskConditionAsset() {

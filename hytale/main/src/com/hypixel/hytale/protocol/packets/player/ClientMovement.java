@@ -3,9 +3,11 @@ package com.hypixel.hytale.protocol.packets.player;
 import com.hypixel.hytale.protocol.Direction;
 import com.hypixel.hytale.protocol.HalfFloatPosition;
 import com.hypixel.hytale.protocol.MovementStates;
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.Position;
 import com.hypixel.hytale.protocol.TeleportAck;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.Vector3d;
 import com.hypixel.hytale.protocol.io.PacketIO;
 import com.hypixel.hytale.protocol.io.ValidationResult;
@@ -14,7 +16,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class ClientMovement implements Packet {
+public class ClientMovement implements Packet, ToServerPacket {
    public static final int PACKET_ID = 108;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 2;
@@ -45,6 +47,11 @@ public class ClientMovement implements Packet {
    @Override
    public int getId() {
       return 108;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public ClientMovement() {

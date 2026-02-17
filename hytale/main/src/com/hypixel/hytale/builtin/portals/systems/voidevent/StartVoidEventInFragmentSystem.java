@@ -20,16 +20,16 @@ public class StartVoidEventInFragmentSystem extends DelayedSystem<EntityStore> {
 
    @Override
    public void delayedTick(float dt, int systemIndex, @Nonnull Store<EntityStore> store) {
-      PortalWorld portalWorld = store.getResource(PortalWorld.getResourceType());
-      if (portalWorld.exists()) {
-         if (portalWorld.getPortalType().isVoidInvasionEnabled()) {
+      PortalWorld portalWorldResource = store.getResource(PortalWorld.getResourceType());
+      if (portalWorldResource.exists()) {
+         if (portalWorldResource.getPortalType().isVoidInvasionEnabled()) {
             World world = store.getExternalData().getWorld();
-            VoidEventConfig voidEventConfig = portalWorld.getVoidEventConfig();
-            int timeLimitSeconds = portalWorld.getTimeLimitSeconds();
+            VoidEventConfig voidEventConfig = portalWorldResource.getVoidEventConfig();
+            int timeLimitSeconds = portalWorldResource.getTimeLimitSeconds();
             int shouldStartAfter = voidEventConfig.getShouldStartAfterSeconds(timeLimitSeconds);
-            int elapsedSeconds = (int)Math.ceil(portalWorld.getElapsedSeconds(world));
-            Ref<EntityStore> voidEventRef = portalWorld.getVoidEventRef();
-            boolean exists = voidEventRef != null;
+            int elapsedSeconds = (int)Math.ceil(portalWorldResource.getElapsedSeconds(world));
+            Ref<EntityStore> voidEventRef = portalWorldResource.getVoidEventRef();
+            boolean exists = voidEventRef != null && voidEventRef.isValid();
             boolean shouldExist = elapsedSeconds >= shouldStartAfter;
             if (exists && !shouldExist) {
                store.removeEntity(voidEventRef, RemoveReason.REMOVE);
@@ -39,7 +39,7 @@ public class StartVoidEventInFragmentSystem extends DelayedSystem<EntityStore> {
                Holder<EntityStore> holder = EntityStore.REGISTRY.newHolder();
                holder.addComponent(VoidEvent.getComponentType(), new VoidEvent());
                Ref<EntityStore> spawnedEventRef = store.addEntity(holder, AddReason.SPAWN);
-               portalWorld.setVoidEventRef(spawnedEventRef);
+               portalWorldResource.setVoidEventRef(spawnedEventRef);
             }
          }
       }

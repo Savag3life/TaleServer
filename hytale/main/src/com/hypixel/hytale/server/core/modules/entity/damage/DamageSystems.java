@@ -28,8 +28,6 @@ import com.hypixel.hytale.math.vector.Vector4d;
 import com.hypixel.hytale.protocol.AnimationSlot;
 import com.hypixel.hytale.protocol.BlockMaterial;
 import com.hypixel.hytale.protocol.CombatTextUpdate;
-import com.hypixel.hytale.protocol.ComponentUpdate;
-import com.hypixel.hytale.protocol.ComponentUpdateType;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.protocol.MovementStates;
 import com.hypixel.hytale.protocol.SoundCategory;
@@ -850,12 +848,7 @@ public class DamageSystems {
       private static void queueUpdateFor(
          @Nonnull Ref<EntityStore> ref, float damageAmount, @Nullable Float hitAngleDeg, @Nonnull EntityTrackerSystems.EntityViewer viewer
       ) {
-         ComponentUpdate update = new ComponentUpdate();
-         update.type = ComponentUpdateType.CombatText;
-         CombatTextUpdate combatTextUpdate = new CombatTextUpdate();
-         combatTextUpdate.hitAngleDeg = hitAngleDeg == null ? 0.0F : hitAngleDeg;
-         combatTextUpdate.text = Integer.toString((int)Math.floor(damageAmount));
-         update.combatTextUpdate = combatTextUpdate;
+         CombatTextUpdate update = new CombatTextUpdate(hitAngleDeg == null ? 0.0F : hitAngleDeg, Integer.toString((int)Math.floor(damageAmount)));
          viewer.queueUpdate(ref, update);
       }
    }

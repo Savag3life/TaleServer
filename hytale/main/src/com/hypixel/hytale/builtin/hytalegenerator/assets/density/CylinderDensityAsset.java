@@ -13,6 +13,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class CylinderDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<CylinderDensityAsset> CODEC = BuilderCodec.builder(
          CylinderDensityAsset.class, CylinderDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -33,7 +34,7 @@ public class CylinderDensityAsset extends DensityAsset {
    private CurveAsset axialCurveAsset = new ConstantCurveAsset();
    @Nonnull
    private Vector3d newYAxis = new Vector3d(0.0, 1.0, 0.0);
-   private double spinAngle = 0.0;
+   private double spinAngle;
 
    @Nonnull
    @Override

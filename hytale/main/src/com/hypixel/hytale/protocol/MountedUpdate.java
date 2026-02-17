@@ -6,7 +6,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class MountedUpdate {
+public class MountedUpdate extends ComponentUpdate {
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
    public static final int FIXED_BLOCK_SIZE = 48;
    public static final int VARIABLE_FIELD_COUNT = 0;
@@ -58,7 +58,9 @@ public class MountedUpdate {
       return 48;
    }
 
-   public void serialize(@Nonnull ByteBuf buf) {
+   @Override
+   public int serialize(@Nonnull ByteBuf buf) {
+      int startPos = buf.writerIndex();
       byte nullBits = 0;
       if (this.attachmentOffset != null) {
          nullBits = (byte)(nullBits | 1);
@@ -82,8 +84,11 @@ public class MountedUpdate {
       } else {
          buf.writeZero(30);
       }
+
+      return buf.writerIndex() - startPos;
    }
 
+   @Override
    public int computeSize() {
       return 48;
    }

@@ -8,6 +8,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import javax.annotation.Nonnull;
 
 public class ImportedScannerAsset extends ScannerAsset {
+   @Nonnull
    public static final BuilderCodec<ImportedScannerAsset> CODEC = BuilderCodec.builder(
          ImportedScannerAsset.class, ImportedScannerAsset::new, ScannerAsset.ABSTRACT_CODEC
       )

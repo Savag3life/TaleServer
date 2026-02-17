@@ -30,6 +30,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public final class VoidSpawnerSystems {
+   @Nonnull
    private static final Query<EntityStore> QUERY = Query.and(VoidSpawner.getComponentType(), TransformComponent.getComponentType());
 
    public static class Instantiate extends RefSystem<EntityStore> {

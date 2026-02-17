@@ -26,7 +26,7 @@ public class BlockInspectPhysicsCommand extends AbstractPlayerCommand {
    private static final Message MESSAGE_COMMANDS_BLOCK_INSPECT_PHYS_NO_BLOCKS = Message.translation("server.commands.block.inspectphys.noblocks");
    @Nonnull
    private static final Message MESSAGE_COMMANDS_BLOCK_INSPECT_PHYS_DONE = Message.translation("server.commands.block.inspectphys.done");
-   private final FlagArg ALL = this.withFlagArg("all", "");
+   private final FlagArg ALL = this.withFlagArg("all", "server.commands.block.inspectphys.all.desc");
 
    public BlockInspectPhysicsCommand() {
       super("inspectphys", "server.commands.block.inspectphys.desc");

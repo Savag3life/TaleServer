@@ -53,38 +53,36 @@ public class ObjectiveLocationMarkerCommand extends AbstractCommandCollection {
       protected void execute(
          @Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world
       ) {
-         Ref<EntityStore> playerReference = playerRef.getReference();
-         TransformComponent playerTransformComponent = store.getComponent(playerReference, TransformComponent.getComponentType());
-
-         assert playerTransformComponent != null;
-
-         String objectiveLocationMarkerId = this.locationMarkerArg.get(context);
-         if (ObjectiveLocationMarkerAsset.getAssetMap().getAsset(objectiveLocationMarkerId) == null) {
-            context.sendMessage(Message.translation("server.commands.objective.locationMarker.notFound").param("id", objectiveLocationMarkerId));
-            context.sendMessage(
-               Message.translation("server.general.failed.didYouMean")
-                  .param(
-                     "choices",
-                     StringUtil.sortByFuzzyDistance(
-                           objectiveLocationMarkerId, ObjectiveLocationMarkerAsset.getAssetMap().getAssetMap().keySet(), CommandUtil.RECOMMEND_COUNT
-                        )
-                        .toString()
-                  )
-            );
-         } else {
-            Holder<EntityStore> holder = EntityStore.REGISTRY.newHolder();
-            holder.addComponent(ObjectiveLocationMarker.getComponentType(), new ObjectiveLocationMarker(objectiveLocationMarkerId));
-            Model model = ObjectivePlugin.get().getObjectiveLocationMarkerModel();
-            holder.addComponent(ModelComponent.getComponentType(), new ModelComponent(model));
-            holder.addComponent(PersistentModel.getComponentType(), new PersistentModel(model.toReference()));
-            holder.addComponent(Nameplate.getComponentType(), new Nameplate(objectiveLocationMarkerId));
-            TransformComponent transform = new TransformComponent(playerTransformComponent.getPosition(), playerTransformComponent.getRotation());
-            holder.addComponent(TransformComponent.getComponentType(), transform);
-            holder.ensureComponent(UUIDComponent.getComponentType());
-            holder.ensureComponent(Intangible.getComponentType());
-            holder.ensureComponent(HiddenFromAdventurePlayers.getComponentType());
-            store.addEntity(holder, AddReason.SPAWN);
-            context.sendMessage(Message.translation("server.commands.objective.locationMarker.added").param("id", objectiveLocationMarkerId));
+         TransformComponent playerTransformComponent = store.getComponent(ref, TransformComponent.getComponentType());
+         if (playerTransformComponent != null) {
+            String objectiveLocationMarkerId = this.locationMarkerArg.get(context);
+            if (ObjectiveLocationMarkerAsset.getAssetMap().getAsset(objectiveLocationMarkerId) == null) {
+               context.sendMessage(Message.translation("server.commands.objective.locationMarker.notFound").param("id", objectiveLocationMarkerId));
+               context.sendMessage(
+                  Message.translation("server.general.failed.didYouMean")
+                     .param(
+                        "choices",
+                        StringUtil.sortByFuzzyDistance(
+                              objectiveLocationMarkerId, ObjectiveLocationMarkerAsset.getAssetMap().getAssetMap().keySet(), CommandUtil.RECOMMEND_COUNT
+                           )
+                           .toString()
+                     )
+               );
+            } else {
+               Holder<EntityStore> holder = EntityStore.REGISTRY.newHolder();
+               holder.addComponent(ObjectiveLocationMarker.getComponentType(), new ObjectiveLocationMarker(objectiveLocationMarkerId));
+               Model model = ObjectivePlugin.get().getObjectiveLocationMarkerModel();
+               holder.addComponent(ModelComponent.getComponentType(), new ModelComponent(model));
+               holder.addComponent(PersistentModel.getComponentType(), new PersistentModel(model.toReference()));
+               holder.addComponent(Nameplate.getComponentType(), new Nameplate(objectiveLocationMarkerId));
+               TransformComponent transform = new TransformComponent(playerTransformComponent.getPosition(), playerTransformComponent.getRotation());
+               holder.addComponent(TransformComponent.getComponentType(), transform);
+               holder.ensureComponent(UUIDComponent.getComponentType());
+               holder.ensureComponent(Intangible.getComponentType());
+               holder.ensureComponent(HiddenFromAdventurePlayers.getComponentType());
+               store.addEntity(holder, AddReason.SPAWN);
+               context.sendMessage(Message.translation("server.commands.objective.locationMarker.added").param("id", objectiveLocationMarkerId));
+            }
          }
       }
    }

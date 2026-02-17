@@ -7,8 +7,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public enum RoleDebugFlags implements Supplier<String> {
-   TraceFail("Trace failed steps"),
-   TraceSuccess("Trace matched steps"),
+   TraceFail("Trace failed instructions"),
+   TraceSuccess("Trace matched instructions"),
    TraceSensorFailures("Trace failing sensors"),
    Flock("Trace flock events"),
    FlockDamage("Trace flock damage events"),
@@ -37,6 +37,11 @@ public enum RoleDebugFlags implements Supplier<String> {
    ValidateMath("Validate (some) math computations in movement"),
    VisAvoidance("Visualize avoidance vectors"),
    VisSeparation("Visualize separation vector"),
+   VisAiming("Visualize aiming"),
+   VisMarkedTargets("Visualize arrows to marked targets"),
+   VisSensorRanges("Visualize entity sensor detection ranges"),
+   VisLeashPosition("Visualize NPC leash position"),
+   VisFlock("Visualize flock member connections"),
    BeaconMessages("Enable debugging of beacon message sending and receiving");
 
    private static final RoleDebugFlags.RoleDebugPreset[] presets = new RoleDebugFlags.RoleDebugPreset[]{
@@ -47,6 +52,7 @@ public enum RoleDebugFlags implements Supplier<String> {
       new RoleDebugFlags.RoleDebugPreset("valid", EnumSet.of(MotionControllerMove, MotionControllerSteer, Collisions, ValidatePositions)),
       new RoleDebugFlags.RoleDebugPreset("block", EnumSet.of(MotionControllerMove, MotionControllerSteer, Collisions, BlockCollisions)),
       new RoleDebugFlags.RoleDebugPreset("visDist", EnumSet.of(VisAvoidance, VisSeparation)),
+      new RoleDebugFlags.RoleDebugPreset("visSensorInfo", EnumSet.of(VisMarkedTargets, VisSensorRanges)),
       new RoleDebugFlags.RoleDebugPreset(
          "display",
          EnumSet.of(

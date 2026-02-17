@@ -9,8 +9,10 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.farming.Growth
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import javax.annotation.Nonnull;
 
 public class FertilizerGrowthModifierAsset extends GrowthModifierAsset {
+   @Nonnull
    public static final BuilderCodec<FertilizerGrowthModifierAsset> CODEC = BuilderCodec.builder(
          FertilizerGrowthModifierAsset.class, FertilizerGrowthModifierAsset::new, ABSTRACT_CODEC
       )
@@ -18,17 +20,37 @@ public class FertilizerGrowthModifierAsset extends GrowthModifierAsset {
 
    @Override
    public double getCurrentGrowthMultiplier(
-      CommandBuffer<ChunkStore> commandBuffer, Ref<ChunkStore> sectionRef, Ref<ChunkStore> blockRef, int x, int y, int z, boolean initialTick
+      @Nonnull CommandBuffer<ChunkStore> commandBuffer,
+      @Nonnull Ref<ChunkStore> sectionRef,
+      @Nonnull Ref<ChunkStore> blockRef,
+      int x,
+      int y,
+      int z,
+      boolean initialTick
    ) {
-      ChunkSection chunkSection = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
-      Ref<ChunkStore> chunk = chunkSection.getChunkColumnReference();
-      BlockComponentChunk blockComponentChunk = commandBuffer.getComponent(chunk, BlockComponentChunk.getComponentType());
-      Ref<ChunkStore> blockRefBelow = blockComponentChunk.getEntityReference(ChunkUtil.indexBlockInColumn(x, y - 1, z));
-      if (blockRefBelow == null) {
-         return 1.0;
+      ChunkSection chunkSectionComponent = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
+
+      assert chunkSectionComponent != null;
+
+      Ref<ChunkStore> chunkRef = chunkSectionComponent.getChunkColumnReference();
+      if (chunkRef != null && chunkRef.isValid()) {
+         BlockComponentChunk blockComponentChunk = commandBuffer.getComponent(chunkRef, BlockComponentChunk.getComponentType());
+         if (blockComponentChunk == null) {
+            return 1.0;
+         } else {
+            int chunkIndexBelow = ChunkUtil.indexBlockInColumn(x, y - 1, z);
+            Ref<ChunkStore> blockBelowRef = blockComponentChunk.getEntityReference(chunkIndexBelow);
+            if (blockBelowRef != null && blockBelowRef.isValid()) {
+               TilledSoilBlock belowTilledSoilComponent = commandBuffer.getComponent(blockBelowRef, TilledSoilBlock.getComponentType());
+               return belowTilledSoilComponent != null && belowTilledSoilComponent.isFertilized()
+                  ? super.getCurrentGrowthMultiplier(commandBuffer, sectionRef, blockRef, x, y, z, initialTick)
+                  : 1.0;
+            } else {
+               return 1.0;
+            }
+         }
       } else {
-         TilledSoilBlock soil = commandBuffer.getComponent(blockRefBelow, TilledSoilBlock.getComponentType());
-         return soil != null && soil.isFertilized() ? super.getCurrentGrowthMultiplier(commandBuffer, sectionRef, blockRef, x, y, z, initialTick) : 1.0;
+         return 1.0;
       }
    }
 }

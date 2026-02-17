@@ -16,12 +16,15 @@ public class ShellDensity extends Density {
    @Nonnull
    private final Vector3d axis;
    private final boolean isMirrored;
+   @Nonnull
+   private final Vector3d rRadialVector;
 
    public ShellDensity(@Nonnull Double2DoubleFunction angleCurve, @Nonnull Double2DoubleFunction distanceCurve, @Nonnull Vector3d axis, boolean isMirrored) {
       this.angleCurve = angleCurve;
       this.distanceCurve = distanceCurve;
       this.axis = axis;
       this.isMirrored = isMirrored;
+      this.rRadialVector = new Vector3d();
    }
 
    @Override
@@ -30,14 +33,14 @@ public class ShellDensity extends Density {
       if (this.axis.length() == 0.0) {
          return 0.0;
       } else {
-         Vector3d radialVector = context.position.clone();
+         this.rRadialVector.assign(context.position);
          double amplitude = this.distanceCurve.applyAsDouble(distance);
          if (amplitude == 0.0) {
             return 0.0;
-         } else if (radialVector.length() <= 1.0E-9) {
+         } else if (this.rRadialVector.length() <= 1.0E-9) {
             return amplitude;
          } else {
-            double angle = VectorUtil.angle(radialVector, this.axis);
+            double angle = VectorUtil.angle(this.rRadialVector, this.axis);
             angle /= Math.PI;
             angle *= 180.0;
             if (this.isMirrored && angle > 90.0) {

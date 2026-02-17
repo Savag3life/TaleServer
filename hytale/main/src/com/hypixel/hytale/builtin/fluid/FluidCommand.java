@@ -27,10 +27,11 @@ import com.hypixel.hytale.server.core.util.TargetUtil;
 import javax.annotation.Nonnull;
 
 public class FluidCommand extends AbstractCommandCollection {
-   private static final SingleArgumentType<Fluid> FLUID_ARG = new AssetArgumentType("Fluid", Fluid.class, "");
+   @Nonnull
+   private static final SingleArgumentType<Fluid> FLUID_ARG = new AssetArgumentType("Fluid", Fluid.class, "server.commands.fluid.fluidArgType.desc");
 
    public FluidCommand() {
-      super("fluid", "Fluid debug commands");
+      super("fluid", "server.commands.fluid.desc");
       this.addSubCommand(new FluidCommand.SetCommand());
       this.addSubCommand(new FluidCommand.GetCommand());
       this.addSubCommand(new FluidCommand.SetRadiusCommand());
@@ -42,10 +43,12 @@ public class FluidCommand extends AbstractCommandCollection {
       @Nonnull
       private static final Message MESSAGE_COMMANDS_NO_SECTION_COMPONENT = Message.translation("server.commands.noSectionComponent");
       @Nonnull
-      private final OptionalArg<RelativeIntPosition> targetOffset = this.withOptionalArg("offset", "", ArgTypes.RELATIVE_BLOCK_POSITION);
+      private final OptionalArg<RelativeIntPosition> targetOffset = this.withOptionalArg(
+         "offset", "server.commands.fluid.get.offset.desc", ArgTypes.RELATIVE_BLOCK_POSITION
+      );
 
       public GetCommand() {
-         super("get", "Gets the fluid at the target position");
+         super("get", "server.commands.fluid.get.desc");
       }
 
       @Override
@@ -94,14 +97,16 @@ public class FluidCommand extends AbstractCommandCollection {
       @Nonnull
       private static final Message MESSAGE_COMMANDS_NO_SECTION_COMPONENT = Message.translation("server.commands.noSectionComponent");
       @Nonnull
-      private final RequiredArg<Fluid> fluid = this.withRequiredArg("fluid", "", FluidCommand.FLUID_ARG);
+      private final RequiredArg<Fluid> fluid = this.withRequiredArg("fluid", "server.commands.fluid.set.fluid.desc", FluidCommand.FLUID_ARG);
       @Nonnull
-      private final RequiredArg<Integer> level = this.withRequiredArg("level", "", ArgTypes.INTEGER);
+      private final RequiredArg<Integer> level = this.withRequiredArg("level", "server.commands.fluid.set.level.desc", ArgTypes.INTEGER);
       @Nonnull
-      private final OptionalArg<RelativeIntPosition> targetOffset = this.withOptionalArg("offset", "", ArgTypes.RELATIVE_BLOCK_POSITION);
+      private final OptionalArg<RelativeIntPosition> targetOffset = this.withOptionalArg(
+         "offset", "server.commands.fluid.set.offset.desc", ArgTypes.RELATIVE_BLOCK_POSITION
+      );
 
       public SetCommand() {
-         super("set", "Changes the fluid at the target position");
+         super("set", "server.commands.fluid.set.desc");
       }
 
       @Override
@@ -163,16 +168,18 @@ public class FluidCommand extends AbstractCommandCollection {
       @Nonnull
       private static final Message MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_LOOKING_AT_BLOCK = Message.translation("server.commands.errors.playerNotLookingAtBlock");
       @Nonnull
-      private final RequiredArg<Integer> radius = this.withRequiredArg("radius", "", ArgTypes.INTEGER);
+      private final RequiredArg<Integer> radius = this.withRequiredArg("radius", "server.commands.fluid.setradius.radius.desc", ArgTypes.INTEGER);
       @Nonnull
-      private final RequiredArg<Fluid> fluid = this.withRequiredArg("fluid", "", FluidCommand.FLUID_ARG);
+      private final RequiredArg<Fluid> fluid = this.withRequiredArg("fluid", "server.commands.fluid.setradius.fluid.desc", FluidCommand.FLUID_ARG);
       @Nonnull
-      private final RequiredArg<Integer> level = this.withRequiredArg("level", "", ArgTypes.INTEGER);
+      private final RequiredArg<Integer> level = this.withRequiredArg("level", "server.commands.fluid.setradius.level.desc", ArgTypes.INTEGER);
       @Nonnull
-      private final OptionalArg<RelativeIntPosition> targetOffset = this.withOptionalArg("offset", "", ArgTypes.RELATIVE_BLOCK_POSITION);
+      private final OptionalArg<RelativeIntPosition> targetOffset = this.withOptionalArg(
+         "offset", "server.commands.fluid.setradius.offset.desc", ArgTypes.RELATIVE_BLOCK_POSITION
+      );
 
       public SetRadiusCommand() {
-         super("setradius", "Changes the fluid at the player position in a given radius");
+         super("setradius", "server.commands.fluid.setradius.desc");
       }
 
       @Override
@@ -209,38 +216,50 @@ public class FluidCommand extends AbstractCommandCollection {
                int maxCY = ChunkUtil.chunkCoordinate(maxY);
                int minCZ = ChunkUtil.chunkCoordinate(minZ);
                int maxCZ = ChunkUtil.chunkCoordinate(maxZ);
-               Integer finalLevel = level;
+               byte levelByteValue = level.byteValue();
 
                for (int cx = minCX; cx <= maxCX; cx++) {
                   for (int cz = minCZ; cz <= maxCZ; cz++) {
-                     int relMinX = MathUtil.clamp(minX - ChunkUtil.minBlock(cx), 0, 32);
-                     int relMaxX = MathUtil.clamp(maxX - ChunkUtil.minBlock(cx), 0, 32);
-                     int relMinZ = MathUtil.clamp(minZ - ChunkUtil.minBlock(cz), 0, 32);
-                     int relMaxZ = MathUtil.clamp(maxZ - ChunkUtil.minBlock(cz), 0, 32);
+                     int minBlockX = ChunkUtil.minBlock(cx);
+                     int minBlockZ = ChunkUtil.minBlock(cz);
+                     int relMinX = MathUtil.clamp(minX - minBlockX, 0, 32);
+                     int relMaxX = MathUtil.clamp(maxX - minBlockX, 0, 32);
+                     int relMinZ = MathUtil.clamp(minZ - minBlockZ, 0, 32);
+                     int relMaxZ = MathUtil.clamp(maxZ - minBlockZ, 0, 32);
 
                      for (int cy = minCY; cy <= maxCY; cy++) {
-                        chunkStore.getChunkSectionReferenceAsync(cx, cy, cz).thenAcceptAsync(section -> {
-                           Store<ChunkStore> sectionStore = section.getStore();
-                           FluidSection fluidSection = sectionStore.getComponent((Ref<ChunkStore>)section, FluidSection.getComponentType());
-                           if (fluidSection != null) {
-                              int relMinY = MathUtil.clamp(minY - ChunkUtil.minBlock(fluidSection.getY()), 0, 32);
-                              int relMaxY = MathUtil.clamp(maxY - ChunkUtil.minBlock(fluidSection.getY()), 0, 32);
-                              ChunkSection sectionComp = sectionStore.getComponent((Ref<ChunkStore>)section, ChunkSection.getComponentType());
-                              WorldChunk worldChunk = sectionStore.getComponent(sectionComp.getChunkColumnReference(), WorldChunk.getComponentType());
+                        chunkStore.getChunkSectionReferenceAsync(cx, cy, cz)
+                           .thenAcceptAsync(
+                              section -> {
+                                 Store<ChunkStore> sectionStore = section.getStore();
+                                 FluidSection fluidSectionComponent = sectionStore.getComponent((Ref<ChunkStore>)section, FluidSection.getComponentType());
+                                 if (fluidSectionComponent != null) {
+                                    ChunkSection chunkSectionComponent = sectionStore.getComponent((Ref<ChunkStore>)section, ChunkSection.getComponentType());
+                                    if (chunkSectionComponent != null) {
+                                       WorldChunk worldChunkComponent = sectionStore.getComponent(
+                                          chunkSectionComponent.getChunkColumnReference(), WorldChunk.getComponentType()
+                                       );
+                                       if (worldChunkComponent != null) {
+                                          int relMinY = MathUtil.clamp(minY - ChunkUtil.minBlock(fluidSectionComponent.getY()), 0, 32);
+                                          int relMaxY = MathUtil.clamp(maxY - ChunkUtil.minBlock(fluidSectionComponent.getY()), 0, 32);
 
-                              for (int y = relMinY; y < relMaxY; y++) {
-                                 for (int z = relMinZ; z < relMaxZ; z++) {
-                                    for (int x = relMinX; x < relMaxX; x++) {
-                                       int index = ChunkUtil.indexBlock(x, y, z);
-                                       fluidSection.setFluid(index, fluid, finalLevel.byteValue());
-                                       worldChunk.setTicking(pos.x, pos.y, pos.z, true);
+                                          for (int y = relMinY; y < relMaxY; y++) {
+                                             for (int z = relMinZ; z < relMaxZ; z++) {
+                                                for (int x = relMinX; x < relMaxX; x++) {
+                                                   int blockIndex = ChunkUtil.indexBlock(x, y, z);
+                                                   fluidSectionComponent.setFluid(blockIndex, fluid, levelByteValue);
+                                                   worldChunkComponent.setTicking(pos.x, pos.y, pos.z, true);
+                                                }
+                                             }
+                                          }
+
+                                          worldChunkComponent.markNeedsSaving();
+                                       }
                                     }
                                  }
-                              }
-
-                              worldChunk.markNeedsSaving();
-                           }
-                        }, world);
+                              },
+                              world
+                           );
                      }
                   }
                }

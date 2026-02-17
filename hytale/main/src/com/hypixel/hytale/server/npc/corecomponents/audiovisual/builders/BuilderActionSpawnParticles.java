@@ -5,8 +5,10 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderDescriptorState;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.asset.builder.holder.AssetHolder;
+import com.hypixel.hytale.server.npc.asset.builder.holder.BooleanHolder;
 import com.hypixel.hytale.server.npc.asset.builder.holder.DoubleHolder;
 import com.hypixel.hytale.server.npc.asset.builder.holder.NumberArrayHolder;
+import com.hypixel.hytale.server.npc.asset.builder.holder.StringHolder;
 import com.hypixel.hytale.server.npc.asset.builder.validators.DoubleSingleValidator;
 import com.hypixel.hytale.server.npc.asset.builder.validators.asset.ParticleSystemExistsValidator;
 import com.hypixel.hytale.server.npc.corecomponents.audiovisual.ActionSpawnParticles;
@@ -17,6 +19,8 @@ public class BuilderActionSpawnParticles extends BuilderActionBase {
    protected final AssetHolder particleSystem = new AssetHolder();
    protected final DoubleHolder range = new DoubleHolder();
    protected final NumberArrayHolder offset = new NumberArrayHolder();
+   protected final StringHolder targetNodeName = new StringHolder();
+   protected final BooleanHolder isDetachedFromModel = new BooleanHolder();
 
    @Nonnull
    public ActionSpawnParticles build(@Nonnull BuilderSupport builderSupport) {
@@ -48,6 +52,10 @@ public class BuilderActionSpawnParticles extends BuilderActionBase {
       );
       this.getDouble(data, "Range", this.range, 75.0, DoubleSingleValidator.greater0(), BuilderDescriptorState.Stable, "Maximum visibility range", null);
       this.getVector3d(data, "Offset", this.offset, null, null, BuilderDescriptorState.Stable, "Offset relative to footpoint in view direction of NPC", null);
+      this.getString(data, "TargetNodeName", this.targetNodeName, null, null, BuilderDescriptorState.Stable, "Target node name to position particles at", null);
+      this.getBoolean(
+         data, "IsDetachedFromModel", this.isDetachedFromModel, false, BuilderDescriptorState.Stable, "Whether to attach particles to the model", null
+      );
       return this;
    }
 
@@ -61,5 +69,13 @@ public class BuilderActionSpawnParticles extends BuilderActionBase {
 
    public Vector3d getOffset(BuilderSupport support) {
       return createVector3d(this.offset.get(support.getExecutionContext()), Vector3d.ZERO::clone);
+   }
+
+   public String getTargetNodeName(BuilderSupport support) {
+      return this.targetNodeName.get(support.getExecutionContext());
+   }
+
+   public boolean isDetachedFromModel(BuilderSupport support) {
+      return this.isDetachedFromModel.get(support.getExecutionContext());
    }
 }

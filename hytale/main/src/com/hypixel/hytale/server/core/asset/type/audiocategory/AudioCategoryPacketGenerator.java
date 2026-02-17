@@ -1,7 +1,7 @@
 package com.hypixel.hytale.server.core.asset.type.audiocategory;
 
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateAudioCategories;
 import com.hypixel.hytale.server.core.asset.packet.SimpleAssetPacketGenerator;
@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
 
 public class AudioCategoryPacketGenerator extends SimpleAssetPacketGenerator<String, AudioCategory, IndexedLookupTableAssetMap<String, AudioCategory>> {
    @Nonnull
-   public Packet generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, AudioCategory> assetMap, @Nonnull Map<String, AudioCategory> assets) {
+   public ToClientPacket generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, AudioCategory> assetMap, @Nonnull Map<String, AudioCategory> assets) {
       UpdateAudioCategories packet = new UpdateAudioCategories();
       packet.type = UpdateType.Init;
       packet.categories = new Int2ObjectOpenHashMap(assets.size());
@@ -34,7 +34,9 @@ public class AudioCategoryPacketGenerator extends SimpleAssetPacketGenerator<Str
    }
 
    @Nonnull
-   public Packet generateUpdatePacket(@Nonnull IndexedLookupTableAssetMap<String, AudioCategory> assetMap, @Nonnull Map<String, AudioCategory> loadedAssets) {
+   public ToClientPacket generateUpdatePacket(
+      @Nonnull IndexedLookupTableAssetMap<String, AudioCategory> assetMap, @Nonnull Map<String, AudioCategory> loadedAssets
+   ) {
       UpdateAudioCategories packet = new UpdateAudioCategories();
       packet.type = UpdateType.AddOrUpdate;
       packet.categories = new Int2ObjectOpenHashMap(loadedAssets.size());
@@ -54,7 +56,7 @@ public class AudioCategoryPacketGenerator extends SimpleAssetPacketGenerator<Str
    }
 
    @Nonnull
-   public Packet generateRemovePacket(@Nonnull IndexedLookupTableAssetMap<String, AudioCategory> assetMap, @Nonnull Set<String> removed) {
+   public ToClientPacket generateRemovePacket(@Nonnull IndexedLookupTableAssetMap<String, AudioCategory> assetMap, @Nonnull Set<String> removed) {
       UpdateAudioCategories packet = new UpdateAudioCategories();
       packet.type = UpdateType.Remove;
       packet.categories = new Int2ObjectOpenHashMap(removed.size());

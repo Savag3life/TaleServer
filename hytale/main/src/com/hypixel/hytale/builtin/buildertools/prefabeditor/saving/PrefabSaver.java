@@ -193,16 +193,8 @@ public class PrefabSaver {
                            }
                         }
 
-                        selection.addBlockAtWorldPos(
-                           x,
-                           y,
-                           z,
-                           block,
-                           sectionComponent.getRotationIndex(x, y, z),
-                           filler,
-                           blockPhysicsComponent != null ? blockPhysicsComponent.get(x, y, z) : 0,
-                           holder
-                        );
+                        int supportValue = settings.isClearSupportValues() ? 0 : (blockPhysicsComponent != null ? blockPhysicsComponent.get(x, y, z) : 0);
+                        selection.addBlockAtWorldPos(x, y, z, block, sectionComponent.getRotationIndex(x, y, z), filler, supportValue, holder);
                         blockCount++;
                      }
 

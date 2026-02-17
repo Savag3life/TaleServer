@@ -10,6 +10,7 @@ import com.hypixel.hytale.math.vector.Vector2d;
 import javax.annotation.Nonnull;
 
 public class PointYOutAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, PointYOutAsset>> {
+   @Nonnull
    public static final AssetBuilderCodec<String, PointYOutAsset> CODEC = AssetBuilderCodec.builder(
          PointYOutAsset.class,
          PointYOutAsset::new,

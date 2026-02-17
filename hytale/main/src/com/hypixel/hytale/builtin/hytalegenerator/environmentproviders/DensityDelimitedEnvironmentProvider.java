@@ -12,6 +12,8 @@ public class DensityDelimitedEnvironmentProvider extends EnvironmentProvider {
    private final List<DelimiterDouble<EnvironmentProvider>> delimiters = new ArrayList<>();
    @Nonnull
    private final Density density;
+   @Nonnull
+   private final Density.Context rDensityContext;
 
    public DensityDelimitedEnvironmentProvider(@Nonnull List<DelimiterDouble<EnvironmentProvider>> delimiters, @Nonnull Density density) {
       for (DelimiterDouble<EnvironmentProvider> delimiter : delimiters) {
@@ -22,11 +24,13 @@ public class DensityDelimitedEnvironmentProvider extends EnvironmentProvider {
       }
 
       this.density = density;
+      this.rDensityContext = new Density.Context();
    }
 
    @Override
    public int getValue(@Nonnull EnvironmentProvider.Context context) {
-      double densityValue = this.density.process(new Density.Context(context));
+      this.rDensityContext.assign(context);
+      double densityValue = this.density.process(this.rDensityContext);
 
       for (DelimiterDouble<EnvironmentProvider> delimiter : this.delimiters) {
          if (delimiter.getRange().contains(densityValue)) {

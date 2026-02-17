@@ -15,6 +15,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public class ShopElement extends ChoiceElement {
+   @Nonnull
    public static final BuilderCodec<ShopElement> CODEC = BuilderCodec.builder(ShopElement.class, ShopElement::new, ChoiceElement.BASE_CODEC)
       .append(new KeyedCodec<>("Cost", Codec.INTEGER), (shopElement, integer) -> shopElement.cost = integer, shopElement -> shopElement.cost)
       .addValidator(Validators.greaterThanOrEqual(0))

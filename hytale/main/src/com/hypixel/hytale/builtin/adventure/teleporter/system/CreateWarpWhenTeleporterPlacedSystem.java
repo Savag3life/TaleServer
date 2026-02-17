@@ -31,6 +31,30 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class CreateWarpWhenTeleporterPlacedSystem extends RefChangeSystem<ChunkStore, PlacedByInteractionComponent> {
+   @Nonnull
+   private final ComponentType<ChunkStore, PlacedByInteractionComponent> placedByInteractionComponentType;
+   @Nonnull
+   private final ComponentType<ChunkStore, Teleporter> teleporterComponentType;
+   @Nonnull
+   private final ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoComponentType;
+   @Nonnull
+   private final ComponentType<EntityStore, PlayerRef> playerRefComponentType;
+   @Nonnull
+   private final Query<ChunkStore> query;
+
+   public CreateWarpWhenTeleporterPlacedSystem(
+      @Nonnull ComponentType<ChunkStore, PlacedByInteractionComponent> placedByInteractionComponentType,
+      @Nonnull ComponentType<ChunkStore, Teleporter> teleporterComponentType,
+      @Nonnull ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoComponentType,
+      @Nonnull ComponentType<EntityStore, PlayerRef> playerRefComponentType
+   ) {
+      this.placedByInteractionComponentType = placedByInteractionComponentType;
+      this.teleporterComponentType = teleporterComponentType;
+      this.blockStateInfoComponentType = blockStateInfoComponentType;
+      this.playerRefComponentType = playerRefComponentType;
+      this.query = Query.and(placedByInteractionComponentType, teleporterComponentType, blockStateInfoComponentType);
+   }
+
    public void onComponentAdded(
       @Nonnull Ref<ChunkStore> ref,
       @Nonnull PlacedByInteractionComponent placedBy,
@@ -42,21 +66,21 @@ public class CreateWarpWhenTeleporterPlacedSystem extends RefChangeSystem<ChunkS
       UUID whoPlacedUuid = placedBy.getWhoPlacedUuid();
       Ref<EntityStore> whoPlacedRef = entityStore.getRefFromUUID(whoPlacedUuid);
       if (whoPlacedRef != null && whoPlacedRef.isValid()) {
-         PlayerRef playerRefComponent = entityStore.getStore().getComponent(whoPlacedRef, PlayerRef.getComponentType());
+         PlayerRef playerRefComponent = entityStore.getStore().getComponent(whoPlacedRef, this.playerRefComponentType);
          String language = playerRefComponent == null ? null : playerRefComponent.getLanguage();
          if (language != null) {
-            BlockModule.BlockStateInfo blockStateInfoComponent = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
+            BlockModule.BlockStateInfo blockStateInfoComponent = commandBuffer.getComponent(ref, this.blockStateInfoComponentType);
 
             assert blockStateInfoComponent != null;
 
             Ref<ChunkStore> chunkRef = blockStateInfoComponent.getChunkRef();
-            if (chunkRef != null && chunkRef.isValid()) {
+            if (chunkRef.isValid()) {
                WorldChunk worldChunk = chunkStore.getComponent(chunkRef, WorldChunk.getComponentType());
                if (worldChunk != null) {
                   String cannedName = CannedWarpNames.generateCannedWarpName(ref, language);
                   if (cannedName != null) {
                      createWarp(worldChunk, blockStateInfoComponent, cannedName);
-                     Teleporter teleporterComponent = commandBuffer.getComponent(ref, Teleporter.getComponentType());
+                     Teleporter teleporterComponent = commandBuffer.getComponent(ref, this.teleporterComponentType);
 
                      assert teleporterComponent != null;
 
@@ -76,21 +100,20 @@ public class CreateWarpWhenTeleporterPlacedSystem extends RefChangeSystem<ChunkS
       int y = ChunkUtil.yFromBlockInColumn(index);
       int z = chunkBlockZ + ChunkUtil.zFromBlockInColumn(index);
       BlockChunk blockChunkComponent = worldChunk.getBlockChunk();
-
-      assert blockChunkComponent != null;
-
-      BlockSection section = blockChunkComponent.getSectionAtBlockY(y);
-      int rotationIndex = section.getRotationIndex(x, y, z);
-      RotationTuple rotationTuple = RotationTuple.get(rotationIndex);
-      Rotation rotationYaw = rotationTuple.yaw();
-      float warpRotationYaw = (float)rotationYaw.getRadians() + (float)Math.toRadians(180.0);
-      Vector3d warpPosition = new Vector3d(x, y, z).add(0.5, 0.65, 0.5);
-      Transform warpTransform = new Transform(warpPosition, new Vector3f(Float.NaN, warpRotationYaw, Float.NaN));
-      String warpId = name.toLowerCase();
-      Warp warp = new Warp(warpTransform, name, worldChunk.getWorld(), "*Teleporter", Instant.now());
-      TeleportPlugin teleportPlugin = TeleportPlugin.get();
-      teleportPlugin.getWarps().put(warpId, warp);
-      teleportPlugin.saveWarps();
+      if (blockChunkComponent != null) {
+         BlockSection section = blockChunkComponent.getSectionAtBlockY(y);
+         int rotationIndex = section.getRotationIndex(x, y, z);
+         RotationTuple rotationTuple = RotationTuple.get(rotationIndex);
+         Rotation rotationYaw = rotationTuple.yaw();
+         float warpRotationYaw = (float)rotationYaw.getRadians() + (float)Math.toRadians(180.0);
+         Vector3d warpPosition = new Vector3d(x, y, z).add(0.5, 0.65, 0.5);
+         Transform warpTransform = new Transform(warpPosition, new Vector3f(Float.NaN, warpRotationYaw, Float.NaN));
+         String warpId = name.toLowerCase();
+         Warp warp = new Warp(warpTransform, name, worldChunk.getWorld(), "*Teleporter", Instant.now());
+         TeleportPlugin teleportPlugin = TeleportPlugin.get();
+         teleportPlugin.getWarps().put(warpId, warp);
+         teleportPlugin.saveWarps();
+      }
    }
 
    public void onComponentSet(
@@ -113,12 +136,12 @@ public class CreateWarpWhenTeleporterPlacedSystem extends RefChangeSystem<ChunkS
    @Nonnull
    @Override
    public ComponentType<ChunkStore, PlacedByInteractionComponent> componentType() {
-      return PlacedByInteractionComponent.getComponentType();
+      return this.placedByInteractionComponentType;
    }
 
-   @Nullable
+   @Nonnull
    @Override
    public Query<ChunkStore> getQuery() {
-      return Query.and(PlacedByInteractionComponent.getComponentType(), Teleporter.getComponentType(), BlockModule.BlockStateInfo.getComponentType());
+      return this.query;
    }
 }

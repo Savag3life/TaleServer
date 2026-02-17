@@ -48,4 +48,8 @@ public class EntityFilterViewSector extends EntityFilterBase {
    public int cost() {
       return 300;
    }
+
+   public float getViewAngle() {
+      return this.viewCone;
+   }
 }

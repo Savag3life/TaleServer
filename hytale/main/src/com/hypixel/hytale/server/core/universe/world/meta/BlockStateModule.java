@@ -28,7 +28,7 @@ import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.metrics.MetricResults;
 import com.hypixel.hytale.metrics.MetricsRegistry;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.StateData;
@@ -419,7 +419,7 @@ public class BlockStateModule extends JavaPlugin {
          Store<ChunkStore> store,
          CommandBuffer<ChunkStore> commandBuffer,
          PlayerRef player,
-         List<Packet> results
+         List<ToClientPacket> results
       ) {
          SendableBlockState state = (SendableBlockState)BlockState.getBlockState(index, archetypeChunk);
          if (state.canPlayerSee(player)) {
@@ -501,7 +501,7 @@ public class BlockStateModule extends JavaPlugin {
          Store<ChunkStore> store,
          CommandBuffer<ChunkStore> commandBuffer,
          PlayerRef player,
-         List<Packet> results
+         List<ToClientPacket> results
       ) {
          SendableBlockState state = (SendableBlockState)BlockState.getBlockState(index, archetypeChunk);
          if (state.canPlayerSee(player)) {

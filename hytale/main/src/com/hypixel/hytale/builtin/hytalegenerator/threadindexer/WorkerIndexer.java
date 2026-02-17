@@ -3,6 +3,7 @@ package com.hypixel.hytale.builtin.hytalegenerator.threadindexer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
@@ -44,9 +45,17 @@ public class WorkerIndexer {
       private T[] data;
       private Supplier<T> initialize;
 
-      public Data(int size, @Nonnull Supplier<T> initialize) {
+      public Data(int size, @Nonnull Supplier<T> initializer) {
          this.data = (T[])(new Object[size]);
-         this.initialize = initialize;
+         this.initialize = initializer;
+      }
+
+      public Data(@Nonnull WorkerIndexer.Data<?> other, @Nonnull Supplier<T> initializer) {
+         this(other.data.length, initializer);
+      }
+
+      public Data(@Nonnull WorkerIndexer workerIndexer, @Nonnull Supplier<T> initializer) {
+         this(workerIndexer.getWorkerCount(), initializer);
       }
 
       public boolean isValid(@Nonnull WorkerIndexer.Id id) {
@@ -67,11 +76,30 @@ public class WorkerIndexer {
             return this.data[id.id];
          }
       }
+
+      public void set(@Nonnull WorkerIndexer.Id id, T value) {
+         if (!this.isValid(id)) {
+            throw new IllegalArgumentException("Invalid thread id " + id);
+         } else {
+            this.data[id.id] = value;
+         }
+      }
+
+      public void forEach(@Nonnull BiConsumer<WorkerIndexer.Id, T> consumer) {
+         for (int i = 0; i < this.data.length; i++) {
+            WorkerIndexer.Id id = new WorkerIndexer.Id(i);
+            consumer.accept(id, this.data[i]);
+         }
+      }
    }
 
    public static class Id {
       public static final int UNKNOWN_THREAD_ID = -1;
+      public static final int MAIN_THREAD_ID = 0;
+      @Nonnull
       public static final WorkerIndexer.Id UNKNOWN = new WorkerIndexer.Id(-1);
+      @Nonnull
+      public static final WorkerIndexer.Id MAIN = new WorkerIndexer.Id(0);
       public final int id;
 
       private Id(int id) {

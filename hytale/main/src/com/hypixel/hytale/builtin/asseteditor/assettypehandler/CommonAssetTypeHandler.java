@@ -21,11 +21,12 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.logging.Level;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class CommonAssetTypeHandler extends AssetTypeHandler {
    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-   public CommonAssetTypeHandler(String id, String icon, String fileExtension, AssetEditorEditorType editorType) {
+   public CommonAssetTypeHandler(String id, @Nullable String icon, String fileExtension, AssetEditorEditorType editorType) {
       super(new AssetEditorAssetType(id, icon, true, "Common", fileExtension, editorType));
    }
 

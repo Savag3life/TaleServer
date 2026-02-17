@@ -8,10 +8,12 @@ import com.hypixel.hytale.server.core.universe.world.storage.IChunkLoader;
 import com.hypixel.hytale.server.core.universe.world.storage.IChunkSaver;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
-public class EmptyChunkStorageProvider implements IChunkStorageProvider {
+public class EmptyChunkStorageProvider implements IChunkStorageProvider<Void> {
    public static final String ID = "Empty";
    @Nonnull
    public static final EmptyChunkStorageProvider INSTANCE = new EmptyChunkStorageProvider();
@@ -20,19 +22,24 @@ public class EmptyChunkStorageProvider implements IChunkStorageProvider {
       .documentation("A chunk storage provider that discards any chunks to save and will always fail to find chunks.")
       .build();
    @Nonnull
-   public static final EmptyChunkStorageProvider.EmptyChunkLoader EMPTY_CHUNK_LOADER = new EmptyChunkStorageProvider.EmptyChunkLoader();
+   private static final EmptyChunkStorageProvider.EmptyChunkLoader EMPTY_CHUNK_LOADER = new EmptyChunkStorageProvider.EmptyChunkLoader();
    @Nonnull
-   public static final EmptyChunkStorageProvider.EmptyChunkSaver EMPTY_CHUNK_SAVER = new EmptyChunkStorageProvider.EmptyChunkSaver();
+   private static final EmptyChunkStorageProvider.EmptyChunkSaver EMPTY_CHUNK_SAVER = new EmptyChunkStorageProvider.EmptyChunkSaver();
+
+   public Void initialize(@NonNullDecl Store<ChunkStore> store) throws IOException {
+      return null;
+   }
+
+   public void close(@NonNullDecl Void o, @NonNullDecl Store<ChunkStore> store) throws IOException {
+   }
 
    @Nonnull
-   @Override
-   public IChunkLoader getLoader(@Nonnull Store<ChunkStore> store) {
+   public IChunkLoader getLoader(@Nonnull Void object, @Nonnull Store<ChunkStore> store) {
       return EMPTY_CHUNK_LOADER;
    }
 
    @Nonnull
-   @Override
-   public IChunkSaver getSaver(@Nonnull Store<ChunkStore> store) {
+   public IChunkSaver getSaver(@Nonnull Void object, @Nonnull Store<ChunkStore> store) {
       return EMPTY_CHUNK_SAVER;
    }
 

@@ -1,7 +1,7 @@
 package com.hypixel.hytale.server.core.modules.projectile.config;
 
 import com.hypixel.hytale.assetstore.map.DefaultAssetMap;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateProjectileConfigs;
 import com.hypixel.hytale.server.core.asset.packet.DefaultAssetPacketGenerator;
@@ -15,7 +15,7 @@ import javax.annotation.Nullable;
 public class ProjectileConfigPacketGenerator extends DefaultAssetPacketGenerator<String, ProjectileConfig> {
    @Nonnull
    @Override
-   public Packet generateInitPacket(@Nonnull DefaultAssetMap<String, ProjectileConfig> assetMap, Map<String, ProjectileConfig> assets) {
+   public ToClientPacket generateInitPacket(@Nonnull DefaultAssetMap<String, ProjectileConfig> assetMap, Map<String, ProjectileConfig> assets) {
       UpdateProjectileConfigs packet = new UpdateProjectileConfigs();
       packet.type = UpdateType.Init;
       Map<String, com.hypixel.hytale.protocol.ProjectileConfig> map = new Object2ObjectOpenHashMap();
@@ -32,7 +32,7 @@ public class ProjectileConfigPacketGenerator extends DefaultAssetPacketGenerator
 
    @Nonnull
    @Override
-   public Packet generateUpdatePacket(@Nonnull Map<String, ProjectileConfig> loadedAssets) {
+   public ToClientPacket generateUpdatePacket(@Nonnull Map<String, ProjectileConfig> loadedAssets) {
       UpdateProjectileConfigs packet = new UpdateProjectileConfigs();
       packet.type = UpdateType.AddOrUpdate;
       Map<String, com.hypixel.hytale.protocol.ProjectileConfig> map = new Object2ObjectOpenHashMap();
@@ -49,7 +49,7 @@ public class ProjectileConfigPacketGenerator extends DefaultAssetPacketGenerator
 
    @Nullable
    @Override
-   public Packet generateRemovePacket(@Nonnull Set<String> removed) {
+   public ToClientPacket generateRemovePacket(@Nonnull Set<String> removed) {
       UpdateProjectileConfigs packet = new UpdateProjectileConfigs();
       packet.type = UpdateType.Remove;
       packet.removedConfigs = removed.toArray(String[]::new);

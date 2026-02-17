@@ -6,6 +6,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.lookup.CodecMapCodec;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.protocol.Rangef;
 import com.hypixel.hytale.protocol.SoundCategory;
@@ -13,8 +14,10 @@ import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.asset.type.soundevent.validator.SoundEventValidators;
 import com.hypixel.hytale.server.core.codec.ProtocolCodecs;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -44,7 +47,7 @@ public abstract class FarmingStageData {
       .build();
    protected Rangef duration;
    @Nullable
-   protected String soundEventId = null;
+   protected String soundEventId;
    protected transient int soundEventIndex = 0;
 
    @Nullable
@@ -65,32 +68,38 @@ public abstract class FarmingStageData {
       return false;
    }
 
-   public boolean shouldStop(ComponentAccessor<ChunkStore> commandBuffer, Ref<ChunkStore> sectionRef, Ref<ChunkStore> blockRef, int x, int y, int z) {
+   public boolean shouldStop(
+      @Nonnull ComponentAccessor<ChunkStore> commandBuffer, @Nonnull Ref<ChunkStore> sectionRef, @Nonnull Ref<ChunkStore> blockRef, int x, int y, int z
+   ) {
       return false;
    }
 
    public void apply(
-      ComponentAccessor<ChunkStore> commandBuffer,
-      Ref<ChunkStore> sectionRef,
-      Ref<ChunkStore> blockRef,
+      @Nonnull ComponentAccessor<ChunkStore> commandBuffer,
+      @Nonnull Ref<ChunkStore> sectionRef,
+      @Nonnull Ref<ChunkStore> blockRef,
       int x,
       int y,
       int z,
       @Nullable FarmingStageData previousStage
    ) {
-      ChunkSection section = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
-      int worldX = ChunkUtil.worldCoordFromLocalCoord(section.getX(), x);
-      int worldY = ChunkUtil.worldCoordFromLocalCoord(section.getY(), y);
-      int worldZ = ChunkUtil.worldCoordFromLocalCoord(section.getZ(), z);
-      SoundUtil.playSoundEvent3d(
-         this.soundEventIndex, SoundCategory.SFX, worldX, worldY, worldZ, commandBuffer.getExternalData().getWorld().getEntityStore().getStore()
-      );
-      if (previousStage != null) {
-         previousStage.remove(commandBuffer, sectionRef, blockRef, x, y, z);
+      ChunkSection chunkSectionComponent = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
+      if (chunkSectionComponent != null) {
+         int worldX = ChunkUtil.worldCoordFromLocalCoord(chunkSectionComponent.getX(), x);
+         int worldY = ChunkUtil.worldCoordFromLocalCoord(chunkSectionComponent.getY(), y);
+         int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkSectionComponent.getZ(), z);
+         World world = commandBuffer.getExternalData().getWorld();
+         Store<EntityStore> entityStore = world.getEntityStore().getStore();
+         SoundUtil.playSoundEvent3d(this.soundEventIndex, SoundCategory.SFX, worldX, worldY, worldZ, entityStore);
+         if (previousStage != null) {
+            previousStage.remove(commandBuffer, sectionRef, blockRef, x, y, z);
+         }
       }
    }
 
-   public void remove(ComponentAccessor<ChunkStore> commandBuffer, Ref<ChunkStore> sectionRef, Ref<ChunkStore> blockRef, int x, int y, int z) {
+   public void remove(
+      @Nonnull ComponentAccessor<ChunkStore> commandBuffer, @Nonnull Ref<ChunkStore> sectionRef, @Nonnull Ref<ChunkStore> blockRef, int x, int y, int z
+   ) {
    }
 
    @Nonnull

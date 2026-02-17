@@ -19,16 +19,22 @@ import javax.annotation.Nullable;
 
 public class BenchRecipeRegistry {
    private final String benchId;
+   @Nonnull
    private final Map<String, Set<String>> categoryMap = new Object2ObjectOpenHashMap();
+   @Nonnull
    private final Map<String, Set<String>> itemToIncomingRecipe = new Object2ObjectOpenHashMap();
+   @Nonnull
    private final Set<String> uncategorizedRecipes = new ObjectOpenHashSet();
+   @Nonnull
    private final Set<String> allMaterialIds = new ObjectOpenHashSet();
+   @Nonnull
    private final Set<String> allMaterialResourceType = new ObjectOpenHashSet();
 
    public BenchRecipeRegistry(String benchId) {
       this.benchId = benchId;
    }
 
+   @Nonnull
    public Iterable<String> getIncomingRecipesForItem(@Nonnull String itemId) {
       Set<String> recipes = this.itemToIncomingRecipe.get(itemId);
       return recipes == null ? Collections.emptySet() : recipes;
@@ -88,7 +94,7 @@ public class BenchRecipeRegistry {
       this.extractMaterialFromRecipes(this.uncategorizedRecipes);
    }
 
-   private void extractMaterialFromRecipes(Set<String> recipes) {
+   private void extractMaterialFromRecipes(@Nonnull Set<String> recipes) {
       for (String recipeId : recipes) {
          CraftingRecipe recipe = CraftingRecipe.getAssetMap().getAsset(recipeId);
          if (recipe != null) {
@@ -141,7 +147,7 @@ public class BenchRecipeRegistry {
    }
 
    @Override
-   public boolean equals(Object o) {
+   public boolean equals(@Nullable Object o) {
       if (o != null && this.getClass() == o.getClass()) {
          BenchRecipeRegistry that = (BenchRecipeRegistry)o;
          return Objects.equals(this.benchId, that.benchId)
@@ -159,6 +165,7 @@ public class BenchRecipeRegistry {
       return Objects.hash(this.benchId, this.categoryMap, this.uncategorizedRecipes, this.allMaterialIds, this.allMaterialResourceType);
    }
 
+   @Nonnull
    @Override
    public String toString() {
       return "BenchRecipeRegistry{benchId='"

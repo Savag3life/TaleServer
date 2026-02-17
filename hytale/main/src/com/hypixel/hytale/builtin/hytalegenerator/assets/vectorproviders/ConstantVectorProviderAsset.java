@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class ConstantVectorProviderAsset extends VectorProviderAsset {
+   @Nonnull
    public static final BuilderCodec<ConstantVectorProviderAsset> CODEC = BuilderCodec.builder(
          ConstantVectorProviderAsset.class, ConstantVectorProviderAsset::new, ABSTRACT_CODEC
       )
@@ -23,6 +24,7 @@ public class ConstantVectorProviderAsset extends VectorProviderAsset {
       this.value.assign(vector);
    }
 
+   @Nonnull
    @Override
    public VectorProvider build(@Nonnull VectorProviderAsset.Argument argument) {
       return this.isSkipped() ? new ConstantVectorProvider(new Vector3d()) : new ConstantVectorProvider(this.value);

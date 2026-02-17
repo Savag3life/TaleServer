@@ -1,20 +1,12 @@
 package com.hypixel.hytale.server.core.util.message;
 
 import com.hypixel.hytale.server.core.Message;
-import java.awt.Color;
 import java.util.Collection;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public final class MessageFormat {
-   private static final Message ENABLED = Message.translation("server.general.enabled").color(Color.GREEN);
-   private static final Message DISABLED = Message.translation("server.general.disabled").color(Color.RED);
    private static final int LIST_MAX_INLINE_VALUES = 4;
-
-   @Nonnull
-   public static Message enabled(boolean b) {
-      return b ? ENABLED : DISABLED;
-   }
 
    @Nonnull
    public static Message list(@Nullable Message header, @Nonnull Collection<Message> values) {

@@ -13,8 +13,8 @@ import javax.annotation.Nullable;
 public class AssetPackManifest {
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
    public static final int FIXED_BLOCK_SIZE = 1;
-   public static final int VARIABLE_FIELD_COUNT = 6;
-   public static final int VARIABLE_BLOCK_START = 25;
+   public static final int VARIABLE_FIELD_COUNT = 7;
+   public static final int VARIABLE_BLOCK_START = 29;
    public static final int MAX_SIZE = 1677721600;
    @Nullable
    public String name;
@@ -28,6 +28,8 @@ public class AssetPackManifest {
    public String version;
    @Nullable
    public AuthorInfo[] authors;
+   @Nullable
+   public String serverVersion;
 
    public AssetPackManifest() {
    }
@@ -38,7 +40,8 @@ public class AssetPackManifest {
       @Nullable String website,
       @Nullable String description,
       @Nullable String version,
-      @Nullable AuthorInfo[] authors
+      @Nullable AuthorInfo[] authors,
+      @Nullable String serverVersion
    ) {
       this.name = name;
       this.group = group;
@@ -46,6 +49,7 @@ public class AssetPackManifest {
       this.description = description;
       this.version = version;
       this.authors = authors;
+      this.serverVersion = serverVersion;
    }
 
    public AssetPackManifest(@Nonnull AssetPackManifest other) {
@@ -55,6 +59,7 @@ public class AssetPackManifest {
       this.description = other.description;
       this.version = other.version;
       this.authors = other.authors;
+      this.serverVersion = other.serverVersion;
    }
 
    @Nonnull
@@ -62,7 +67,7 @@ public class AssetPackManifest {
       AssetPackManifest obj = new AssetPackManifest();
       byte nullBits = buf.getByte(offset);
       if ((nullBits & 1) != 0) {
-         int varPos0 = offset + 25 + buf.getIntLE(offset + 1);
+         int varPos0 = offset + 29 + buf.getIntLE(offset + 1);
          int nameLen = VarInt.peek(buf, varPos0);
          if (nameLen < 0) {
             throw ProtocolException.negativeLength("Name", nameLen);
@@ -76,7 +81,7 @@ public class AssetPackManifest {
       }
 
       if ((nullBits & 2) != 0) {
-         int varPos1 = offset + 25 + buf.getIntLE(offset + 5);
+         int varPos1 = offset + 29 + buf.getIntLE(offset + 5);
          int groupLen = VarInt.peek(buf, varPos1);
          if (groupLen < 0) {
             throw ProtocolException.negativeLength("Group", groupLen);
@@ -90,7 +95,7 @@ public class AssetPackManifest {
       }
 
       if ((nullBits & 4) != 0) {
-         int varPos2 = offset + 25 + buf.getIntLE(offset + 9);
+         int varPos2 = offset + 29 + buf.getIntLE(offset + 9);
          int websiteLen = VarInt.peek(buf, varPos2);
          if (websiteLen < 0) {
             throw ProtocolException.negativeLength("Website", websiteLen);
@@ -104,7 +109,7 @@ public class AssetPackManifest {
       }
 
       if ((nullBits & 8) != 0) {
-         int varPos3 = offset + 25 + buf.getIntLE(offset + 13);
+         int varPos3 = offset + 29 + buf.getIntLE(offset + 13);
          int descriptionLen = VarInt.peek(buf, varPos3);
          if (descriptionLen < 0) {
             throw ProtocolException.negativeLength("Description", descriptionLen);
@@ -118,7 +123,7 @@ public class AssetPackManifest {
       }
 
       if ((nullBits & 16) != 0) {
-         int varPos4 = offset + 25 + buf.getIntLE(offset + 17);
+         int varPos4 = offset + 29 + buf.getIntLE(offset + 17);
          int versionLen = VarInt.peek(buf, varPos4);
          if (versionLen < 0) {
             throw ProtocolException.negativeLength("Version", versionLen);
@@ -132,7 +137,7 @@ public class AssetPackManifest {
       }
 
       if ((nullBits & 32) != 0) {
-         int varPos5 = offset + 25 + buf.getIntLE(offset + 21);
+         int varPos5 = offset + 29 + buf.getIntLE(offset + 21);
          int authorsCount = VarInt.peek(buf, varPos5);
          if (authorsCount < 0) {
             throw ProtocolException.negativeLength("Authors", authorsCount);
@@ -156,15 +161,29 @@ public class AssetPackManifest {
          }
       }
 
+      if ((nullBits & 64) != 0) {
+         int varPos6 = offset + 29 + buf.getIntLE(offset + 25);
+         int serverVersionLen = VarInt.peek(buf, varPos6);
+         if (serverVersionLen < 0) {
+            throw ProtocolException.negativeLength("ServerVersion", serverVersionLen);
+         }
+
+         if (serverVersionLen > 4096000) {
+            throw ProtocolException.stringTooLong("ServerVersion", serverVersionLen, 4096000);
+         }
+
+         obj.serverVersion = PacketIO.readVarString(buf, varPos6, PacketIO.UTF8);
+      }
+
       return obj;
    }
 
    public static int computeBytesConsumed(@Nonnull ByteBuf buf, int offset) {
       byte nullBits = buf.getByte(offset);
-      int maxEnd = 25;
+      int maxEnd = 29;
       if ((nullBits & 1) != 0) {
          int fieldOffset0 = buf.getIntLE(offset + 1);
-         int pos0 = offset + 25 + fieldOffset0;
+         int pos0 = offset + 29 + fieldOffset0;
          int sl = VarInt.peek(buf, pos0);
          pos0 += VarInt.length(buf, pos0) + sl;
          if (pos0 - offset > maxEnd) {
@@ -174,7 +193,7 @@ public class AssetPackManifest {
 
       if ((nullBits & 2) != 0) {
          int fieldOffset1 = buf.getIntLE(offset + 5);
-         int pos1 = offset + 25 + fieldOffset1;
+         int pos1 = offset + 29 + fieldOffset1;
          int sl = VarInt.peek(buf, pos1);
          pos1 += VarInt.length(buf, pos1) + sl;
          if (pos1 - offset > maxEnd) {
@@ -184,7 +203,7 @@ public class AssetPackManifest {
 
       if ((nullBits & 4) != 0) {
          int fieldOffset2 = buf.getIntLE(offset + 9);
-         int pos2 = offset + 25 + fieldOffset2;
+         int pos2 = offset + 29 + fieldOffset2;
          int sl = VarInt.peek(buf, pos2);
          pos2 += VarInt.length(buf, pos2) + sl;
          if (pos2 - offset > maxEnd) {
@@ -194,7 +213,7 @@ public class AssetPackManifest {
 
       if ((nullBits & 8) != 0) {
          int fieldOffset3 = buf.getIntLE(offset + 13);
-         int pos3 = offset + 25 + fieldOffset3;
+         int pos3 = offset + 29 + fieldOffset3;
          int sl = VarInt.peek(buf, pos3);
          pos3 += VarInt.length(buf, pos3) + sl;
          if (pos3 - offset > maxEnd) {
@@ -204,7 +223,7 @@ public class AssetPackManifest {
 
       if ((nullBits & 16) != 0) {
          int fieldOffset4 = buf.getIntLE(offset + 17);
-         int pos4 = offset + 25 + fieldOffset4;
+         int pos4 = offset + 29 + fieldOffset4;
          int sl = VarInt.peek(buf, pos4);
          pos4 += VarInt.length(buf, pos4) + sl;
          if (pos4 - offset > maxEnd) {
@@ -214,7 +233,7 @@ public class AssetPackManifest {
 
       if ((nullBits & 32) != 0) {
          int fieldOffset5 = buf.getIntLE(offset + 21);
-         int pos5 = offset + 25 + fieldOffset5;
+         int pos5 = offset + 29 + fieldOffset5;
          int arrLen = VarInt.peek(buf, pos5);
          pos5 += VarInt.length(buf, pos5);
 
@@ -224,6 +243,16 @@ public class AssetPackManifest {
 
          if (pos5 - offset > maxEnd) {
             maxEnd = pos5 - offset;
+         }
+      }
+
+      if ((nullBits & 64) != 0) {
+         int fieldOffset6 = buf.getIntLE(offset + 25);
+         int pos6 = offset + 29 + fieldOffset6;
+         int sl = VarInt.peek(buf, pos6);
+         pos6 += VarInt.length(buf, pos6) + sl;
+         if (pos6 - offset > maxEnd) {
+            maxEnd = pos6 - offset;
          }
       }
 
@@ -257,6 +286,10 @@ public class AssetPackManifest {
          nullBits = (byte)(nullBits | 32);
       }
 
+      if (this.serverVersion != null) {
+         nullBits = (byte)(nullBits | 64);
+      }
+
       buf.writeByte(nullBits);
       int nameOffsetSlot = buf.writerIndex();
       buf.writeIntLE(0);
@@ -269,6 +302,8 @@ public class AssetPackManifest {
       int versionOffsetSlot = buf.writerIndex();
       buf.writeIntLE(0);
       int authorsOffsetSlot = buf.writerIndex();
+      buf.writeIntLE(0);
+      int serverVersionOffsetSlot = buf.writerIndex();
       buf.writeIntLE(0);
       int varBlockStart = buf.writerIndex();
       if (this.name != null) {
@@ -320,10 +355,17 @@ public class AssetPackManifest {
       } else {
          buf.setIntLE(authorsOffsetSlot, -1);
       }
+
+      if (this.serverVersion != null) {
+         buf.setIntLE(serverVersionOffsetSlot, buf.writerIndex() - varBlockStart);
+         PacketIO.writeVarString(buf, this.serverVersion, 4096000);
+      } else {
+         buf.setIntLE(serverVersionOffsetSlot, -1);
+      }
    }
 
    public int computeSize() {
-      int size = 25;
+      int size = 29;
       if (this.name != null) {
          size += PacketIO.stringSize(this.name);
       }
@@ -354,12 +396,16 @@ public class AssetPackManifest {
          size += VarInt.size(this.authors.length) + authorsSize;
       }
 
+      if (this.serverVersion != null) {
+         size += PacketIO.stringSize(this.serverVersion);
+      }
+
       return size;
    }
 
    public static ValidationResult validateStructure(@Nonnull ByteBuf buffer, int offset) {
-      if (buffer.readableBytes() - offset < 25) {
-         return ValidationResult.error("Buffer too small: expected at least 25 bytes");
+      if (buffer.readableBytes() - offset < 29) {
+         return ValidationResult.error("Buffer too small: expected at least 29 bytes");
       } else {
          byte nullBits = buffer.getByte(offset);
          if ((nullBits & 1) != 0) {
@@ -368,7 +414,7 @@ public class AssetPackManifest {
                return ValidationResult.error("Invalid offset for Name");
             }
 
-            int pos = offset + 25 + nameOffset;
+            int pos = offset + 29 + nameOffset;
             if (pos >= buffer.writerIndex()) {
                return ValidationResult.error("Offset out of bounds for Name");
             }
@@ -395,7 +441,7 @@ public class AssetPackManifest {
                return ValidationResult.error("Invalid offset for Group");
             }
 
-            int posx = offset + 25 + groupOffset;
+            int posx = offset + 29 + groupOffset;
             if (posx >= buffer.writerIndex()) {
                return ValidationResult.error("Offset out of bounds for Group");
             }
@@ -422,7 +468,7 @@ public class AssetPackManifest {
                return ValidationResult.error("Invalid offset for Website");
             }
 
-            int posxx = offset + 25 + websiteOffset;
+            int posxx = offset + 29 + websiteOffset;
             if (posxx >= buffer.writerIndex()) {
                return ValidationResult.error("Offset out of bounds for Website");
             }
@@ -449,7 +495,7 @@ public class AssetPackManifest {
                return ValidationResult.error("Invalid offset for Description");
             }
 
-            int posxxx = offset + 25 + descriptionOffset;
+            int posxxx = offset + 29 + descriptionOffset;
             if (posxxx >= buffer.writerIndex()) {
                return ValidationResult.error("Offset out of bounds for Description");
             }
@@ -476,7 +522,7 @@ public class AssetPackManifest {
                return ValidationResult.error("Invalid offset for Version");
             }
 
-            int posxxxx = offset + 25 + versionOffset;
+            int posxxxx = offset + 29 + versionOffset;
             if (posxxxx >= buffer.writerIndex()) {
                return ValidationResult.error("Offset out of bounds for Version");
             }
@@ -503,7 +549,7 @@ public class AssetPackManifest {
                return ValidationResult.error("Invalid offset for Authors");
             }
 
-            int posxxxxx = offset + 25 + authorsOffset;
+            int posxxxxx = offset + 29 + authorsOffset;
             if (posxxxxx >= buffer.writerIndex()) {
                return ValidationResult.error("Offset out of bounds for Authors");
             }
@@ -529,6 +575,33 @@ public class AssetPackManifest {
             }
          }
 
+         if ((nullBits & 64) != 0) {
+            int serverVersionOffset = buffer.getIntLE(offset + 25);
+            if (serverVersionOffset < 0) {
+               return ValidationResult.error("Invalid offset for ServerVersion");
+            }
+
+            int posxxxxxx = offset + 29 + serverVersionOffset;
+            if (posxxxxxx >= buffer.writerIndex()) {
+               return ValidationResult.error("Offset out of bounds for ServerVersion");
+            }
+
+            int serverVersionLen = VarInt.peek(buffer, posxxxxxx);
+            if (serverVersionLen < 0) {
+               return ValidationResult.error("Invalid string length for ServerVersion");
+            }
+
+            if (serverVersionLen > 4096000) {
+               return ValidationResult.error("ServerVersion exceeds max length 4096000");
+            }
+
+            posxxxxxx += VarInt.length(buffer, posxxxxxx);
+            posxxxxxx += serverVersionLen;
+            if (posxxxxxx > buffer.writerIndex()) {
+               return ValidationResult.error("Buffer overflow reading ServerVersion");
+            }
+         }
+
          return ValidationResult.OK;
       }
    }
@@ -541,6 +614,7 @@ public class AssetPackManifest {
       copy.description = this.description;
       copy.version = this.version;
       copy.authors = this.authors != null ? Arrays.stream(this.authors).map(e -> e.clone()).toArray(AuthorInfo[]::new) : null;
+      copy.serverVersion = this.serverVersion;
       return copy;
    }
 
@@ -556,7 +630,8 @@ public class AssetPackManifest {
                && Objects.equals(this.website, other.website)
                && Objects.equals(this.description, other.description)
                && Objects.equals(this.version, other.version)
-               && Arrays.equals((Object[])this.authors, (Object[])other.authors);
+               && Arrays.equals((Object[])this.authors, (Object[])other.authors)
+               && Objects.equals(this.serverVersion, other.serverVersion);
       }
    }
 
@@ -568,6 +643,7 @@ public class AssetPackManifest {
       result = 31 * result + Objects.hashCode(this.website);
       result = 31 * result + Objects.hashCode(this.description);
       result = 31 * result + Objects.hashCode(this.version);
-      return 31 * result + Arrays.hashCode((Object[])this.authors);
+      result = 31 * result + Arrays.hashCode((Object[])this.authors);
+      return 31 * result + Objects.hashCode(this.serverVersion);
    }
 }

@@ -23,6 +23,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.PositionUtil;
+import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 
 public class TeleportSystems {
@@ -62,15 +63,22 @@ public class TeleportSystems {
             headRotationComponent.teleportRotation(teleport.getRotation());
          }
 
+         CompletableFuture<Void> future = teleport.getOnComplete();
+         commandBuffer.removeComponent(ref, this.teleportComponentType);
          World targetWorld = teleport.getWorld();
          if (targetWorld != null && !targetWorld.equals(store.getExternalData().getWorld())) {
             commandBuffer.run(s -> {
                Holder<EntityStore> holder = s.removeEntity(ref, RemoveReason.UNLOAD);
-               targetWorld.execute(() -> targetWorld.getEntityStore().getStore().addEntity(holder, AddReason.LOAD));
+               targetWorld.execute(() -> {
+                  targetWorld.getEntityStore().getStore().addEntity(holder, AddReason.LOAD);
+                  if (future != null) {
+                     future.complete(null);
+                  }
+               });
             });
+         } else if (future != null) {
+            future.complete(null);
          }
-
-         commandBuffer.removeComponent(ref, this.teleportComponentType);
       }
 
       public void onComponentRemoved(
@@ -223,7 +231,21 @@ public class TeleportSystems {
             TeleportRecord teleportRecord = s.ensureAndGetComponent(ref, TeleportRecord.getComponentType());
             teleportRecord.setLastTeleport(new TeleportRecord.Entry(origin, destination, System.nanoTime()));
             playerRefComponent.removeFromStore();
-            targetWorld.addPlayer(playerRefComponent, new Transform(teleport.getPosition(), teleport.getRotation()));
+            CompletableFuture<PlayerRef> fut = targetWorld.addPlayer(playerRefComponent, new Transform(teleport.getPosition(), teleport.getRotation()));
+            CompletableFuture<Void> future = teleport.getOnComplete();
+            if (future != null) {
+               if (fut != null) {
+                  fut.whenComplete((playerRef, throwable) -> {
+                     if (throwable != null) {
+                        future.completeExceptionally(throwable);
+                     } else {
+                        future.complete(null);
+                     }
+                  });
+               } else {
+                  future.completeExceptionally(new RuntimeException("Failed to teleport player to world " + targetWorld.getName()));
+               }
+            }
          });
       }
 
@@ -270,6 +292,11 @@ public class TeleportSystems {
             teleport.isResetVelocity()
          );
          playerRefComponent.getPacketHandler().write(teleportPacket);
+         CompletableFuture<Void> future = teleport.getOnComplete();
+         if (future != null) {
+            future.complete(null);
+         }
+
          commandBuffer.removeComponent(ref, this.teleportComponentType);
       }
    }

@@ -15,6 +15,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class PositionsPinchDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<PositionsPinchDensityAsset> CODEC = BuilderCodec.builder(
          PositionsPinchDensityAsset.class, PositionsPinchDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -38,10 +39,10 @@ public class PositionsPinchDensityAsset extends DensityAsset {
       .build();
    private PositionProviderAsset positionProviderAsset = new ListPositionProviderAsset();
    private CurveAsset pinchCurveAsset = new ConstantCurveAsset();
-   private double maxDistance = 0.0;
-   private boolean normalizeDistance = false;
-   private boolean isHorizontal = false;
-   private double positionsMinY = 0.0;
+   private double maxDistance;
+   private boolean normalizeDistance;
+   private boolean isHorizontal;
+   private double positionsMinY;
    private double positionsMaxY = 1.0E-6;
 
    @Nonnull
@@ -53,17 +54,16 @@ public class PositionsPinchDensityAsset extends DensityAsset {
          return (Density)(this.isHorizontal
             ? new PositionsHorizontalPinchDensity(
                this.buildFirstInput(argument),
-               this.positionProviderAsset.build(new PositionProviderAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer)),
+               this.positionProviderAsset.build(new PositionProviderAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId)),
                this.pinchCurveAsset.build(),
                this.maxDistance,
                this.normalizeDistance,
                this.positionsMinY,
-               this.positionsMaxY,
-               argument.workerIndexer.getWorkerCount()
+               this.positionsMaxY
             )
             : new PositionsPinchDensity(
                this.buildFirstInput(argument),
-               this.positionProviderAsset.build(new PositionProviderAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer)),
+               this.positionProviderAsset.build(new PositionProviderAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId)),
                this.pinchCurveAsset.build(),
                this.maxDistance,
                this.normalizeDistance

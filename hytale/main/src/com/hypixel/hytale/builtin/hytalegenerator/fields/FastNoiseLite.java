@@ -28,6 +28,7 @@ public class FastNoiseLite {
    private FastNoiseLite.TransformType3D mWarpTransformType3D = FastNoiseLite.TransformType3D.DefaultOpenSimplex2;
    private float mDomainWarpAmp = 1.0F;
    private float mDomainWarpFreq = 1.0F;
+   @Nonnull
    private static final float[] Gradients2D = new float[]{
       0.13052619F,
       0.9914449F,
@@ -286,6 +287,7 @@ public class FastNoiseLite {
       -0.38268343F,
       0.9238795F
    };
+   @Nonnull
    private static final float[] RandVecs2D = new float[]{
       -0.2700222F,
       -0.9628541F,
@@ -800,6 +802,7 @@ public class FastNoiseLite {
       -0.774312F,
       -0.632804F
    };
+   @Nonnull
    private static final float[] Gradients3D = new float[]{
       0.0F,
       1.0F,
@@ -1058,6 +1061,7 @@ public class FastNoiseLite {
       -1.0F,
       0.0F
    };
+   @Nonnull
    private static final float[] randVecs3D = new float[]{
       -0.7292737F,
       -0.66184396F,
@@ -3826,6 +3830,7 @@ public class FastNoiseLite {
       Distance2Mul,
       Distance2Div;
 
+      @Nonnull
       public static final Codec<FastNoiseLite.CellularReturnType> CODEC = new EnumCodec<>(FastNoiseLite.CellularReturnType.class);
    }
 

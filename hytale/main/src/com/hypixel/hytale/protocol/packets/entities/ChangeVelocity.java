@@ -1,7 +1,9 @@
 package com.hypixel.hytale.protocol.packets.entities;
 
 import com.hypixel.hytale.protocol.ChangeVelocityType;
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.VelocityConfig;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
@@ -9,7 +11,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class ChangeVelocity implements Packet {
+public class ChangeVelocity implements Packet, ToClientPacket {
    public static final int PACKET_ID = 163;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -28,6 +30,11 @@ public class ChangeVelocity implements Packet {
    @Override
    public int getId() {
       return 163;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public ChangeVelocity() {

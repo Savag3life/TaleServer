@@ -4,6 +4,7 @@ import com.hypixel.hytale.builtin.hytalegenerator.delimiters.RangeDouble;
 import javax.annotation.Nonnull;
 
 public class SimpleHorizontalPositionProvider extends PositionProvider {
+   @Nonnull
    private final RangeDouble rangeY;
    @Nonnull
    private final PositionProvider positionProvider;

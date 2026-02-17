@@ -1,6 +1,8 @@
 package com.hypixel.hytale.protocol.packets.auth;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import com.hypixel.hytale.protocol.io.VarInt;
@@ -9,7 +11,7 @@ import java.util.Arrays;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class PasswordResponse implements Packet {
+public class PasswordResponse implements Packet, ToServerPacket {
    public static final int PACKET_ID = 15;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -23,6 +25,11 @@ public class PasswordResponse implements Packet {
    @Override
    public int getId() {
       return 15;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public PasswordResponse() {

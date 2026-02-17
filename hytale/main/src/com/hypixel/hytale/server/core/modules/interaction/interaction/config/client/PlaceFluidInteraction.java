@@ -79,7 +79,8 @@ public class PlaceFluidInteraction extends SimpleBlockInteraction {
       Fluid fluid = Fluid.getAssetMap().getAsset(fluidIndex);
       Vector3i target = targetBlock;
       BlockType targetBlockType = world.getBlockType(targetBlock);
-      if (FluidTicker.isSolid(targetBlockType)) {
+      FluidTicker ticker = fluid.getTicker();
+      if (!ticker.canOccupySolidBlocks() && FluidTicker.isSolid(targetBlockType)) {
          target = targetBlock.clone();
          BlockFace face = BlockFace.fromProtocolFace(context.getClientState().blockFace);
          target.add(face.getDirection());

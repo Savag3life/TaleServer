@@ -20,12 +20,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
 public abstract class ScannerAsset implements Cleanable, JsonAssetWithMap<String, DefaultAssetMap<String, ScannerAsset>> {
+   @Nonnull
    public static final AssetCodecMapCodec<String, ScannerAsset> CODEC = new AssetCodecMapCodec<>(
       Codec.STRING, (t, k) -> t.id = k, t -> t.id, (t, data) -> t.data = data, t -> t.data
    );
+   @Nonnull
    private static final Map<String, ScannerAsset> exportedNodes = new ConcurrentHashMap<>();
+   @Nonnull
    public static final Codec<String> CHILD_ASSET_CODEC = new ContainedAssetCodec<>(ScannerAsset.class, CODEC);
+   @Nonnull
    public static final Codec<String[]> CHILD_ASSET_CODEC_ARRAY = new ArrayCodec<>(CHILD_ASSET_CODEC, String[]::new);
+   @Nonnull
    public static final BuilderCodec<ScannerAsset> ABSTRACT_CODEC = BuilderCodec.abstractBuilder(ScannerAsset.class)
       .append(new KeyedCodec<>("Skip", Codec.BOOLEAN, false), (t, k) -> t.skip = k, t -> t.skip)
       .add()

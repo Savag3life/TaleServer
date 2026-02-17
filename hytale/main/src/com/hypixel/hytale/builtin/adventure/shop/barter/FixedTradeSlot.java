@@ -9,6 +9,7 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 
 public class FixedTradeSlot extends TradeSlot {
+   @Nonnull
    public static final BuilderCodec<FixedTradeSlot> CODEC = BuilderCodec.builder(FixedTradeSlot.class, FixedTradeSlot::new)
       .append(new KeyedCodec<>("Trade", BarterTrade.CODEC), (slot, trade) -> slot.trade = trade, slot -> slot.trade)
       .addValidator(Validators.nonNull())

@@ -19,8 +19,9 @@ import com.hypixel.hytale.component.system.HolderSystem;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.protocol.ColorLight;
-import com.hypixel.hytale.protocol.ComponentUpdate;
 import com.hypixel.hytale.protocol.ComponentUpdateType;
+import com.hypixel.hytale.protocol.DynamicLightUpdate;
+import com.hypixel.hytale.protocol.NewSpawnUpdate;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.entity.EntityModule;
 import com.hypixel.hytale.server.core.modules.entity.component.DynamicLight;
@@ -150,9 +151,7 @@ public class EntitySystems {
       private static void queueUpdatesFor(
          @Nonnull Ref<EntityStore> ref, @Nonnull ColorLight dynamicLight, @Nonnull Map<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> visibleTo
       ) {
-         ComponentUpdate update = new ComponentUpdate();
-         update.type = ComponentUpdateType.DynamicLight;
-         update.dynamicLight = dynamicLight;
+         DynamicLightUpdate update = new DynamicLightUpdate(dynamicLight);
 
          for (EntityTrackerSystems.EntityViewer viewer : visibleTo.values()) {
             viewer.queueUpdate(ref, update);
@@ -209,8 +208,7 @@ public class EntitySystems {
 
          Ref<EntityStore> ref = archetypeChunk.getReferenceTo(index);
          if (!visibleComponent.newlyVisibleTo.isEmpty()) {
-            ComponentUpdate update = new ComponentUpdate();
-            update.type = ComponentUpdateType.NewSpawn;
+            NewSpawnUpdate update = new NewSpawnUpdate();
 
             for (Entry<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> entry : visibleComponent.newlyVisibleTo.entrySet()) {
                entry.getValue().queueUpdate(ref, update);

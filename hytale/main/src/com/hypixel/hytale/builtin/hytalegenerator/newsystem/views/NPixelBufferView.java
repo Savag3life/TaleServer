@@ -14,9 +14,13 @@ import javax.annotation.Nullable;
 public class NPixelBufferView<T> implements VoxelSpace<T> {
    public static final int Y_LEVEL_BUFFER_GRID = 0;
    public static final int Y_LEVEL_VOXEL_GRID = 0;
+   @Nonnull
    private final Class<T> voxelType;
+   @Nonnull
    private final NBufferBundle.Access.View bufferAccess;
+   @Nonnull
    private final Bounds3i bounds_voxelGrid;
+   @Nonnull
    private final Vector3i size_voxelGrid;
 
    public NPixelBufferView(@Nonnull NBufferBundle.Access.View bufferAccess, @Nonnull Class<T> pixelType) {
@@ -74,6 +78,7 @@ public class NPixelBufferView<T> implements VoxelSpace<T> {
       return buffer.getPixelContent(positionInBuffer_voxelGrid);
    }
 
+   @Nonnull
    private NPixelBuffer<T> getBuffer(@Nonnull Vector3i position_voxelGrid) {
       assert this.bounds_voxelGrid.contains(position_voxelGrid);
 

@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class UseBlockObjectiveTaskAsset extends CountObjectiveTaskAsset {
+   @Nonnull
    public static final BuilderCodec<UseBlockObjectiveTaskAsset> CODEC = BuilderCodec.builder(
          UseBlockObjectiveTaskAsset.class, UseBlockObjectiveTaskAsset::new, CountObjectiveTaskAsset.CODEC
       )

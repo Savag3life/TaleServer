@@ -13,6 +13,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class DensityGradientVectorProviderAsset extends VectorProviderAsset {
+   @Nonnull
    public static final BuilderCodec<DensityGradientVectorProviderAsset> CODEC = BuilderCodec.builder(
          DensityGradientVectorProviderAsset.class, DensityGradientVectorProviderAsset::new, VectorProviderAsset.ABSTRACT_CODEC
       )
@@ -27,6 +28,7 @@ public class DensityGradientVectorProviderAsset extends VectorProviderAsset {
    private DensityAsset densityAsset = new ConstantDensityAsset();
    private double sampleDistance = 1.0;
 
+   @Nonnull
    @Override
    public VectorProvider build(@Nonnull VectorProviderAsset.Argument argument) {
       if (this.isSkipped()) {

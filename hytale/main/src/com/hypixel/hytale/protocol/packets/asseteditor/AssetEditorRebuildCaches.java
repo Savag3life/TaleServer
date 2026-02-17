@@ -1,14 +1,11 @@
 package com.hypixel.hytale.protocol.packets.asseteditor;
 
-import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
-public class AssetEditorRebuildCaches implements Packet {
-   public static final int PACKET_ID = 348;
-   public static final boolean IS_COMPRESSED = false;
+public class AssetEditorRebuildCaches {
    public static final int NULLABLE_BIT_FIELD_SIZE = 0;
    public static final int FIXED_BLOCK_SIZE = 5;
    public static final int VARIABLE_FIELD_COUNT = 0;
@@ -19,11 +16,6 @@ public class AssetEditorRebuildCaches implements Packet {
    public boolean modelTextures;
    public boolean mapGeometry;
    public boolean itemIcons;
-
-   @Override
-   public int getId() {
-      return 348;
-   }
 
    public AssetEditorRebuildCaches() {
    }
@@ -59,7 +51,6 @@ public class AssetEditorRebuildCaches implements Packet {
       return 5;
    }
 
-   @Override
    public void serialize(@Nonnull ByteBuf buf) {
       buf.writeByte(this.blockTextures ? 1 : 0);
       buf.writeByte(this.models ? 1 : 0);
@@ -68,7 +59,6 @@ public class AssetEditorRebuildCaches implements Packet {
       buf.writeByte(this.itemIcons ? 1 : 0);
    }
 
-   @Override
    public int computeSize() {
       return 5;
    }

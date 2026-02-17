@@ -15,6 +15,7 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.protocol.packets.interface_.Page;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.AssetModule;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
@@ -260,7 +261,9 @@ public class ImageImportPage extends InteractiveCustomUIPage<ImageImportPage.Pag
          this.setError("Please enter a path to an image file");
       } else {
          Path path = Paths.get(this.imagePath);
-         if (!Files.exists(path)) {
+         if (!AssetModule.get().isWithinPackSubDir(path, "Server/Imports/Images")) {
+            this.setError("File must be within an asset pack's imports directory");
+         } else if (!Files.exists(path)) {
             this.setError("File not found: " + this.imagePath);
          } else {
             this.isProcessing = true;

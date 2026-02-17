@@ -5,7 +5,9 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class Bounds3i implements MemInstrument {
+   @Nonnull
    public final Vector3i min;
+   @Nonnull
    public final Vector3i max;
 
    public Bounds3i() {
@@ -49,6 +51,7 @@ public class Bounds3i implements MemInstrument {
       return this.min.x >= this.max.x || this.min.y >= this.max.y || this.min.z >= this.max.z;
    }
 
+   @Nonnull
    public Vector3i getSize() {
       return this.max.clone().subtract(this.min);
    }

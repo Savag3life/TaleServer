@@ -27,6 +27,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -508,12 +509,39 @@ public class EntityStatMap implements Component<EntityStore> {
       map.update();
 
       for (int i = 0; i < this.values.length; i++) {
-         map.values[i].set(this.values[i].get());
+         if (this.values[i] != null) {
+            EntityStatValue value = this.values[i];
+            map.values[i].set(value.get());
+            Map<String, Modifier> modifiers = value.getModifiers();
+            if (modifiers != null) {
+               for (java.util.Map.Entry<String, Modifier> entry : modifiers.entrySet()) {
+                  map.values[i].putModifier(entry.getKey(), entry.getValue());
+               }
+            }
+         }
       }
 
-      map.selfUpdates.putAll(this.selfUpdates);
-      map.selfStatValues.putAll(this.selfStatValues);
-      map.otherUpdates.putAll(this.otherUpdates);
+      ObjectIterator var7 = this.selfUpdates.int2ObjectEntrySet().iterator();
+
+      while (var7.hasNext()) {
+         Entry<List<EntityStatUpdate>> entry = (Entry<List<EntityStatUpdate>>)var7.next();
+         map.selfUpdates.put(entry.getIntKey(), new ObjectArrayList((Collection)entry.getValue()));
+      }
+
+      var7 = this.selfStatValues.int2ObjectEntrySet().iterator();
+
+      while (var7.hasNext()) {
+         Entry<FloatList> entry = (Entry<FloatList>)var7.next();
+         map.selfStatValues.put(entry.getIntKey(), new FloatArrayList((FloatList)entry.getValue()));
+      }
+
+      var7 = this.otherUpdates.int2ObjectEntrySet().iterator();
+
+      while (var7.hasNext()) {
+         Entry<List<EntityStatUpdate>> entry = (Entry<List<EntityStatUpdate>>)var7.next();
+         map.otherUpdates.put(entry.getIntKey(), new ObjectArrayList((Collection)entry.getValue()));
+      }
+
       return map;
    }
 

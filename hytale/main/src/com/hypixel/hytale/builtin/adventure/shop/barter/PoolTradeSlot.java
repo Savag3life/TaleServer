@@ -12,6 +12,7 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 
 public class PoolTradeSlot extends TradeSlot {
+   @Nonnull
    public static final BuilderCodec<PoolTradeSlot> CODEC = BuilderCodec.builder(PoolTradeSlot.class, PoolTradeSlot::new)
       .append(new KeyedCodec<>("SlotCount", Codec.INTEGER), (slot, count) -> slot.slotCount = count, slot -> slot.slotCount)
       .addValidator(Validators.greaterThanOrEqual(1))
@@ -54,7 +55,7 @@ public class PoolTradeSlot extends TradeSlot {
          int toSelect = Math.min(this.slotCount, available.size());
 
          for (int i = 0; i < toSelect; i++) {
-            int selectedIndex = this.selectWeightedIndex(available, random);
+            int selectedIndex = selectWeightedIndex(available, random);
             if (selectedIndex >= 0) {
                WeightedTrade selected = (WeightedTrade)available.remove(selectedIndex);
                result.add(selected.toBarterTrade(random));
@@ -70,7 +71,7 @@ public class PoolTradeSlot extends TradeSlot {
       return this.slotCount;
    }
 
-   private int selectWeightedIndex(@Nonnull List<WeightedTrade> trades, @Nonnull Random random) {
+   private static int selectWeightedIndex(@Nonnull List<WeightedTrade> trades, @Nonnull Random random) {
       if (trades.isEmpty()) {
          return -1;
       } else {

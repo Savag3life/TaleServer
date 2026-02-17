@@ -9,6 +9,7 @@ class Simplex {
    private static final double G3 = 0.16666666666666666;
    private static final double F4 = (Math.sqrt(5.0) - 1.0) / 4.0;
    private static final double G4 = (5.0 - Math.sqrt(5.0)) / 20.0;
+   @Nonnull
    private static final Simplex.Grad[] grad3 = new Simplex.Grad[]{
       new Simplex.Grad(1.0, 1.0, 0.0),
       new Simplex.Grad(-1.0, 1.0, 0.0),
@@ -23,6 +24,7 @@ class Simplex {
       new Simplex.Grad(0.0, 1.0, -1.0),
       new Simplex.Grad(0.0, -1.0, -1.0)
    };
+   @Nonnull
    private static final Simplex.Grad[] grad4 = new Simplex.Grad[]{
       new Simplex.Grad(0.0, 1.0, 1.0, 1.0),
       new Simplex.Grad(0.0, 1.0, 1.0, -1.0),
@@ -57,6 +59,7 @@ class Simplex {
       new Simplex.Grad(-1.0, -1.0, 1.0, 0.0),
       new Simplex.Grad(-1.0, -1.0, -1.0, 0.0)
    };
+   @Nonnull
    private static final short[] p = new short[]{
       151,
       160,
@@ -315,7 +318,9 @@ class Simplex {
       156,
       180
    };
+   @Nonnull
    private static final short[] perm = new short[512];
+   @Nonnull
    private static final short[] permMod12 = new short[512];
 
    private static int fastfloor(double x) {

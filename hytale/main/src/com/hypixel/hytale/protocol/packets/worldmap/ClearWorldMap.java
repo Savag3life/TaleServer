@@ -1,11 +1,13 @@
 package com.hypixel.hytale.protocol.packets.worldmap;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 
-public class ClearWorldMap implements Packet {
+public class ClearWorldMap implements Packet, ToClientPacket {
    public static final int PACKET_ID = 242;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 0;
@@ -17,6 +19,11 @@ public class ClearWorldMap implements Packet {
    @Override
    public int getId() {
       return 242;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.WorldMap;
    }
 
    @Nonnull

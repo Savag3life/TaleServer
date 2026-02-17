@@ -249,64 +249,68 @@ public class BlockSection implements Component<ChunkStore> {
    }
 
    public boolean set(int blockIdx, int blockId, int rotation, int filler) {
-      long lock = this.chunkSectionLock.writeLock();
+      if (rotation >= 0 && rotation < RotationTuple.VALUES.length) {
+         long lock = this.chunkSectionLock.writeLock();
 
-      boolean changed;
-      try {
-         ISectionPalette.SetResult result = this.chunkSection.set(blockIdx, blockId);
-         if (result == ISectionPalette.SetResult.REQUIRES_PROMOTE) {
-            this.chunkSection = this.chunkSection.promote();
-            ISectionPalette.SetResult repeatResult = this.chunkSection.set(blockIdx, blockId);
-            if (repeatResult != ISectionPalette.SetResult.ADDED_OR_REMOVED) {
-               throw new IllegalStateException("Promoted chunk section failed to correctly add the new block!");
-            }
-         } else {
-            if (result == ISectionPalette.SetResult.ADDED_OR_REMOVED) {
-               this.maximumHitboxExtent = -1.0;
+         boolean changed;
+         try {
+            ISectionPalette.SetResult result = this.chunkSection.set(blockIdx, blockId);
+            if (result == ISectionPalette.SetResult.REQUIRES_PROMOTE) {
+               this.chunkSection = this.chunkSection.promote();
+               ISectionPalette.SetResult repeatResult = this.chunkSection.set(blockIdx, blockId);
+               if (repeatResult != ISectionPalette.SetResult.ADDED_OR_REMOVED) {
+                  throw new IllegalStateException("Promoted chunk section failed to correctly add the new block!");
+               }
+            } else {
+               if (result == ISectionPalette.SetResult.ADDED_OR_REMOVED) {
+                  this.maximumHitboxExtent = -1.0;
+               }
+
+               if (this.chunkSection.shouldDemote()) {
+                  this.chunkSection = this.chunkSection.demote();
+               }
             }
 
-            if (this.chunkSection.shouldDemote()) {
-               this.chunkSection = this.chunkSection.demote();
+            changed = result != ISectionPalette.SetResult.UNCHANGED;
+            result = this.fillerSection.set(blockIdx, filler);
+            if (result == ISectionPalette.SetResult.REQUIRES_PROMOTE) {
+               this.fillerSection = this.fillerSection.promote();
+               ISectionPalette.SetResult repeatResult = this.fillerSection.set(blockIdx, filler);
+               if (repeatResult != ISectionPalette.SetResult.ADDED_OR_REMOVED) {
+                  throw new IllegalStateException("Promoted chunk section failed to correctly add the new block!");
+               }
+            } else if (this.fillerSection.shouldDemote()) {
+               this.fillerSection = this.fillerSection.demote();
             }
+
+            changed |= result != ISectionPalette.SetResult.UNCHANGED;
+            result = this.rotationSection.set(blockIdx, rotation);
+            if (result == ISectionPalette.SetResult.REQUIRES_PROMOTE) {
+               this.rotationSection = this.rotationSection.promote();
+               ISectionPalette.SetResult repeatResult = this.rotationSection.set(blockIdx, rotation);
+               if (repeatResult != ISectionPalette.SetResult.ADDED_OR_REMOVED) {
+                  throw new IllegalStateException("Promoted chunk section failed to correctly add the new block!");
+               }
+            } else if (this.rotationSection.shouldDemote()) {
+               this.rotationSection = this.rotationSection.demote();
+            }
+
+            changed |= result != ISectionPalette.SetResult.UNCHANGED;
+            if (changed && this.loaded) {
+               this.changedPositions.add(blockIdx);
+            }
+         } finally {
+            this.chunkSectionLock.unlockWrite(lock);
          }
 
-         changed = result != ISectionPalette.SetResult.UNCHANGED;
-         result = this.fillerSection.set(blockIdx, filler);
-         if (result == ISectionPalette.SetResult.REQUIRES_PROMOTE) {
-            this.fillerSection = this.fillerSection.promote();
-            ISectionPalette.SetResult repeatResult = this.fillerSection.set(blockIdx, filler);
-            if (repeatResult != ISectionPalette.SetResult.ADDED_OR_REMOVED) {
-               throw new IllegalStateException("Promoted chunk section failed to correctly add the new block!");
-            }
-         } else if (this.fillerSection.shouldDemote()) {
-            this.fillerSection = this.fillerSection.demote();
+         if (changed) {
+            this.invalidateLocalLight();
          }
 
-         changed |= result != ISectionPalette.SetResult.UNCHANGED;
-         result = this.rotationSection.set(blockIdx, rotation);
-         if (result == ISectionPalette.SetResult.REQUIRES_PROMOTE) {
-            this.rotationSection = this.rotationSection.promote();
-            ISectionPalette.SetResult repeatResult = this.rotationSection.set(blockIdx, rotation);
-            if (repeatResult != ISectionPalette.SetResult.ADDED_OR_REMOVED) {
-               throw new IllegalStateException("Promoted chunk section failed to correctly add the new block!");
-            }
-         } else if (this.rotationSection.shouldDemote()) {
-            this.rotationSection = this.rotationSection.demote();
-         }
-
-         changed |= result != ISectionPalette.SetResult.UNCHANGED;
-         if (changed && this.loaded) {
-            this.changedPositions.add(blockIdx);
-         }
-      } finally {
-         this.chunkSectionLock.unlockWrite(lock);
+         return changed;
+      } else {
+         throw new IllegalArgumentException("Rotation index out of bounds. Got " + rotation + " but expected 0-" + (RotationTuple.VALUES.length - 1));
       }
-
-      if (changed) {
-         this.invalidateLocalLight();
-      }
-
-      return changed;
    }
 
    @Nonnull

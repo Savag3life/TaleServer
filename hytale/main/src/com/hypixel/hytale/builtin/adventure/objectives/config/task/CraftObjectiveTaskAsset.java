@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import javax.annotation.Nonnull;
 
 public class CraftObjectiveTaskAsset extends CountObjectiveTaskAsset {
+   @Nonnull
    public static final BuilderCodec<CraftObjectiveTaskAsset> CODEC = BuilderCodec.builder(
          CraftObjectiveTaskAsset.class, CraftObjectiveTaskAsset::new, CountObjectiveTaskAsset.CODEC
       )

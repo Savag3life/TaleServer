@@ -17,6 +17,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 public class CraftObjectiveTask extends CountObjectiveTask {
+   @Nonnull
    public static final BuilderCodec<CraftObjectiveTask> CODEC = BuilderCodec.builder(
          CraftObjectiveTask.class, CraftObjectiveTask::new, CountObjectiveTask.CODEC
       )

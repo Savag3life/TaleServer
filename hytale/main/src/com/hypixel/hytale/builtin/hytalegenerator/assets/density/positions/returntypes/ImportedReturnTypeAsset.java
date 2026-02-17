@@ -14,6 +14,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class ImportedReturnTypeAsset extends ReturnTypeAsset {
+   @Nonnull
    public static final BuilderCodec<ImportedReturnTypeAsset> CODEC = BuilderCodec.builder(
          ImportedReturnTypeAsset.class, ImportedReturnTypeAsset::new, ReturnTypeAsset.ABSTRACT_CODEC
       )
@@ -23,7 +24,7 @@ public class ImportedReturnTypeAsset extends ReturnTypeAsset {
    private String importedAssetName = "";
 
    @Override
-   public ReturnType build(@Nonnull SeedBox parentSeed, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer workerIndexer) {
+   public ReturnType build(@Nonnull SeedBox parentSeed, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer.Id workerId) {
       ReturnTypeAsset asset = getExportedAsset(this.importedAssetName);
       if (asset == null) {
          Logger.getLogger("Density")
@@ -42,7 +43,7 @@ public class ImportedReturnTypeAsset extends ReturnTypeAsset {
             }
          };
       } else {
-         return asset.build(parentSeed, referenceBundle, workerIndexer);
+         return asset.build(parentSeed, referenceBundle, workerId);
       }
    }
 }

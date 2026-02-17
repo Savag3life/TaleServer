@@ -6,15 +6,11 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.component.Resource;
-import com.hypixel.hytale.component.ResourceType;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.component.SystemGroup;
-import com.hypixel.hytale.component.system.StoreSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.metrics.MetricProvider;
 import com.hypixel.hytale.metrics.MetricResults;
 import com.hypixel.hytale.metrics.MetricsRegistry;
-import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.BufferChunkLoader;
 import com.hypixel.hytale.server.core.universe.world.storage.BufferChunkSaver;
@@ -42,8 +38,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
-public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider {
+public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider<IndexedStorageChunkStorageProvider.IndexedStorageCache> {
    public static final String ID = "IndexedStorage";
    @Nonnull
    public static final BuilderCodec<IndexedStorageChunkStorageProvider> CODEC = BuilderCodec.builder(
@@ -60,16 +57,25 @@ public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider
       .build();
    private boolean flushOnWrite = false;
 
-   @Nonnull
-   @Override
-   public IChunkLoader getLoader(@Nonnull Store<ChunkStore> store) {
-      return new IndexedStorageChunkStorageProvider.IndexedStorageChunkLoader(store, this.flushOnWrite);
+   public IndexedStorageChunkStorageProvider.IndexedStorageCache initialize(@NonNullDecl Store<ChunkStore> store) throws IOException {
+      World world = store.getExternalData().getWorld();
+      IndexedStorageChunkStorageProvider.IndexedStorageCache cache = new IndexedStorageChunkStorageProvider.IndexedStorageCache();
+      cache.path = world.getSavePath().resolve("chunks");
+      return cache;
+   }
+
+   public void close(@NonNullDecl IndexedStorageChunkStorageProvider.IndexedStorageCache cache, @NonNullDecl Store<ChunkStore> store) throws IOException {
+      cache.close();
    }
 
    @Nonnull
-   @Override
-   public IChunkSaver getSaver(@Nonnull Store<ChunkStore> store) {
-      return new IndexedStorageChunkStorageProvider.IndexedStorageChunkSaver(store, this.flushOnWrite);
+   public IChunkLoader getLoader(@Nonnull IndexedStorageChunkStorageProvider.IndexedStorageCache cache, @Nonnull Store<ChunkStore> store) {
+      return new IndexedStorageChunkStorageProvider.IndexedStorageChunkLoader(store, cache, this.flushOnWrite);
+   }
+
+   @Nonnull
+   public IChunkSaver getSaver(@Nonnull IndexedStorageChunkStorageProvider.IndexedStorageCache cache, @Nonnull Store<ChunkStore> store) {
+      return new IndexedStorageChunkStorageProvider.IndexedStorageChunkSaver(store, cache, this.flushOnWrite);
    }
 
    @Nonnull
@@ -115,10 +121,6 @@ public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider
          );
       private final Long2ObjectConcurrentHashMap<IndexedStorageFile> cache = new Long2ObjectConcurrentHashMap<>(true, ChunkUtil.NOT_FOUND);
       private Path path;
-
-      public static ResourceType<ChunkStore, IndexedStorageChunkStorageProvider.IndexedStorageCache> getResourceType() {
-         return Universe.get().getIndexedStorageCacheResourceType();
-      }
 
       @Nonnull
       public Long2ObjectConcurrentHashMap<IndexedStorageFile> getCache() {
@@ -286,35 +288,21 @@ public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider
       }
    }
 
-   public static class IndexedStorageCacheSetupSystem extends StoreSystem<ChunkStore> {
-      @Nullable
-      @Override
-      public SystemGroup<ChunkStore> getGroup() {
-         return ChunkStore.INIT_GROUP;
-      }
-
-      @Override
-      public void onSystemAddedToStore(@Nonnull Store<ChunkStore> store) {
-         World world = store.getExternalData().getWorld();
-         store.getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType()).path = world.getSavePath().resolve("chunks");
-      }
-
-      @Override
-      public void onSystemRemovedFromStore(@Nonnull Store<ChunkStore> store) {
-      }
-   }
-
    public static class IndexedStorageChunkLoader extends BufferChunkLoader implements MetricProvider {
+      @Nonnull
+      private final IndexedStorageChunkStorageProvider.IndexedStorageCache cache;
       private final boolean flushOnWrite;
 
-      public IndexedStorageChunkLoader(@Nonnull Store<ChunkStore> store, boolean flushOnWrite) {
+      public IndexedStorageChunkLoader(
+         @Nonnull Store<ChunkStore> store, @Nonnull IndexedStorageChunkStorageProvider.IndexedStorageCache cache, boolean flushOnWrite
+      ) {
          super(store);
+         this.cache = cache;
          this.flushOnWrite = flushOnWrite;
       }
 
       @Override
       public void close() throws IOException {
-         this.getStore().getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType()).close();
       }
 
       @Nonnull
@@ -325,10 +313,8 @@ public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider
          int localX = x & 31;
          int localZ = z & 31;
          int index = ChunkUtil.indexColumn(localX, localZ);
-         IndexedStorageChunkStorageProvider.IndexedStorageCache indexedStorageCache = this.getStore()
-            .getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType());
          return CompletableFuture.supplyAsync(SneakyThrow.sneakySupplier(() -> {
-            IndexedStorageFile chunks = indexedStorageCache.getOrTryOpen(regionX, regionZ, this.flushOnWrite);
+            IndexedStorageFile chunks = this.cache.getOrTryOpen(regionX, regionZ, this.flushOnWrite);
             return chunks == null ? null : chunks.readBlob(index);
          }));
       }
@@ -336,7 +322,7 @@ public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider
       @Nonnull
       @Override
       public LongSet getIndexes() throws IOException {
-         return this.getStore().getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType()).getIndexes();
+         return this.cache.getIndexes();
       }
 
       @Nullable
@@ -344,23 +330,25 @@ public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider
       public MetricResults toMetricResults() {
          return this.getStore().getExternalData().getSaver() instanceof IndexedStorageChunkStorageProvider.IndexedStorageChunkSaver
             ? null
-            : this.getStore().getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType()).toMetricResults();
+            : this.cache.toMetricResults();
       }
    }
 
    public static class IndexedStorageChunkSaver extends BufferChunkSaver implements MetricProvider {
+      @Nonnull
+      private final IndexedStorageChunkStorageProvider.IndexedStorageCache cache;
       private final boolean flushOnWrite;
 
-      protected IndexedStorageChunkSaver(@Nonnull Store<ChunkStore> store, boolean flushOnWrite) {
+      protected IndexedStorageChunkSaver(
+         @Nonnull Store<ChunkStore> store, @Nonnull IndexedStorageChunkStorageProvider.IndexedStorageCache cache, boolean flushOnWrite
+      ) {
          super(store);
+         this.cache = cache;
          this.flushOnWrite = flushOnWrite;
       }
 
       @Override
       public void close() throws IOException {
-         IndexedStorageChunkStorageProvider.IndexedStorageCache indexedStorageCache = this.getStore()
-            .getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType());
-         indexedStorageCache.close();
       }
 
       @Nonnull
@@ -371,10 +359,8 @@ public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider
          int localX = x & 31;
          int localZ = z & 31;
          int index = ChunkUtil.indexColumn(localX, localZ);
-         IndexedStorageChunkStorageProvider.IndexedStorageCache indexedStorageCache = this.getStore()
-            .getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType());
          return CompletableFuture.runAsync(SneakyThrow.sneakyRunnable(() -> {
-            IndexedStorageFile chunks = indexedStorageCache.getOrCreate(regionX, regionZ, this.flushOnWrite);
+            IndexedStorageFile chunks = this.cache.getOrCreate(regionX, regionZ, this.flushOnWrite);
             chunks.writeBlob(index, buffer);
          }));
       }
@@ -387,10 +373,8 @@ public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider
          int localX = x & 31;
          int localZ = z & 31;
          int index = ChunkUtil.indexColumn(localX, localZ);
-         IndexedStorageChunkStorageProvider.IndexedStorageCache indexedStorageCache = this.getStore()
-            .getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType());
          return CompletableFuture.runAsync(SneakyThrow.sneakyRunnable(() -> {
-            IndexedStorageFile chunks = indexedStorageCache.getOrTryOpen(regionX, regionZ, this.flushOnWrite);
+            IndexedStorageFile chunks = this.cache.getOrTryOpen(regionX, regionZ, this.flushOnWrite);
             if (chunks != null) {
                chunks.removeBlob(index);
             }
@@ -400,17 +384,17 @@ public class IndexedStorageChunkStorageProvider implements IChunkStorageProvider
       @Nonnull
       @Override
       public LongSet getIndexes() throws IOException {
-         return this.getStore().getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType()).getIndexes();
+         return this.cache.getIndexes();
       }
 
       @Override
       public void flush() throws IOException {
-         this.getStore().getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType()).flush();
+         this.cache.flush();
       }
 
       @Override
       public MetricResults toMetricResults() {
-         return this.getStore().getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType()).toMetricResults();
+         return this.cache.toMetricResults();
       }
    }
 }

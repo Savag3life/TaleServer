@@ -20,7 +20,7 @@ public class ShapeOperation extends SequenceBrushOperation {
       .documentation("Changes the shape of the brush editing area")
       .build();
    @Nonnull
-   public BrushShape brushShapeArg = BrushShape.Cube;
+   public BrushShape brushShapeArg = BrushShape.Sphere;
 
    public ShapeOperation() {
       super("Shape", "Changes the shape of the brush editing area", false);

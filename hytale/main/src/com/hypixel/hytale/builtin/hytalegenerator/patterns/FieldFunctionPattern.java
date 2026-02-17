@@ -13,17 +13,20 @@ public class FieldFunctionPattern extends Pattern {
    private final SpaceSize readSpaceSize;
    @Nonnull
    private final List<FieldFunctionPattern.Delimiter> delimiters;
+   @Nonnull
+   private final Density.Context rDensityContext;
 
    public FieldFunctionPattern(@Nonnull Density field) {
       this.field = field;
       this.readSpaceSize = SpaceSize.empty();
       this.delimiters = new ArrayList<>(1);
+      this.rDensityContext = new Density.Context();
    }
 
    @Override
    public boolean matches(@Nonnull Pattern.Context context) {
-      Density.Context densityContext = new Density.Context(context);
-      double density = this.field.process(densityContext);
+      this.rDensityContext.assign(context);
+      double density = this.field.process(this.rDensityContext);
 
       for (FieldFunctionPattern.Delimiter d : this.delimiters) {
          if (d.isInside(density)) {

@@ -1,11 +1,10 @@
 package com.hypixel.hytale.builtin.hytalegenerator.density.nodes;
 
+import com.hypixel.hytale.builtin.hytalegenerator.ReusableList;
 import com.hypixel.hytale.builtin.hytalegenerator.density.Density;
 import com.hypixel.hytale.builtin.hytalegenerator.positionproviders.PositionProvider;
 import com.hypixel.hytale.math.vector.Vector3d;
 import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
-import java.util.ArrayList;
-import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -17,6 +16,22 @@ public class PositionsPinchDensity extends Density {
    private Double2DoubleFunction pinchCurve;
    private double maxDistance;
    private boolean distanceNormalized;
+   @Nonnull
+   private final Vector3d rMin;
+   @Nonnull
+   private final Vector3d rMax;
+   @Nonnull
+   private final Vector3d rSamplePoint;
+   @Nonnull
+   private final Vector3d rWarpVector;
+   @Nonnull
+   private final ReusableList<Vector3d> rWarpVectors;
+   @Nonnull
+   private final ReusableList<Double> rWarpDistances;
+   @Nonnull
+   private final ReusableList<Double> rWeights;
+   @Nonnull
+   private final Density.Context rChildContext;
 
    public PositionsPinchDensity(
       @Nullable Density input, @Nullable PositionProvider positions, @Nonnull Double2DoubleFunction pinchCurve, double maxDistance, boolean distanceNormalized
@@ -29,6 +44,41 @@ public class PositionsPinchDensity extends Density {
          this.pinchCurve = pinchCurve;
          this.maxDistance = maxDistance;
          this.distanceNormalized = distanceNormalized;
+         this.rMin = new Vector3d();
+         this.rMax = new Vector3d();
+         this.rSamplePoint = new Vector3d();
+         this.rWarpVector = new Vector3d();
+         this.rWarpVectors = new ReusableList<>();
+         this.rWarpDistances = new ReusableList<>();
+         this.rWeights = new ReusableList<>();
+         this.rChildContext = new Density.Context();
+      }
+   }
+
+   private void consumer(@Nonnull Vector3d p) {
+      double distance = p.distanceTo(this.rSamplePoint);
+      if (!(distance > this.maxDistance)) {
+         double normalizedDistance = distance / this.maxDistance;
+         this.rWarpVector.assign(p).subtract(this.rSamplePoint);
+         double radialDistance;
+         if (this.distanceNormalized) {
+            radialDistance = this.pinchCurve.applyAsDouble(normalizedDistance);
+            radialDistance *= this.maxDistance;
+         } else {
+            radialDistance = this.pinchCurve.applyAsDouble(distance);
+         }
+
+         if (!(Math.abs(this.rWarpVector.length()) < 1.0E-9)) {
+            this.rWarpVector.setLength(radialDistance);
+         }
+
+         if (this.rWarpVectors.isAtHardCapacity()) {
+            this.rWarpVectors.expandAndSet(this.rWarpVector.clone());
+         } else {
+            this.rWarpVectors.expandAndGet().assign(this.rWarpVector);
+         }
+
+         this.rWarpDistances.expandAndSet(normalizedDistance);
       }
    }
 
@@ -39,63 +89,41 @@ public class PositionsPinchDensity extends Density {
       } else if (this.positions == null) {
          return this.input.process(context);
       } else {
-         Vector3d min = new Vector3d(context.position.x - this.maxDistance, context.position.y - this.maxDistance, context.position.z - this.maxDistance);
-         Vector3d max = new Vector3d(context.position.x + this.maxDistance, context.position.y + this.maxDistance, context.position.z + this.maxDistance);
-         Vector3d samplePoint = context.position.clone();
-         ArrayList<Vector3d> warpVectors = new ArrayList<>(10);
-         ArrayList<Double> warpDistances = new ArrayList<>(10);
-         Consumer<Vector3d> consumer = p -> {
-            double distance = p.distanceTo(samplePoint);
-            if (!(distance > this.maxDistance)) {
-               double normalizedDistance = distance / this.maxDistance;
-               Vector3d warpVectorx = p.clone().addScaled(samplePoint, -1.0);
-               double radialDistance;
-               if (this.distanceNormalized) {
-                  radialDistance = this.pinchCurve.applyAsDouble(normalizedDistance);
-                  radialDistance *= this.maxDistance;
-               } else {
-                  radialDistance = this.pinchCurve.applyAsDouble(distance);
-               }
-
-               if (!(Math.abs(warpVectorx.length()) < 1.0E-9)) {
-                  warpVectorx.setLength(radialDistance);
-               }
-
-               warpVectors.add(warpVectorx);
-               warpDistances.add(normalizedDistance);
-            }
-         };
+         this.rMin.assign(context.position.x - this.maxDistance, context.position.y - this.maxDistance, context.position.z - this.maxDistance);
+         this.rMax.assign(context.position.x + this.maxDistance, context.position.y + this.maxDistance, context.position.z + this.maxDistance);
+         this.rSamplePoint.assign(context.position);
+         this.rWarpVectors.clear();
+         this.rWarpDistances.clear();
          PositionProvider.Context positionsContext = new PositionProvider.Context();
-         positionsContext.minInclusive = min;
-         positionsContext.maxExclusive = max;
-         positionsContext.consumer = consumer;
-         positionsContext.workerId = context.workerId;
+         positionsContext.minInclusive = this.rMin;
+         positionsContext.maxExclusive = this.rMax;
+         positionsContext.consumer = this::consumer;
          this.positions.positionsIn(positionsContext);
-         if (warpVectors.isEmpty()) {
+         if (this.rWarpVectors.getSoftSize() == 0) {
             return this.input.process(context);
-         } else if (warpVectors.size() == 1) {
-            Vector3d warpVector = warpVectors.getFirst();
-            samplePoint.add(warpVector);
-            Density.Context childContext = new Density.Context(context);
-            context.position = samplePoint;
-            return this.input.process(childContext);
+         } else if (this.rWarpVectors.getSoftSize() == 1) {
+            Vector3d warpVector = this.rWarpVectors.get(0);
+            this.rSamplePoint.add(warpVector);
+            this.rChildContext.assign(context);
+            this.rChildContext.position = this.rSamplePoint;
+            return this.input.process(this.rChildContext);
          } else {
-            int possiblePointsSize = warpVectors.size();
-            ArrayList<Double> weights = new ArrayList<>(warpDistances.size());
+            int possiblePointsSize = this.rWarpVectors.getSoftSize();
+            this.rWeights.clear();
             double totalWeight = 0.0;
 
             for (int i = 0; i < possiblePointsSize; i++) {
-               double distance = warpDistances.get(i);
+               double distance = this.rWarpDistances.get(i);
                double weight = 1.0 - distance;
-               weights.add(weight);
+               this.rWeights.expandAndSet(weight);
                totalWeight += weight;
             }
 
             for (int i = 0; i < possiblePointsSize; i++) {
-               double weight = weights.get(i) / totalWeight;
-               Vector3d warpVector = warpVectors.get(i);
+               double weight = this.rWeights.get(i) / totalWeight;
+               Vector3d warpVector = this.rWarpVectors.get(i);
                warpVector.scale(weight);
-               samplePoint.add(warpVector);
+               this.rSamplePoint.add(warpVector);
             }
 
             return this.input.process(context);

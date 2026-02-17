@@ -25,6 +25,7 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Int
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import javax.annotation.Nonnull;
 
 public class DeployablesPlugin extends JavaPlugin {
    private static DeployablesPlugin instance;
@@ -33,7 +34,7 @@ public class DeployablesPlugin extends JavaPlugin {
    private ComponentType<EntityStore, DeployableProjectileShooterComponent> deployableProjectileShooterComponentType;
    private ComponentType<EntityStore, DeployableProjectileComponent> deployableProjectileComponentType;
 
-   public DeployablesPlugin(JavaPluginInit init) {
+   public DeployablesPlugin(@Nonnull JavaPluginInit init) {
       super(init);
    }
 

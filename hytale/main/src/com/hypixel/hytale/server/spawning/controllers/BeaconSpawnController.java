@@ -69,33 +69,36 @@ public class BeaconSpawnController extends SpawnController<NPCBeaconSpawnJob> {
    @Nullable
    public NPCBeaconSpawnJob createRandomSpawnJob(@Nonnull ComponentAccessor<EntityStore> componentAccessor) {
       LegacySpawnBeaconEntity legacySpawnBeaconComponent = componentAccessor.getComponent(this.ownerRef, LegacySpawnBeaconEntity.getComponentType());
-
-      assert legacySpawnBeaconComponent != null;
-
-      BeaconSpawnWrapper wrapper = legacySpawnBeaconComponent.getSpawnWrapper();
-      RoleSpawnParameters spawn = wrapper.pickRole(ThreadLocalRandom.current());
-      if (spawn == null) {
+      if (legacySpawnBeaconComponent == null) {
          return null;
       } else {
-         String spawnId = spawn.getId();
-         int roleIndex = NPCPlugin.get().getIndex(spawnId);
-         if (roleIndex >= 0 && !this.unspawnableRoles.contains(roleIndex)) {
-            NPCBeaconSpawnJob job = null;
-            int predictedTotal = this.spawnedEntities.size() + this.activeJobs.size();
-            if (this.activeJobs.size() < this.getMaxActiveJobs()
-               && this.nextPlayerIndex < this.playersInRegion.size()
-               && predictedTotal < this.currentScaledMaxTotalSpawns) {
-               job = this.idleJobs.isEmpty() ? new NPCBeaconSpawnJob() : this.idleJobs.pop();
-               job.beginProbing(this.playersInRegion.get(this.nextPlayerIndex++), this.currentScaledMaxConcurrentSpawns, roleIndex, spawn.getFlockDefinition());
-               this.activeJobs.add(job);
-               if (this.nextPlayerIndex >= this.playersInRegion.size()) {
-                  this.nextPlayerIndex = 0;
-               }
-            }
-
-            return job;
-         } else {
+         BeaconSpawnWrapper wrapper = legacySpawnBeaconComponent.getSpawnWrapper();
+         RoleSpawnParameters spawn = wrapper.pickRole(ThreadLocalRandom.current());
+         if (spawn == null) {
             return null;
+         } else {
+            String spawnId = spawn.getId();
+            int roleIndex = NPCPlugin.get().getIndex(spawnId);
+            if (roleIndex >= 0 && !this.unspawnableRoles.contains(roleIndex)) {
+               NPCBeaconSpawnJob job = null;
+               int predictedTotal = this.spawnedEntities.size() + this.activeJobs.size();
+               if (this.activeJobs.size() < this.getMaxActiveJobs()
+                  && this.nextPlayerIndex < this.playersInRegion.size()
+                  && predictedTotal < this.currentScaledMaxTotalSpawns) {
+                  job = this.idleJobs.isEmpty() ? new NPCBeaconSpawnJob() : this.idleJobs.pop();
+                  job.beginProbing(
+                     this.playersInRegion.get(this.nextPlayerIndex++), this.currentScaledMaxConcurrentSpawns, roleIndex, spawn.getFlockDefinition()
+                  );
+                  this.activeJobs.add(job);
+                  if (this.nextPlayerIndex >= this.playersInRegion.size()) {
+                     this.nextPlayerIndex = 0;
+                  }
+               }
+
+               return job;
+            } else {
+               return null;
+            }
          }
       }
    }
@@ -134,6 +137,7 @@ public class BeaconSpawnController extends SpawnController<NPCBeaconSpawnJob> {
       this.roundStart = roundStart;
    }
 
+   @Nonnull
    public Ref<EntityStore> getOwnerRef() {
       return this.ownerRef;
    }

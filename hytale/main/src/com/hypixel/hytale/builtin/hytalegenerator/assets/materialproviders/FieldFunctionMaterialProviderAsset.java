@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class FieldFunctionMaterialProviderAsset extends MaterialProviderAsset {
+   @Nonnull
    public static final BuilderCodec<FieldFunctionMaterialProviderAsset> CODEC = BuilderCodec.builder(
          FieldFunctionMaterialProviderAsset.class, FieldFunctionMaterialProviderAsset::new, MaterialProviderAsset.ABSTRACT_CODEC
       )
@@ -71,6 +72,7 @@ public class FieldFunctionMaterialProviderAsset extends MaterialProviderAsset {
    public static class DelimiterAsset
       implements Cleanable,
       JsonAssetWithMap<String, DefaultAssetMap<String, FieldFunctionMaterialProviderAsset.DelimiterAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, FieldFunctionMaterialProviderAsset.DelimiterAsset> CODEC = AssetBuilderCodec.builder(
             FieldFunctionMaterialProviderAsset.DelimiterAsset.class,
             FieldFunctionMaterialProviderAsset.DelimiterAsset::new,
@@ -89,8 +91,8 @@ public class FieldFunctionMaterialProviderAsset extends MaterialProviderAsset {
          .build();
       private String id;
       private AssetExtraInfo.Data data;
-      private double from = 0.0;
-      private double to = 0.0;
+      private double from;
+      private double to;
       private MaterialProviderAsset materialProviderAsset = new ConstantMaterialProviderAsset();
 
       public String getId() {

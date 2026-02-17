@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class NEntityBuffer extends NBuffer {
+   @Nullable
    private List<EntityPlacementData> entities = null;
    private boolean isReference = false;
 

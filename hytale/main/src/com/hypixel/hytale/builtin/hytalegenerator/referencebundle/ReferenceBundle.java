@@ -7,27 +7,23 @@ import javax.annotation.Nullable;
 
 public class ReferenceBundle {
    @Nonnull
-   private final Map<String, Reference> dataLayerMap = new HashMap<>();
+   private final Map<String, Object> dataLayerMap = new HashMap<>();
    @Nonnull
-   private final Map<String, String> layerTypeMap = new HashMap<>();
+   private final Map<String, Class<?>> layerTypeMap = new HashMap<>();
 
-   public <T extends Reference> void put(@Nonnull String name, @Nonnull Reference reference, @Nonnull Class<T> type) {
+   public <T> void put(@Nonnull String name, @Nonnull T reference, @Nonnull Class<T> type) {
       this.dataLayerMap.put(name, reference);
-      this.layerTypeMap.put(name, type.getName());
+      this.layerTypeMap.put(name, type);
    }
 
    @Nullable
-   public Reference getLayerWithName(@Nonnull String name) {
-      return this.dataLayerMap.get(name);
-   }
+   public <T> T get(@Nonnull String name, @Nonnull Class<T> type) {
+      Class<?> storedType = this.layerTypeMap.get(name);
 
-   @Nullable
-   public <T extends Reference> T getLayerWithName(@Nonnull String name, @Nonnull Class<T> type) {
-      String storedType = this.layerTypeMap.get(name);
-      if (storedType == null) {
-         return null;
-      } else {
-         return (T)(!storedType.equals(type.getName()) ? null : this.dataLayerMap.get(name));
-      }
+      assert storedType != null;
+
+      assert type.isAssignableFrom(storedType);
+
+      return (T)this.dataLayerMap.get(name);
    }
 }

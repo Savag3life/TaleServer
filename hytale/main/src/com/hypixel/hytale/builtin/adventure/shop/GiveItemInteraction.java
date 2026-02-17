@@ -15,6 +15,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public class GiveItemInteraction extends ChoiceInteraction {
+   @Nonnull
    public static final BuilderCodec<GiveItemInteraction> CODEC = BuilderCodec.builder(
          GiveItemInteraction.class, GiveItemInteraction::new, ChoiceInteraction.BASE_CODEC
       )
@@ -56,7 +57,9 @@ public class GiveItemInteraction extends ChoiceInteraction {
    @Override
    public void run(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef) {
       Player playerComponent = store.getComponent(ref, Player.getComponentType());
-      playerComponent.getInventory().getCombinedHotbarFirst().addItemStack(new ItemStack(this.itemId, this.quantity));
+      if (playerComponent != null) {
+         playerComponent.getInventory().getCombinedHotbarFirst().addItemStack(new ItemStack(this.itemId, this.quantity));
+      }
    }
 
    @Nonnull

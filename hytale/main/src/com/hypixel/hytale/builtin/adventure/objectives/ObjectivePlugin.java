@@ -45,10 +45,12 @@ import com.hypixel.hytale.builtin.adventure.objectives.task.ReachLocationTask;
 import com.hypixel.hytale.builtin.adventure.objectives.task.TreasureMapObjectiveTask;
 import com.hypixel.hytale.builtin.adventure.objectives.task.UseBlockObjectiveTask;
 import com.hypixel.hytale.builtin.adventure.objectives.task.UseEntityObjectiveTask;
+import com.hypixel.hytale.builtin.weather.components.WeatherTracker;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.common.util.ArrayUtil;
+import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.ResourceType;
@@ -56,6 +58,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.AndQuery;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.spatial.SpatialResource;
+import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.function.function.TriFunction;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.protocol.packets.assets.TrackOrUpdateObjective;
@@ -71,7 +74,6 @@ import com.hypixel.hytale.server.core.asset.type.item.config.ItemDropList;
 import com.hypixel.hytale.server.core.asset.type.model.config.Model;
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset;
 import com.hypixel.hytale.server.core.asset.type.weather.config.Weather;
-import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.data.PlayerConfigData;
@@ -83,9 +85,11 @@ import com.hypixel.hytale.server.core.modules.entity.EntityModule;
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.PersistentModel;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.prefab.PrefabCopyableComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.datastore.DataStoreProvider;
@@ -110,15 +114,20 @@ import javax.annotation.Nullable;
 
 public class ObjectivePlugin extends JavaPlugin {
    protected static ObjectivePlugin instance;
+   @Nonnull
    public static final String OBJECTIVE_LOCATION_MARKER_MODEL_ID = "Objective_Location_Marker";
    public static final long SAVE_INTERVAL_MINUTES = 5L;
+   @Nonnull
    private final Map<Class<? extends ObjectiveTaskAsset>, TriFunction<ObjectiveTaskAsset, Integer, Integer, ? extends ObjectiveTask>> taskGenerators = new ConcurrentHashMap<>();
+   @Nonnull
    private final Map<Class<? extends ObjectiveCompletionAsset>, Function<ObjectiveCompletionAsset, ? extends ObjectiveCompletion>> completionGenerators = new ConcurrentHashMap<>();
+   @Nonnull
    private final Config<ObjectivePlugin.ObjectivePluginConfig> config = this.withConfig(ObjectivePlugin.ObjectivePluginConfig.CODEC);
    private Model objectiveLocationMarkerModel;
    private ComponentType<EntityStore, ObjectiveHistoryComponent> objectiveHistoryComponentType;
    private ComponentType<EntityStore, ReachLocationMarker> reachLocationMarkerComponentType;
    private ComponentType<EntityStore, ObjectiveLocationMarker> objectiveLocationMarkerComponentType;
+   @Nullable
    private ObjectiveDataStore objectiveDataStore;
 
    public static ObjectivePlugin get() {
@@ -137,6 +146,7 @@ public class ObjectivePlugin extends JavaPlugin {
       return this.objectiveLocationMarkerModel;
    }
 
+   @Nullable
    public ObjectiveDataStore getObjectiveDataStore() {
       return this.objectiveDataStore;
    }
@@ -144,6 +154,8 @@ public class ObjectivePlugin extends JavaPlugin {
    @Override
    protected void setup() {
       instance = this;
+      EventRegistry eventRegistry = this.getEventRegistry();
+      ComponentRegistryProxy<EntityStore> entityStoreRegistry = this.getEntityStoreRegistry();
       AssetRegistry.register(
          ((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)HytaleAssetStore.builder(
                            ObjectiveAsset.class, new DefaultAssetMap()
@@ -185,10 +197,10 @@ public class ObjectivePlugin extends JavaPlugin {
             .build()
       );
       this.objectiveDataStore = new ObjectiveDataStore(this.config.get().getDataStoreProvider().create(Objective.CODEC));
-      this.reachLocationMarkerComponentType = this.getEntityStoreRegistry()
-         .registerComponent(ReachLocationMarker.class, "ReachLocationMarker", ReachLocationMarker.CODEC);
-      this.objectiveLocationMarkerComponentType = this.getEntityStoreRegistry()
-         .registerComponent(ObjectiveLocationMarker.class, "ObjectiveLocation", ObjectiveLocationMarker.CODEC);
+      this.reachLocationMarkerComponentType = entityStoreRegistry.registerComponent(ReachLocationMarker.class, "ReachLocationMarker", ReachLocationMarker.CODEC);
+      this.objectiveLocationMarkerComponentType = entityStoreRegistry.registerComponent(
+         ObjectiveLocationMarker.class, "ObjectiveLocation", ObjectiveLocationMarker.CODEC
+      );
       this.registerTask(
          "Craft", CraftObjectiveTaskAsset.class, CraftObjectiveTaskAsset.CODEC, CraftObjectiveTask.class, CraftObjectiveTask.CODEC, CraftObjectiveTask::new
       );
@@ -231,46 +243,64 @@ public class ObjectivePlugin extends JavaPlugin {
       this.registerCompletion(
          "ClearObjectiveItems", ClearObjectiveItemsCompletionAsset.class, ClearObjectiveItemsCompletionAsset.CODEC, ClearObjectiveItemsCompletion::new
       );
-      this.getEventRegistry().register(LoadedAssetsEvent.class, ObjectiveLineAsset.class, this::onObjectiveLineAssetLoaded);
-      this.getEventRegistry().register(LoadedAssetsEvent.class, ObjectiveAsset.class, this::onObjectiveAssetLoaded);
-      this.getEventRegistry().register(PlayerDisconnectEvent.class, this::onPlayerDisconnect);
-      this.getEventRegistry().register(LoadedAssetsEvent.class, ObjectiveLocationMarkerAsset.class, ObjectivePlugin::onObjectiveLocationMarkerChange);
-      this.getEventRegistry().register(LoadedAssetsEvent.class, ModelAsset.class, this::onModelAssetChange);
-      this.getEventRegistry().registerGlobal(LivingEntityInventoryChangeEvent.class, this::onLivingEntityInventoryChange);
-      this.getEventRegistry().registerGlobal(AddWorldEvent.class, this::onWorldAdded);
+      eventRegistry.register(LoadedAssetsEvent.class, ObjectiveLineAsset.class, this::onObjectiveLineAssetLoaded);
+      eventRegistry.register(LoadedAssetsEvent.class, ObjectiveAsset.class, this::onObjectiveAssetLoaded);
+      eventRegistry.register(PlayerDisconnectEvent.class, this::onPlayerDisconnect);
+      eventRegistry.register(LoadedAssetsEvent.class, ObjectiveLocationMarkerAsset.class, ObjectivePlugin::onObjectiveLocationMarkerChange);
+      eventRegistry.register(LoadedAssetsEvent.class, ModelAsset.class, this::onModelAssetChange);
+      eventRegistry.registerGlobal(LivingEntityInventoryChangeEvent.class, this::onLivingEntityInventoryChange);
+      eventRegistry.registerGlobal(AddWorldEvent.class, this::onWorldAdded);
       this.getCommandRegistry().registerCommand(new ObjectiveCommand());
       EntityModule entityModule = EntityModule.get();
       ComponentType<EntityStore, PlayerRef> playerRefComponentType = PlayerRef.getComponentType();
       ResourceType<EntityStore, SpatialResource<Ref<EntityStore>, EntityStore>> playerSpatialComponent = entityModule.getPlayerSpatialResourceType();
-      this.getEntityStoreRegistry().registerSystem(new ReachLocationMarkerSystems.EntityAdded(this.reachLocationMarkerComponentType));
-      this.getEntityStoreRegistry().registerSystem(new ReachLocationMarkerSystems.EnsureNetworkSendable());
-      this.getEntityStoreRegistry().registerSystem(new ReachLocationMarkerSystems.Ticking(this.reachLocationMarkerComponentType, playerSpatialComponent));
-      this.getEntityStoreRegistry().registerSystem(new ObjectiveLocationMarkerSystems.EnsureNetworkSendableSystem());
-      this.getEntityStoreRegistry().registerSystem(new ObjectiveLocationMarkerSystems.InitSystem(this.objectiveLocationMarkerComponentType));
-      this.getEntityStoreRegistry()
-         .registerSystem(
-            new ObjectiveLocationMarkerSystems.TickingSystem(this.objectiveLocationMarkerComponentType, playerRefComponentType, playerSpatialComponent)
-         );
+      ComponentType<EntityStore, NetworkId> networkIdComponentType = NetworkId.getComponentType();
+      ComponentType<EntityStore, TransformComponent> transformComponentType = TransformComponent.getComponentType();
+      ComponentType<EntityStore, UUIDComponent> uuidComponentType = UUIDComponent.getComponentType();
+      ComponentType<EntityStore, WeatherTracker> weatherTrackerComponentType = WeatherTracker.getComponentType();
+      ComponentType<EntityStore, ModelComponent> modelComponentType = ModelComponent.getComponentType();
+      ComponentType<EntityStore, PrefabCopyableComponent> prefabCopyableComponentType = PrefabCopyableComponent.getComponentType();
+      entityStoreRegistry.registerSystem(new ReachLocationMarkerSystems.EntityAdded(this.reachLocationMarkerComponentType, transformComponentType));
+      entityStoreRegistry.registerSystem(new ReachLocationMarkerSystems.EnsureNetworkSendable(this.reachLocationMarkerComponentType, networkIdComponentType));
+      entityStoreRegistry.registerSystem(
+         new ReachLocationMarkerSystems.Ticking(this.reachLocationMarkerComponentType, playerSpatialComponent, transformComponentType, uuidComponentType)
+      );
+      entityStoreRegistry.registerSystem(
+         new ObjectiveLocationMarkerSystems.EnsureNetworkSendableSystem(this.objectiveLocationMarkerComponentType, networkIdComponentType)
+      );
+      entityStoreRegistry.registerSystem(
+         new ObjectiveLocationMarkerSystems.InitSystem(
+            this.objectiveLocationMarkerComponentType, modelComponentType, transformComponentType, prefabCopyableComponentType
+         )
+      );
+      entityStoreRegistry.registerSystem(
+         new ObjectiveLocationMarkerSystems.TickingSystem(
+            this.objectiveLocationMarkerComponentType,
+            playerRefComponentType,
+            playerSpatialComponent,
+            transformComponentType,
+            weatherTrackerComponentType,
+            uuidComponentType
+         )
+      );
       CommonObjectiveHistoryData.CODEC.register("Objective", ObjectiveHistoryData.class, ObjectiveHistoryData.CODEC);
       CommonObjectiveHistoryData.CODEC.register("ObjectiveLine", ObjectiveLineHistoryData.class, ObjectiveLineHistoryData.CODEC);
       ObjectiveRewardHistoryData.CODEC.register("Item", ItemObjectiveRewardHistoryData.class, ItemObjectiveRewardHistoryData.CODEC);
-      this.objectiveHistoryComponentType = this.getEntityStoreRegistry()
-         .registerComponent(ObjectiveHistoryComponent.class, "ObjectiveHistory", ObjectiveHistoryComponent.CODEC);
-      this.getEntityStoreRegistry().registerSystem(new ObjectivePlayerSetupSystem(this.objectiveHistoryComponentType, Player.getComponentType()));
-      this.getEntityStoreRegistry().registerSystem(new ObjectiveItemEntityRemovalSystem());
+      this.objectiveHistoryComponentType = entityStoreRegistry.registerComponent(
+         ObjectiveHistoryComponent.class, "ObjectiveHistory", ObjectiveHistoryComponent.CODEC
+      );
+      entityStoreRegistry.registerSystem(new ObjectivePlayerSetupSystem(this.objectiveHistoryComponentType, Player.getComponentType()));
+      entityStoreRegistry.registerSystem(new ObjectiveItemEntityRemovalSystem());
       this.getCodecRegistry(Interaction.CODEC).register("StartObjective", StartObjectiveInteraction.class, StartObjectiveInteraction.CODEC);
       this.getCodecRegistry(Interaction.CODEC).register("CanBreakRespawnPoint", CanBreakRespawnPointInteraction.class, CanBreakRespawnPointInteraction.CODEC);
       BlockStateModule.get().registerBlockState(TreasureChestState.class, "TreasureChest", TreasureChestState.CODEC);
       this.getCodecRegistry(GameplayConfig.PLUGIN_CODEC).register(ObjectiveGameplayConfig.class, "Objective", ObjectiveGameplayConfig.CODEC);
-      this.getEntityStoreRegistry()
-         .registerSystem(
-            new EntityModule.TangibleMigrationSystem(Query.or(ObjectiveLocationMarker.getComponentType(), ReachLocationMarker.getComponentType())), true
-         );
-      this.getEntityStoreRegistry()
-         .registerSystem(
-            new EntityModule.HiddenFromPlayerMigrationSystem(Query.or(ObjectiveLocationMarker.getComponentType(), ReachLocationMarker.getComponentType())),
-            true
-         );
+      entityStoreRegistry.registerSystem(
+         new EntityModule.TangibleMigrationSystem(Query.or(ObjectiveLocationMarker.getComponentType(), ReachLocationMarker.getComponentType())), true
+      );
+      entityStoreRegistry.registerSystem(
+         new EntityModule.HiddenFromPlayerMigrationSystem(Query.or(ObjectiveLocationMarker.getComponentType(), ReachLocationMarker.getComponentType())), true
+      );
    }
 
    @Override
@@ -280,13 +310,17 @@ public class ObjectivePlugin extends JavaPlugin {
          throw new IllegalStateException(String.format("Default objective location marker model '%s' not found", "Objective_Location_Marker"));
       } else {
          this.objectiveLocationMarkerModel = Model.createUnitScaleModel(modelAsset);
-         HytaleServer.SCHEDULED_EXECUTOR.scheduleWithFixedDelay(() -> this.objectiveDataStore.saveToDiskAllObjectives(), 5L, 5L, TimeUnit.MINUTES);
+         if (this.objectiveDataStore != null) {
+            HytaleServer.SCHEDULED_EXECUTOR.scheduleWithFixedDelay(() -> this.objectiveDataStore.saveToDiskAllObjectives(), 5L, 5L, TimeUnit.MINUTES);
+         }
       }
    }
 
    @Override
    protected void shutdown() {
-      this.objectiveDataStore.saveToDiskAllObjectives();
+      if (this.objectiveDataStore != null) {
+         this.objectiveDataStore.saveToDiskAllObjectives();
+      }
    }
 
    public ComponentType<EntityStore, ReachLocationMarker> getReachLocationMarkerComponentType() {
@@ -305,10 +339,12 @@ public class ObjectivePlugin extends JavaPlugin {
       Codec<U> implementationCodec,
       TriFunction<T, Integer, Integer, U> generator
    ) {
-      ObjectiveTaskAsset.CODEC.register(id, assetClass, assetCodec);
-      ObjectiveTask.CODEC.register(id, implementationClass, implementationCodec);
-      this.taskGenerators.put(assetClass, generator);
-      this.objectiveDataStore.registerTaskRef(implementationClass);
+      if (this.objectiveDataStore != null) {
+         ObjectiveTaskAsset.CODEC.register(id, assetClass, assetCodec);
+         ObjectiveTask.CODEC.register(id, implementationClass, implementationCodec);
+         this.taskGenerators.put(assetClass, generator);
+         this.objectiveDataStore.registerTaskRef(implementationClass);
+      }
    }
 
    public <T extends ObjectiveCompletionAsset, U extends ObjectiveCompletion> void registerCompletion(
@@ -342,79 +378,90 @@ public class ObjectivePlugin extends JavaPlugin {
       @Nullable UUID markerUUID,
       @Nonnull Store<EntityStore> store
    ) {
-      ObjectiveAsset asset = ObjectiveAsset.getAssetMap().getAsset(objectiveId);
-      if (asset == null) {
-         this.getLogger().at(Level.WARNING).log("Failed to find objective asset '%s'", objectiveId);
-         return null;
-      } else if (markerUUID == null && !asset.isValidForPlayer()) {
-         this.getLogger().at(Level.WARNING).log("Objective %s can't be used for Player", asset.getId());
+      if (this.objectiveDataStore == null) {
          return null;
       } else {
-         Objective objective = new Objective(asset, objectiveUUID, playerUUIDs, worldUUID, markerUUID);
-         boolean setupResult = objective.setup(store);
-         Message assetTitleMessage = Message.translation(asset.getTitleKey());
-         if (!setupResult || !this.objectiveDataStore.addObjective(objective.getObjectiveUUID(), objective)) {
-            this.getLogger().at(Level.WARNING).log("Failed to start objective %s", asset.getId());
-            if (objective.getPlayerUUIDs() == null) {
-               return null;
-            } else {
-               objective.forEachParticipant(participantReference -> {
-                  PlayerRef playerRefComponent = store.getComponent(participantReference, PlayerRef.getComponentType());
-                  if (playerRefComponent != null) {
-                     playerRefComponent.sendMessage(Message.translation("server.modules.objective.start.failed").param("title", assetTitleMessage));
-                  }
-               });
-               return null;
-            }
-         } else if (objective.getPlayerUUIDs() == null) {
-            return objective;
+         ObjectiveAsset asset = ObjectiveAsset.getAssetMap().getAsset(objectiveId);
+         if (asset == null) {
+            this.getLogger().at(Level.WARNING).log("Failed to find objective asset '%s'", objectiveId);
+            return null;
+         } else if (markerUUID == null && !asset.isValidForPlayer()) {
+            this.getLogger().at(Level.WARNING).log("Objective %s can't be used for Player", asset.getId());
+            return null;
          } else {
-            TrackOrUpdateObjective trackObjectivePacket = new TrackOrUpdateObjective(objective.toPacket());
-            String objectiveAssetId = asset.getId();
-            objective.forEachParticipant(participantReference -> {
-               Player playerComponent = store.getComponent(participantReference, Player.getComponentType());
-               if (playerComponent != null) {
-                  if (!this.canPlayerDoObjective(playerComponent, objectiveAssetId)) {
-                     playerComponent.sendMessage(Message.translation("server.modules.objective.playerAlreadyDoingObjective").param("title", assetTitleMessage));
-                  } else {
+            Objective objective = new Objective(asset, objectiveUUID, playerUUIDs, worldUUID, markerUUID);
+            boolean setupResult = objective.setup(store);
+            Message assetTitleMessage = Message.translation(asset.getTitleKey());
+            if (!setupResult || !this.objectiveDataStore.addObjective(objective.getObjectiveUUID(), objective)) {
+               this.getLogger().at(Level.WARNING).log("Failed to start objective %s", asset.getId());
+               if (objective.getPlayerUUIDs() == null) {
+                  return null;
+               } else {
+                  objective.forEachParticipant(participantReference -> {
                      PlayerRef playerRefComponent = store.getComponent(participantReference, PlayerRef.getComponentType());
-
-                     assert playerRefComponent != null;
-
-                     UUIDComponent uuidComponent = store.getComponent(participantReference, UUIDComponent.getComponentType());
-
-                     assert uuidComponent != null;
-
-                     objective.addActivePlayerUUID(uuidComponent.getUuid());
-                     PlayerConfigData playerConfigData = playerComponent.getPlayerConfigData();
-                     HashSet<UUID> activeObjectiveUUIDs = new HashSet<>(playerConfigData.getActiveObjectiveUUIDs());
-                     activeObjectiveUUIDs.add(objective.getObjectiveUUID());
-                     playerConfigData.setActiveObjectiveUUIDs(activeObjectiveUUIDs);
-                     playerRefComponent.sendMessage(Message.translation("server.modules.objective.start.success").param("title", assetTitleMessage));
-                     playerRefComponent.sendMessage(objective.getTaskInfoMessage());
-                     playerRefComponent.getPacketHandler().writeNoCache(trackObjectivePacket);
-                  }
+                     if (playerRefComponent != null) {
+                        playerRefComponent.sendMessage(Message.translation("server.modules.objective.start.failed").param("title", assetTitleMessage));
+                     }
+                  });
+                  return null;
                }
-            });
-            objective.markDirty();
-            return objective;
+            } else if (objective.getPlayerUUIDs() == null) {
+               return objective;
+            } else {
+               TrackOrUpdateObjective trackObjectivePacket = new TrackOrUpdateObjective(objective.toPacket());
+               String objectiveAssetId = asset.getId();
+               objective.forEachParticipant(
+                  participantReference -> {
+                     Player playerComponent = store.getComponent(participantReference, Player.getComponentType());
+                     if (playerComponent != null) {
+                        if (!this.canPlayerDoObjective(playerComponent, objectiveAssetId)) {
+                           playerComponent.sendMessage(
+                              Message.translation("server.modules.objective.playerAlreadyDoingObjective").param("title", assetTitleMessage)
+                           );
+                        } else {
+                           PlayerRef playerRefComponent = store.getComponent(participantReference, PlayerRef.getComponentType());
+
+                           assert playerRefComponent != null;
+
+                           UUIDComponent uuidComponent = store.getComponent(participantReference, UUIDComponent.getComponentType());
+
+                           assert uuidComponent != null;
+
+                           objective.addActivePlayerUUID(uuidComponent.getUuid());
+                           PlayerConfigData playerConfigData = playerComponent.getPlayerConfigData();
+                           HashSet<UUID> activeObjectiveUUIDs = new HashSet<>(playerConfigData.getActiveObjectiveUUIDs());
+                           activeObjectiveUUIDs.add(objective.getObjectiveUUID());
+                           playerConfigData.setActiveObjectiveUUIDs(activeObjectiveUUIDs);
+                           playerRefComponent.sendMessage(Message.translation("server.modules.objective.start.success").param("title", assetTitleMessage));
+                           playerRefComponent.getPacketHandler().writeNoCache(trackObjectivePacket);
+                        }
+                     }
+                  }
+               );
+               objective.markDirty();
+               return objective;
+            }
          }
       }
    }
 
    public boolean canPlayerDoObjective(@Nonnull Player player, @Nonnull String objectiveAssetId) {
-      Set<UUID> activeObjectiveUUIDs = player.getPlayerConfigData().getActiveObjectiveUUIDs();
-      if (activeObjectiveUUIDs == null) {
-         return true;
+      if (this.objectiveDataStore == null) {
+         return false;
       } else {
-         for (UUID objectiveUUID : activeObjectiveUUIDs) {
-            Objective objective = this.objectiveDataStore.getObjective(objectiveUUID);
-            if (objective != null && objective.getObjectiveId().equals(objectiveAssetId)) {
-               return false;
+         Set<UUID> activeObjectiveUUIDs = player.getPlayerConfigData().getActiveObjectiveUUIDs();
+         if (activeObjectiveUUIDs == null) {
+            return true;
+         } else {
+            for (UUID objectiveUUID : activeObjectiveUUIDs) {
+               Objective objective = this.objectiveDataStore.getObjective(objectiveUUID);
+               if (objective != null && objective.getObjectiveId().equals(objectiveAssetId)) {
+                  return false;
+               }
             }
-         }
 
-         return true;
+            return true;
+         }
       }
    }
 
@@ -469,56 +516,62 @@ public class ObjectivePlugin extends JavaPlugin {
    }
 
    public boolean canPlayerDoObjectiveLine(@Nonnull Player player, @Nonnull String objectiveLineId) {
-      Set<UUID> activeObjectiveUUIDs = player.getPlayerConfigData().getActiveObjectiveUUIDs();
-      if (activeObjectiveUUIDs == null) {
-         return true;
+      if (this.objectiveDataStore == null) {
+         return false;
       } else {
-         for (UUID objectiveUUID : activeObjectiveUUIDs) {
-            Objective objective = this.objectiveDataStore.getObjective(objectiveUUID);
-            if (objective != null) {
-               ObjectiveLineHistoryData objectiveLineHistoryData = objective.getObjectiveLineHistoryData();
-               if (objectiveLineHistoryData != null && objectiveLineId.equals(objectiveLineHistoryData.getId())) {
-                  return false;
+         Set<UUID> activeObjectiveUUIDs = player.getPlayerConfigData().getActiveObjectiveUUIDs();
+         if (activeObjectiveUUIDs == null) {
+            return true;
+         } else {
+            for (UUID objectiveUUID : activeObjectiveUUIDs) {
+               Objective objective = this.objectiveDataStore.getObjective(objectiveUUID);
+               if (objective != null) {
+                  ObjectiveLineHistoryData objectiveLineHistoryData = objective.getObjectiveLineHistoryData();
+                  if (objectiveLineHistoryData != null && objectiveLineId.equals(objectiveLineHistoryData.getId())) {
+                     return false;
+                  }
                }
             }
-         }
 
-         return true;
+            return true;
+         }
       }
    }
 
    public void objectiveCompleted(@Nonnull Objective objective, @Nonnull Store<EntityStore> store) {
-      for (UUID playerUUID : objective.getPlayerUUIDs()) {
-         this.untrackObjectiveForPlayer(objective, playerUUID);
-      }
+      if (this.objectiveDataStore != null) {
+         for (UUID playerUUID : objective.getPlayerUUIDs()) {
+            this.untrackObjectiveForPlayer(objective, playerUUID);
+         }
 
-      UUID objectiveUUID = objective.getObjectiveUUID();
-      this.objectiveDataStore.removeObjective(objectiveUUID);
-      if (this.objectiveDataStore.removeFromDisk(objectiveUUID.toString())) {
-         ObjectiveLineAsset objectiveLineAsset = objective.getObjectiveLineAsset();
-         if (objectiveLineAsset == null) {
-            this.storeObjectiveHistoryData(objective);
-         } else {
-            ObjectiveLineHistoryData objectiveLineHistoryData = objective.getObjectiveLineHistoryData();
-
-            assert objectiveLineHistoryData != null;
-
-            objectiveLineHistoryData.addObjectiveHistoryData(objective.getObjectiveHistoryData());
-            String nextObjectiveId = objectiveLineAsset.getNextObjectiveId(objective.getObjectiveId());
-            if (nextObjectiveId != null) {
-               Objective newObjective = this.startObjective(
-                  nextObjectiveId, objectiveUUID, objective.getPlayerUUIDs(), objective.getWorldUUID(), objective.getMarkerUUID(), store
-               );
-               if (newObjective != null) {
-                  newObjective.setObjectiveLineHistoryData(objectiveLineHistoryData);
-                  newObjective.checkTaskSetCompletion(store);
-               }
+         UUID objectiveUUID = objective.getObjectiveUUID();
+         this.objectiveDataStore.removeObjective(objectiveUUID);
+         if (this.objectiveDataStore.removeFromDisk(objectiveUUID.toString())) {
+            ObjectiveLineAsset objectiveLineAsset = objective.getObjectiveLineAsset();
+            if (objectiveLineAsset == null) {
+               this.storeObjectiveHistoryData(objective);
             } else {
-               this.storeObjectiveLineHistoryData(objectiveLineHistoryData, objective.getPlayerUUIDs());
-               String[] nextObjectiveLineIds = objectiveLineHistoryData.getNextObjectiveLineIds();
-               if (nextObjectiveLineIds != null) {
-                  for (String nextObjectiveLineId : nextObjectiveLineIds) {
-                     this.startObjectiveLine(store, nextObjectiveLineId, objective.getPlayerUUIDs(), objective.getWorldUUID(), objective.getMarkerUUID());
+               ObjectiveLineHistoryData objectiveLineHistoryData = objective.getObjectiveLineHistoryData();
+
+               assert objectiveLineHistoryData != null;
+
+               objectiveLineHistoryData.addObjectiveHistoryData(objective.getObjectiveHistoryData());
+               String nextObjectiveId = objectiveLineAsset.getNextObjectiveId(objective.getObjectiveId());
+               if (nextObjectiveId != null) {
+                  Objective newObjective = this.startObjective(
+                     nextObjectiveId, objectiveUUID, objective.getPlayerUUIDs(), objective.getWorldUUID(), objective.getMarkerUUID(), store
+                  );
+                  if (newObjective != null) {
+                     newObjective.setObjectiveLineHistoryData(objectiveLineHistoryData);
+                     newObjective.checkTaskSetCompletion(store);
+                  }
+               } else {
+                  this.storeObjectiveLineHistoryData(objectiveLineHistoryData, objective.getPlayerUUIDs());
+                  String[] nextObjectiveLineIds = objectiveLineHistoryData.getNextObjectiveLineIds();
+                  if (nextObjectiveLineIds != null) {
+                     for (String nextObjectiveLineId : nextObjectiveLineIds) {
+                        this.startObjectiveLine(store, nextObjectiveLineId, objective.getPlayerUUIDs(), objective.getWorldUUID(), objective.getMarkerUUID());
+                     }
                   }
                }
             }
@@ -587,118 +640,130 @@ public class ObjectivePlugin extends JavaPlugin {
    }
 
    public void cancelObjective(@Nonnull UUID objectiveUUID, @Nonnull Store<EntityStore> store) {
-      Objective objective = this.objectiveDataStore.loadObjective(objectiveUUID, store);
-      if (objective != null) {
-         objective.cancel();
+      if (this.objectiveDataStore != null) {
+         Objective objective = this.objectiveDataStore.loadObjective(objectiveUUID, store);
+         if (objective != null) {
+            objective.cancel();
 
-         for (UUID playerUUID : objective.getPlayerUUIDs()) {
-            this.untrackObjectiveForPlayer(objective, playerUUID);
+            for (UUID playerUUID : objective.getPlayerUUIDs()) {
+               this.untrackObjectiveForPlayer(objective, playerUUID);
+            }
+
+            this.objectiveDataStore.removeObjective(objectiveUUID);
+            this.objectiveDataStore.removeFromDisk(objectiveUUID.toString());
          }
-
-         this.objectiveDataStore.removeObjective(objectiveUUID);
-         this.objectiveDataStore.removeFromDisk(objectiveUUID.toString());
       }
    }
 
    public void untrackObjectiveForPlayer(@Nonnull Objective objective, @Nonnull UUID playerUUID) {
-      UUID objectiveUUID = objective.getObjectiveUUID();
-      ObjectiveTask[] currentTasks = objective.getCurrentTasks();
-
-      for (ObjectiveTask task : currentTasks) {
-         if (task instanceof UseEntityObjectiveTask) {
-            this.objectiveDataStore.removeEntityTaskForPlayer(objectiveUUID, ((UseEntityObjectiveTask)task).getAsset().getTaskId(), playerUUID);
-         }
-      }
-
-      PlayerRef playerRef = Universe.get().getPlayer(playerUUID);
-      if (playerRef != null) {
-         Player player = playerRef.getComponent(Player.getComponentType());
-         HashSet<UUID> activeObjectiveUUIDs = new HashSet<>(player.getPlayerConfigData().getActiveObjectiveUUIDs());
-         activeObjectiveUUIDs.remove(objectiveUUID);
-         player.getPlayerConfigData().setActiveObjectiveUUIDs(activeObjectiveUUIDs);
-         playerRef.getPacketHandler().writeNoCache(new UntrackObjective(objectiveUUID));
-      }
-   }
-
-   public void addPlayerToExistingObjective(@Nonnull Store<EntityStore> store, @Nonnull UUID playerUUID, @Nonnull UUID objectiveUUID) {
-      Objective objective = this.objectiveDataStore.loadObjective(objectiveUUID, store);
-      if (objective != null) {
-         objective.addActivePlayerUUID(playerUUID);
-         ObjectiveDataStore objectiveDataStore = get().getObjectiveDataStore();
+      if (this.objectiveDataStore != null) {
+         UUID objectiveUUID = objective.getObjectiveUUID();
          ObjectiveTask[] currentTasks = objective.getCurrentTasks();
 
          for (ObjectiveTask task : currentTasks) {
-            if (task instanceof UseEntityObjectiveTask) {
-               objectiveDataStore.addEntityTaskForPlayer(playerUUID, ((UseEntityObjectiveTask)task).getAsset().getTaskId(), objectiveUUID);
+            if (task instanceof UseEntityObjectiveTask useEntityObjectiveTask) {
+               this.objectiveDataStore.removeEntityTaskForPlayer(objectiveUUID, useEntityObjectiveTask.getAsset().getTaskId(), playerUUID);
             }
          }
 
          PlayerRef playerRef = Universe.get().getPlayer(playerUUID);
-         if (playerRef != null && playerRef.isValid()) {
-            Ref<EntityStore> playerReference = playerRef.getReference();
-            if (playerReference != null && playerReference.isValid()) {
-               Player playerComponent = store.getComponent(playerReference, Player.getComponentType());
+         if (playerRef != null) {
+            Player player = playerRef.getComponent(Player.getComponentType());
+            HashSet<UUID> activeObjectiveUUIDs = new HashSet<>(player.getPlayerConfigData().getActiveObjectiveUUIDs());
+            activeObjectiveUUIDs.remove(objectiveUUID);
+            player.getPlayerConfigData().setActiveObjectiveUUIDs(activeObjectiveUUIDs);
+            playerRef.getPacketHandler().writeNoCache(new UntrackObjective(objectiveUUID));
+         }
+      }
+   }
 
-               assert playerComponent != null;
+   public void addPlayerToExistingObjective(@Nonnull Store<EntityStore> store, @Nonnull UUID playerUUID, @Nonnull UUID objectiveUUID) {
+      if (this.objectiveDataStore != null) {
+         Objective objective = this.objectiveDataStore.loadObjective(objectiveUUID, store);
+         if (objective != null) {
+            objective.addActivePlayerUUID(playerUUID);
+            ObjectiveDataStore objectiveDataStore = get().getObjectiveDataStore();
+            ObjectiveTask[] currentTasks = objective.getCurrentTasks();
 
-               HashSet<UUID> activeObjectiveUUIDs = new HashSet<>(playerComponent.getPlayerConfigData().getActiveObjectiveUUIDs());
-               activeObjectiveUUIDs.add(objectiveUUID);
-               playerComponent.getPlayerConfigData().setActiveObjectiveUUIDs(activeObjectiveUUIDs);
-               playerRef.getPacketHandler().writeNoCache(new TrackOrUpdateObjective(objective.toPacket()));
+            for (ObjectiveTask task : currentTasks) {
+               if (task instanceof UseEntityObjectiveTask) {
+                  objectiveDataStore.addEntityTaskForPlayer(playerUUID, ((UseEntityObjectiveTask)task).getAsset().getTaskId(), objectiveUUID);
+               }
+            }
+
+            PlayerRef playerRef = Universe.get().getPlayer(playerUUID);
+            if (playerRef != null && playerRef.isValid()) {
+               Ref<EntityStore> playerReference = playerRef.getReference();
+               if (playerReference != null && playerReference.isValid()) {
+                  Player playerComponent = store.getComponent(playerReference, Player.getComponentType());
+
+                  assert playerComponent != null;
+
+                  HashSet<UUID> activeObjectiveUUIDs = new HashSet<>(playerComponent.getPlayerConfigData().getActiveObjectiveUUIDs());
+                  activeObjectiveUUIDs.add(objectiveUUID);
+                  playerComponent.getPlayerConfigData().setActiveObjectiveUUIDs(activeObjectiveUUIDs);
+                  playerRef.getPacketHandler().writeNoCache(new TrackOrUpdateObjective(objective.toPacket()));
+               }
             }
          }
       }
    }
 
    public void removePlayerFromExistingObjective(@Nonnull Store<EntityStore> store, @Nonnull UUID playerUUID, @Nonnull UUID objectiveUUID) {
-      Objective objective = this.objectiveDataStore.loadObjective(objectiveUUID, store);
-      if (objective != null) {
-         objective.removeActivePlayerUUID(playerUUID);
-         if (objective.getActivePlayerUUIDs().isEmpty()) {
-            this.objectiveDataStore.saveToDisk(objectiveUUID.toString(), objective);
-            this.objectiveDataStore.unloadObjective(objectiveUUID);
-         }
+      if (this.objectiveDataStore != null) {
+         Objective objective = this.objectiveDataStore.loadObjective(objectiveUUID, store);
+         if (objective != null) {
+            objective.removeActivePlayerUUID(playerUUID);
+            if (objective.getActivePlayerUUIDs().isEmpty()) {
+               this.objectiveDataStore.saveToDisk(objectiveUUID.toString(), objective);
+               this.objectiveDataStore.unloadObjective(objectiveUUID);
+            }
 
-         this.untrackObjectiveForPlayer(objective, playerUUID);
+            this.untrackObjectiveForPlayer(objective, playerUUID);
+         }
       }
    }
 
    private void onPlayerDisconnect(@Nonnull PlayerDisconnectEvent event) {
-      PlayerRef playerRef = event.getPlayerRef();
-      Ref<EntityStore> ref = playerRef.getReference();
-      if (ref != null) {
-         Store<EntityStore> store = ref.getStore();
-         World world = store.getExternalData().getWorld();
-         world.execute(
-            () -> {
-               if (ref.isValid()) {
-                  UUID playerUUID = playerRef.getUuid();
-                  this.getLogger().at(Level.INFO).log("Checking objectives for disconnecting player '" + playerRef.getUsername() + "' (" + playerUUID + ")");
-                  Player playerComponent = store.getComponent(ref, Player.getComponentType());
-                  if (playerComponent != null) {
-                     Set<UUID> activeObjectiveUUIDs = playerComponent.getPlayerConfigData().getActiveObjectiveUUIDs();
-                     if (activeObjectiveUUIDs == null) {
-                        this.getLogger().at(Level.INFO).log("No active objectives found for player '" + playerRef.getUsername() + "' (" + playerUUID + ")");
-                     } else {
-                        this.getLogger()
-                           .at(Level.INFO)
-                           .log("Processing " + activeObjectiveUUIDs.size() + " active objectives for '" + playerRef.getUsername() + "' (" + playerUUID + ")");
+      if (this.objectiveDataStore != null) {
+         PlayerRef playerRef = event.getPlayerRef();
+         Ref<EntityStore> ref = playerRef.getReference();
+         if (ref != null) {
+            Store<EntityStore> store = ref.getStore();
+            World world = store.getExternalData().getWorld();
+            world.execute(
+               () -> {
+                  if (ref.isValid()) {
+                     UUID playerUUID = playerRef.getUuid();
+                     this.getLogger().at(Level.INFO).log("Checking objectives for disconnecting player '" + playerRef.getUsername() + "' (" + playerUUID + ")");
+                     Player playerComponent = store.getComponent(ref, Player.getComponentType());
+                     if (playerComponent != null) {
+                        Set<UUID> activeObjectiveUUIDs = playerComponent.getPlayerConfigData().getActiveObjectiveUUIDs();
+                        if (activeObjectiveUUIDs == null) {
+                           this.getLogger().at(Level.INFO).log("No active objectives found for player '" + playerRef.getUsername() + "' (" + playerUUID + ")");
+                        } else {
+                           this.getLogger()
+                              .at(Level.INFO)
+                              .log(
+                                 "Processing " + activeObjectiveUUIDs.size() + " active objectives for '" + playerRef.getUsername() + "' (" + playerUUID + ")"
+                              );
 
-                        for (UUID objectiveUUID : activeObjectiveUUIDs) {
-                           Objective objective = this.objectiveDataStore.getObjective(objectiveUUID);
-                           if (objective != null) {
-                              objective.removeActivePlayerUUID(playerUUID);
-                              if (objective.getActivePlayerUUIDs().isEmpty()) {
-                                 this.objectiveDataStore.saveToDisk(objectiveUUID.toString(), objective);
-                                 this.objectiveDataStore.unloadObjective(objectiveUUID);
+                           for (UUID objectiveUUID : activeObjectiveUUIDs) {
+                              Objective objective = this.objectiveDataStore.getObjective(objectiveUUID);
+                              if (objective != null) {
+                                 objective.removeActivePlayerUUID(playerUUID);
+                                 if (objective.getActivePlayerUUIDs().isEmpty()) {
+                                    this.objectiveDataStore.saveToDisk(objectiveUUID.toString(), objective);
+                                    this.objectiveDataStore.unloadObjective(objectiveUUID);
+                                 }
                               }
                            }
                         }
                      }
                   }
                }
-            }
-         );
+            );
+         }
       }
    }
 
@@ -728,7 +793,11 @@ public class ObjectivePlugin extends JavaPlugin {
    }
 
    private void onObjectiveAssetLoaded(@Nonnull LoadedAssetsEvent<String, ObjectiveAsset, DefaultAssetMap<String, ObjectiveAsset>> event) {
-      this.objectiveDataStore.getObjectiveCollection().forEach(objective -> objective.reloadObjectiveAsset(event.getLoadedAssets()));
+      if (this.objectiveDataStore != null) {
+         for (Objective objective : this.objectiveDataStore.getObjectiveCollection()) {
+            objective.reloadObjectiveAsset(event.getLoadedAssets());
+         }
+      }
    }
 
    private static void onObjectiveLocationMarkerChange(
@@ -785,6 +854,8 @@ public class ObjectivePlugin extends JavaPlugin {
                                  oldModel.getGradientId(),
                                  oldModel.getEyeHeight(),
                                  oldModel.getCrouchOffset(),
+                                 oldModel.getSittingOffset(),
+                                 oldModel.getSleepingOffset(),
                                  oldModel.getAnimationSetMap(),
                                  oldModel.getCamera(),
                                  oldModel.getLight(),
@@ -815,43 +886,47 @@ public class ObjectivePlugin extends JavaPlugin {
    }
 
    private void onLivingEntityInventoryChange(@Nonnull LivingEntityInventoryChangeEvent event) {
-      LivingEntity entity = event.getEntity();
-      if (entity instanceof Player player) {
-         Set<UUID> activeObjectiveUUIDs = player.getPlayerConfigData().getActiveObjectiveUUIDs();
-         if (!activeObjectiveUUIDs.isEmpty()) {
-            Set<UUID> inventoryItemObjectiveUUIDs = null;
-            CombinedItemContainer inventory = entity.getInventory().getCombinedHotbarFirst();
+      if (this.objectiveDataStore != null) {
+         if (event.getEntity() instanceof Player player) {
+            Set<UUID> activeObjectiveUUIDs = player.getPlayerConfigData().getActiveObjectiveUUIDs();
+            if (!activeObjectiveUUIDs.isEmpty()) {
+               Set<UUID> inventoryItemObjectiveUUIDs = null;
+               CombinedItemContainer inventory = player.getInventory().getCombinedHotbarFirst();
 
-            for (short i = 0; i < inventory.getCapacity(); i++) {
-               ItemStack itemStack = inventory.getItemStack(i);
-               if (!ItemStack.isEmpty(itemStack)) {
-                  UUID objectiveUUID = itemStack.getFromMetadataOrNull(StartObjectiveInteraction.OBJECTIVE_UUID);
-                  if (objectiveUUID != null) {
-                     if (inventoryItemObjectiveUUIDs == null) {
-                        inventoryItemObjectiveUUIDs = new HashSet<>(activeObjectiveUUIDs);
+               for (short i = 0; i < inventory.getCapacity(); i++) {
+                  ItemStack itemStack = inventory.getItemStack(i);
+                  if (!ItemStack.isEmpty(itemStack)) {
+                     UUID objectiveUUID = itemStack.getFromMetadataOrNull(StartObjectiveInteraction.OBJECTIVE_UUID);
+                     if (objectiveUUID != null) {
+                        if (inventoryItemObjectiveUUIDs == null) {
+                           inventoryItemObjectiveUUIDs = new HashSet<>(activeObjectiveUUIDs);
+                        }
+
+                        inventoryItemObjectiveUUIDs.add(objectiveUUID);
                      }
-
-                     inventoryItemObjectiveUUIDs.add(objectiveUUID);
                   }
                }
-            }
 
-            for (UUID activeObjectiveUUID : activeObjectiveUUIDs) {
-               if (inventoryItemObjectiveUUIDs == null || !inventoryItemObjectiveUUIDs.contains(activeObjectiveUUID)) {
-                  Objective objective = this.objectiveDataStore.getObjective(activeObjectiveUUID);
-                  if (objective != null) {
-                     ObjectiveAsset objectiveAsset = objective.getObjectiveAsset();
-                     if (objectiveAsset != null && objectiveAsset.isRemoveOnItemDrop()) {
-                        Ref<EntityStore> reference = entity.getReference();
-                        Store<EntityStore> store = reference.getStore();
-                        World world = store.getExternalData().getWorld();
-                        world.execute(() -> {
-                           UUIDComponent uuidComponent = store.getComponent(reference, UUIDComponent.getComponentType());
+               Ref<EntityStore> reference = player.getReference();
+               if (reference != null && reference.isValid()) {
+                  Store<EntityStore> store = reference.getStore();
+                  World world = store.getExternalData().getWorld();
 
-                           assert uuidComponent != null;
+                  for (UUID activeObjectiveUUID : activeObjectiveUUIDs) {
+                     if (inventoryItemObjectiveUUIDs == null || !inventoryItemObjectiveUUIDs.contains(activeObjectiveUUID)) {
+                        Objective objective = this.objectiveDataStore.getObjective(activeObjectiveUUID);
+                        if (objective != null) {
+                           ObjectiveAsset objectiveAsset = objective.getObjectiveAsset();
+                           if (objectiveAsset != null && objectiveAsset.isRemoveOnItemDrop()) {
+                              world.execute(() -> {
+                                 UUIDComponent uuidComponent = store.getComponent(reference, UUIDComponent.getComponentType());
 
-                           get().removePlayerFromExistingObjective(store, uuidComponent.getUuid(), activeObjectiveUUID);
-                        });
+                                 assert uuidComponent != null;
+
+                                 get().removePlayerFromExistingObjective(store, uuidComponent.getUuid(), activeObjectiveUUID);
+                              });
+                           }
+                        }
                      }
                   }
                }
@@ -860,33 +935,37 @@ public class ObjectivePlugin extends JavaPlugin {
       }
    }
 
-   private void onWorldAdded(AddWorldEvent event) {
+   private void onWorldAdded(@Nonnull AddWorldEvent event) {
       event.getWorld().getWorldMapManager().addMarkerProvider("objectives", ObjectiveMarkerProvider.INSTANCE);
    }
 
    @Nonnull
    public String getObjectiveDataDump() {
       StringBuilder sb = new StringBuilder("Objective Data\n");
-
-      for (Objective objective : this.objectiveDataStore.getObjectiveCollection()) {
-         sb.append("Objective ID: ")
-            .append(objective.getObjectiveId())
-            .append("\n\t")
-            .append("UUID: ")
-            .append(objective.getObjectiveUUID())
-            .append("\n\t")
-            .append("Players: ")
-            .append(Arrays.toString(objective.getPlayerUUIDs().toArray()))
-            .append("\n\t")
-            .append("Active players: ")
-            .append(Arrays.toString(objective.getActivePlayerUUIDs().toArray()))
-            .append("\n\n");
+      if (this.objectiveDataStore != null) {
+         for (Objective objective : this.objectiveDataStore.getObjectiveCollection()) {
+            sb.append("Objective ID: ")
+               .append(objective.getObjectiveId())
+               .append("\n\t")
+               .append("UUID: ")
+               .append(objective.getObjectiveUUID())
+               .append("\n\t")
+               .append("Players: ")
+               .append(Arrays.toString(objective.getPlayerUUIDs().toArray()))
+               .append("\n\t")
+               .append("Active players: ")
+               .append(Arrays.toString(objective.getActivePlayerUUIDs().toArray()))
+               .append("\n\n");
+         }
+      } else {
+         sb.append("Objective data store is not initialized.\n");
       }
 
       return sb.toString();
    }
 
    public static class ObjectivePluginConfig {
+      @Nonnull
       public static final BuilderCodec<ObjectivePlugin.ObjectivePluginConfig> CODEC = BuilderCodec.builder(
             ObjectivePlugin.ObjectivePluginConfig.class, ObjectivePlugin.ObjectivePluginConfig::new
          )

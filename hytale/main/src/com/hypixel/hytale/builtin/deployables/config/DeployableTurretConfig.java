@@ -264,7 +264,10 @@ public class DeployableTurretConfig extends DeployableConfig {
       DeployableProjectileShooterComponent shooterComponent = store.getComponent(ref, DeployableProjectileShooterComponent.getComponentType());
       Vector3d spawnPos = Vector3d.ZERO.clone();
       if (this.projectileSpawnOffsets != null) {
-         spawnPos.add(this.projectileSpawnOffsets.get(component.getSpawnFace()));
+         Vector3d spawnOffset = this.projectileSpawnOffsets.get(component.getSpawnFace());
+         if (spawnOffset != null) {
+            spawnPos.add(spawnOffset);
+         }
       }
 
       if (shooterComponent == null) {
@@ -359,19 +362,24 @@ public class DeployableTurretConfig extends DeployableConfig {
             Vector3d rootPos = transformComponent.getPosition();
             Vector3d projectileSpawnPos = Vector3d.ZERO.clone();
             if (this.projectileSpawnOffsets != null) {
-               projectileSpawnPos = this.projectileSpawnOffsets.get(component.getSpawnFace()).clone();
+               projectileSpawnPos = this.projectileSpawnOffsets.getOrDefault(component.getSpawnFace(), Vector3d.ZERO).clone();
             }
 
             projectileSpawnPos.add(fwdDirection.clone().normalize());
             projectileSpawnPos.add(rootPos);
-            UUID uuid = store.getComponent(ref, UUIDComponent.getComponentType()).getUuid();
-            shooterComponent.spawnProjectile(ref, commandBuffer, this.projectileConfig, uuid, projectileSpawnPos, fwdDirection.clone());
+            UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
+            if (uuidComponent != null) {
+               UUID uuid = uuidComponent.getUuid();
+               shooterComponent.spawnProjectile(ref, commandBuffer, this.projectileConfig, uuid, projectileSpawnPos, fwdDirection.clone());
+            }
+
             playAnimation(store, ref, this, "Shoot");
             component.setTimeSinceLastAttack(0.0F);
          }
       }
    }
 
+   @Nonnull
    private Vector3d calculatedTargetPosition(@Nonnull Vector3d original) {
       return Vector3d.add(original.clone(), this.targetOffset);
    }
@@ -411,8 +419,12 @@ public class DeployableTurretConfig extends DeployableConfig {
                return false;
             } else {
                BlockType blockType = BlockType.getAssetMap().getAsset(id);
-               BlockMaterial material = blockType.getMaterial();
-               return material == BlockMaterial.Empty ? false : blockType.getOpacity() != Opacity.Transparent;
+               if (blockType == null) {
+                  return false;
+               } else {
+                  BlockMaterial material = blockType.getMaterial();
+                  return material != null && material != BlockMaterial.Empty ? blockType.getOpacity() != Opacity.Transparent : false;
+               }
             }
          }, attackerPos.x, attackerPos.y, attackerPos.z, direction.x, direction.y, direction.z, distance);
          if (blockPosition == null) {
@@ -457,44 +469,46 @@ public class DeployableTurretConfig extends DeployableConfig {
          shooterComponent.getProjectilesForRemoval().add(projectileRef);
       } else {
          TransformComponent projTransformComponent = store.getComponent(projectileRef, TransformComponent.getComponentType());
-
-         assert projTransformComponent != null;
-
-         Vector3d projPos = projTransformComponent.getPosition();
-         AtomicReference<Boolean> hit = new AtomicReference<>(Boolean.FALSE);
-         DeployableProjectileComponent dProjComponent = store.getComponent(projectileRef, DeployableProjectileComponent.getComponentType());
-
-         assert dProjComponent != null;
-
-         Vector3d prevPos = dProjComponent.getPreviousTickPosition();
-         Vector3d increment = new Vector3d((projPos.x - prevPos.x) * 0.1F, (projPos.y - prevPos.y) * 0.1F, (projPos.z - prevPos.z) * 0.1F);
-
-         for (int j = 0; j < 10; j++) {
-            if (!hit.get()) {
-               Vector3d scanPos = dProjComponent.getPreviousTickPosition().clone();
-               scanPos.x = scanPos.x + increment.x * j;
-               scanPos.y = scanPos.y + increment.y * j;
-               scanPos.z = scanPos.z + increment.z * j;
-               if (this.getDebugVisuals()) {
-                  DebugUtils.addSphere(store.getExternalData().getWorld(), scanPos, new Vector3f(1.0F, 1.0F, 1.0F), 0.1F, 5.0F);
-               }
-
-               for (Ref<EntityStore> targetEntityRef : TargetUtil.getAllEntitiesInSphere(scanPos, 0.1, store)) {
-                  if (hit.get()) {
-                     return;
-                  }
-
-                  this.projectileHit(targetEntityRef, projectileRef, shooterComponent, store, commandBuffer);
-                  hit.set(Boolean.TRUE);
-               }
-            }
-         }
-
-         dProjComponent.setPreviousTickPosition(projPos);
-         if (!hit.get()) {
-            StandardPhysicsProvider physics = store.getComponent(projectileRef, StandardPhysicsProvider.getComponentType());
-            if (physics != null && physics.getState() != StandardPhysicsProvider.STATE.ACTIVE) {
+         if (projTransformComponent == null) {
+            shooterComponent.getProjectilesForRemoval().add(projectileRef);
+         } else {
+            Vector3d projPos = projTransformComponent.getPosition();
+            AtomicReference<Boolean> hit = new AtomicReference<>(Boolean.FALSE);
+            DeployableProjectileComponent deployableProjectileComponent = store.getComponent(projectileRef, DeployableProjectileComponent.getComponentType());
+            if (deployableProjectileComponent == null) {
                shooterComponent.getProjectilesForRemoval().add(projectileRef);
+            } else {
+               Vector3d prevPos = deployableProjectileComponent.getPreviousTickPosition();
+               Vector3d increment = new Vector3d((projPos.x - prevPos.x) * 0.1F, (projPos.y - prevPos.y) * 0.1F, (projPos.z - prevPos.z) * 0.1F);
+
+               for (int j = 0; j < 10; j++) {
+                  if (!hit.get()) {
+                     Vector3d scanPos = deployableProjectileComponent.getPreviousTickPosition().clone();
+                     scanPos.x = scanPos.x + increment.x * j;
+                     scanPos.y = scanPos.y + increment.y * j;
+                     scanPos.z = scanPos.z + increment.z * j;
+                     if (this.getDebugVisuals()) {
+                        DebugUtils.addSphere(store.getExternalData().getWorld(), scanPos, new Vector3f(1.0F, 1.0F, 1.0F), 0.1F, 5.0F);
+                     }
+
+                     for (Ref<EntityStore> targetEntityRef : TargetUtil.getAllEntitiesInSphere(scanPos, 0.1, store)) {
+                        if (hit.get()) {
+                           return;
+                        }
+
+                        this.projectileHit(targetEntityRef, projectileRef, shooterComponent, store, commandBuffer);
+                        hit.set(Boolean.TRUE);
+                     }
+                  }
+               }
+
+               deployableProjectileComponent.setPreviousTickPosition(projPos);
+               if (!hit.get()) {
+                  StandardPhysicsProvider physicsComponent = store.getComponent(projectileRef, StandardPhysicsProvider.getComponentType());
+                  if (physicsComponent != null && physicsComponent.getState() != StandardPhysicsProvider.STATE.ACTIVE) {
+                     shooterComponent.getProjectilesForRemoval().add(projectileRef);
+                  }
+               }
             }
          }
       }
@@ -541,6 +555,7 @@ public class DeployableTurretConfig extends DeployableConfig {
       knockbackComponent.setDuration(this.projectileKnockback.getDuration());
    }
 
+   @Nonnull
    @Override
    public String toString() {
       return "DeployableTurretConfig{}" + super.toString();

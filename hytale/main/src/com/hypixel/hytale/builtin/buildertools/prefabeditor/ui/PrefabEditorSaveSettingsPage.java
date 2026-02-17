@@ -75,6 +75,7 @@ public class PrefabEditorSaveSettingsPage extends InteractiveCustomUIPage<Prefab
       commandBuilder.set("#MainPage #Entities #CheckBox.Value", true);
       commandBuilder.set("#MainPage #Empty #CheckBox.Value", false);
       commandBuilder.set("#MainPage #Overwrite #CheckBox.Value", true);
+      commandBuilder.set("#MainPage #ClearSupport #CheckBox.Value", false);
       commandBuilder.set("#SavingPage.Visible", false);
       commandBuilder.set("#SavingPage #ProgressBar.Value", 0.0F);
       commandBuilder.set("#SavingPage #StatusText.TextSpans", Message.translation("server.commands.editprefab.save.saving"));
@@ -88,6 +89,7 @@ public class PrefabEditorSaveSettingsPage extends InteractiveCustomUIPage<Prefab
             .append("@Entities", "#MainPage #Entities #CheckBox.Value")
             .append("@Empty", "#MainPage #Empty #CheckBox.Value")
             .append("@Overwrite", "#MainPage #Overwrite #CheckBox.Value")
+            .append("@ClearSupport", "#MainPage #ClearSupport #CheckBox.Value")
       );
       eventBuilder.addEventBinding(
          CustomUIEventBindingType.Activating, "#MainPage #CancelButton", new EventData().append("Action", PrefabEditorSaveSettingsPage.Action.Cancel.name())
@@ -168,6 +170,7 @@ public class PrefabEditorSaveSettingsPage extends InteractiveCustomUIPage<Prefab
             prefabSaverSettings.setEntities(data.entities);
             prefabSaverSettings.setEmpty(data.empty);
             prefabSaverSettings.setOverwriteExisting(data.overwrite);
+            prefabSaverSettings.setClearSupportValues(data.clearSupport);
             String[] prefabPaths = prefabsToSaveStr.split(",");
             List<PrefabEditingMetadata> prefabsToSave = new ObjectArrayList();
 
@@ -496,6 +499,7 @@ public class PrefabEditorSaveSettingsPage extends InteractiveCustomUIPage<Prefab
       public static final String ENTITIES = "@Entities";
       public static final String EMPTY = "@Empty";
       public static final String OVERWRITE = "@Overwrite";
+      public static final String CLEAR_SUPPORT = "@ClearSupport";
       public static final String BROWSER_SEARCH = "@BrowserSearch";
       public static final String PREFAB_UUID = "PrefabUuid";
       public static final BuilderCodec<PrefabEditorSaveSettingsPage.PageData> CODEC = BuilderCodec.builder(
@@ -515,6 +519,8 @@ public class PrefabEditorSaveSettingsPage extends InteractiveCustomUIPage<Prefab
          .add()
          .append(new KeyedCodec<>("@Overwrite", Codec.BOOLEAN), (o, overwrite) -> o.overwrite = overwrite, o -> o.overwrite)
          .add()
+         .append(new KeyedCodec<>("@ClearSupport", Codec.BOOLEAN), (o, clearSupport) -> o.clearSupport = clearSupport, o -> o.clearSupport)
+         .add()
          .append(new KeyedCodec<>("@BrowserSearch", Codec.STRING), (o, browserSearchStr) -> o.browserSearchStr = browserSearchStr, o -> o.browserSearchStr)
          .add()
          .append(new KeyedCodec<>("PrefabUuid", Codec.STRING), (o, prefabUuid) -> o.prefabUuid = prefabUuid, o -> o.prefabUuid)
@@ -525,6 +531,7 @@ public class PrefabEditorSaveSettingsPage extends InteractiveCustomUIPage<Prefab
       public boolean entities = true;
       public boolean empty = false;
       public boolean overwrite = true;
+      public boolean clearSupport = false;
       public String browserSearchStr;
       public String prefabUuid;
 

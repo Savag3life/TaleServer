@@ -15,6 +15,7 @@ import com.hypixel.hytale.protocol.packets.inventory.SetCreativeItem;
 import com.hypixel.hytale.protocol.packets.inventory.SmartGiveCreativeItem;
 import com.hypixel.hytale.protocol.packets.inventory.SmartMoveItemStack;
 import com.hypixel.hytale.protocol.packets.inventory.SwitchHotbarBlockSet;
+import com.hypixel.hytale.protocol.packets.window.WindowType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.item.config.BlockGroup;
 import com.hypixel.hytale.server.core.asset.type.item.config.BlockSelectorToolData;
@@ -38,6 +39,7 @@ import com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction
 import com.hypixel.hytale.server.core.io.PacketHandler;
 import com.hypixel.hytale.server.core.io.handlers.IPacketHandler;
 import com.hypixel.hytale.server.core.io.handlers.SubPacketHandler;
+import com.hypixel.hytale.server.core.modules.entity.player.PlayerSettings;
 import com.hypixel.hytale.server.core.modules.item.ItemModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
@@ -254,32 +256,34 @@ public class InventoryPacketHandler implements SubPacketHandler {
                } else {
                   Inventory inventory = playerComponent.getInventory();
                   ItemStack itemStack = ItemStack.fromPacket(packet.item);
-                  switch (packet.moveType) {
-                     case EquipOrMergeStack:
-                        Item item = itemStack.getItem();
-                        ItemArmor itemArmor = item.getArmor();
-                        if (itemArmor != null) {
-                           inventory.getArmor().setItemStackForSlot((short)itemArmor.getArmorSlot().ordinal(), itemStack);
-                           return;
-                        }
-
-                        int quantity = itemStack.getQuantity();
-                        if (item.getUtility().isUsable()) {
-                           ItemStackTransaction transaction = inventory.getUtility().addItemStack(itemStack);
-                           ItemStack remainder = transaction.getRemainder();
-                           if (ItemStack.isEmpty(remainder) || remainder.getQuantity() != quantity) {
-                              for (ItemStackSlotTransaction slotTransaction : transaction.getSlotTransactions()) {
-                                 if (slotTransaction.succeeded()) {
-                                    inventory.setActiveUtilitySlot((byte)slotTransaction.getSlot());
-                                 }
-                              }
+                  if (itemStack != null) {
+                     switch (packet.moveType) {
+                        case EquipOrMergeStack:
+                           Item item = itemStack.getItem();
+                           ItemArmor itemArmor = item.getArmor();
+                           if (itemArmor != null) {
+                              inventory.getArmor().setItemStackForSlot((short)itemArmor.getArmorSlot().ordinal(), itemStack);
+                              return;
                            }
 
-                           return;
-                        }
-                        break;
-                     case PutInHotbarOrWindow:
-                        inventory.getCombinedHotbarFirst().addItemStack(itemStack);
+                           int quantity = itemStack.getQuantity();
+                           if (item.getUtility().isUsable()) {
+                              ItemStackTransaction transaction = inventory.getUtility().addItemStack(itemStack);
+                              ItemStack remainder = transaction.getRemainder();
+                              if (ItemStack.isEmpty(remainder) || remainder.getQuantity() != quantity) {
+                                 for (ItemStackSlotTransaction slotTransaction : transaction.getSlotTransactions()) {
+                                    if (slotTransaction.succeeded()) {
+                                       inventory.setActiveUtilitySlot((byte)slotTransaction.getSlot());
+                                    }
+                                 }
+                              }
+
+                              return;
+                           }
+                           break;
+                        case PutInHotbarOrWindow:
+                           playerComponent.giveItem(itemStack, ref, store);
+                     }
                   }
                }
             }
@@ -374,7 +378,12 @@ public class InventoryPacketHandler implements SubPacketHandler {
             assert playerComponent != null;
 
             Inventory inventory = playerComponent.getInventory();
-            inventory.smartMoveItem(packet.fromSectionId, packet.fromSlotId, packet.quantity, packet.moveType);
+            PlayerSettings settings = store.getComponent(ref, PlayerSettings.getComponentType());
+            if (settings == null) {
+               settings = PlayerSettings.defaults();
+            }
+
+            inventory.smartMoveItem(packet.fromSectionId, packet.fromSlotId, packet.quantity, packet.moveType, settings);
          });
       }
    }
@@ -428,62 +437,77 @@ public class InventoryPacketHandler implements SubPacketHandler {
          if (packet.inventorySectionId >= 0 || packet.inventorySectionId == -9) {
             Store<EntityStore> store = ref.getStore();
             World world = store.getExternalData().getWorld();
-            world.execute(() -> {
-               Player playerComponent = store.getComponent(ref, Player.getComponentType());
+            world.execute(
+               () -> {
+                  Player playerComponent = store.getComponent(ref, Player.getComponentType());
 
-               assert playerComponent != null;
+                  assert playerComponent != null;
 
-               Inventory inventory = playerComponent.getInventory();
-               switch (packet.inventoryActionType) {
-                  case TakeAll:
-                     if (packet.inventorySectionId == -9) {
-                        inventory.takeAll(packet.inventorySectionId);
-                        return;
-                     }
+                  Inventory inventory = playerComponent.getInventory();
+                  PlayerSettings settings = store.getComponent(ref, PlayerSettings.getComponentType());
+                  if (settings == null) {
+                     settings = PlayerSettings.defaults();
+                  }
 
-                     Window window = playerComponent.getWindowManager().getWindow(packet.inventorySectionId);
-                     if (window instanceof ItemContainerWindow) {
-                        inventory.takeAll(packet.inventorySectionId);
-                     }
-                     break;
-                  case PutAll:
-                     if (packet.inventorySectionId == -9) {
-                        inventory.putAll(packet.inventorySectionId);
-                        return;
-                     }
-
-                     Window window = playerComponent.getWindowManager().getWindow(packet.inventorySectionId);
-                     if (window instanceof ItemContainerWindow) {
-                        inventory.putAll(packet.inventorySectionId);
-                     }
-                     break;
-                  case QuickStack:
-                     if (packet.inventorySectionId == -9) {
-                        inventory.quickStack(packet.inventorySectionId);
-                        return;
-                     }
-
-                     Window window = playerComponent.getWindowManager().getWindow(packet.inventorySectionId);
-                     if (window instanceof ItemContainerWindow) {
-                        inventory.quickStack(packet.inventorySectionId);
-                     }
-                     break;
-                  case Sort:
-                     SortType sortType = SortType.VALUES[packet.actionData];
-                     if (packet.inventorySectionId == 0) {
-                        inventory.sortStorage(sortType);
-                     } else {
-                        if (packet.inventorySectionId == -9 && inventory.getBackpack() != null) {
-                           inventory.getBackpack().sortItems(sortType);
+                  switch (packet.inventoryActionType) {
+                     case TakeAll:
+                        if (packet.inventorySectionId == -9) {
+                           inventory.takeAll(packet.inventorySectionId, settings);
                            return;
                         }
 
-                        if (playerComponent.getWindowManager().getWindow(packet.inventorySectionId) instanceof ItemContainerWindow itemContainerWindow) {
-                           itemContainerWindow.getItemContainer().sortItems(sortType);
+                        Window window = playerComponent.getWindowManager().getWindow(packet.inventorySectionId);
+                        if (window instanceof ItemContainerWindow itemContainerWindow) {
+                           if (window.getType() == WindowType.Processing) {
+                              if (itemContainerWindow.getItemContainer() instanceof CombinedItemContainer combinedItemContainer
+                                 && combinedItemContainer.getContainersSize() >= 3) {
+                                 ItemContainer outputContainer = combinedItemContainer.getContainer(2);
+                                 inventory.takeAllWithPriority(outputContainer, settings);
+                              }
+                           } else {
+                              inventory.takeAll(packet.inventorySectionId, settings);
+                           }
                         }
-                     }
+                        break;
+                     case PutAll:
+                        if (packet.inventorySectionId == -9) {
+                           inventory.putAll(packet.inventorySectionId);
+                           return;
+                        }
+
+                        Window window = playerComponent.getWindowManager().getWindow(packet.inventorySectionId);
+                        if (window instanceof ItemContainerWindow) {
+                           inventory.putAll(packet.inventorySectionId);
+                        }
+                        break;
+                     case QuickStack:
+                        if (packet.inventorySectionId == -9) {
+                           inventory.quickStack(packet.inventorySectionId);
+                           return;
+                        }
+
+                        Window window = playerComponent.getWindowManager().getWindow(packet.inventorySectionId);
+                        if (window instanceof ItemContainerWindow) {
+                           inventory.quickStack(packet.inventorySectionId);
+                        }
+                        break;
+                     case Sort:
+                        SortType sortType = SortType.VALUES[packet.actionData];
+                        if (packet.inventorySectionId == 0) {
+                           inventory.sortStorage(sortType);
+                        } else {
+                           if (packet.inventorySectionId == -9 && inventory.getBackpack() != null) {
+                              inventory.getBackpack().sortItems(sortType);
+                              return;
+                           }
+
+                           if (playerComponent.getWindowManager().getWindow(packet.inventorySectionId) instanceof ItemContainerWindow itemContainerWindow) {
+                              itemContainerWindow.getItemContainer().sortItems(sortType);
+                           }
+                        }
+                  }
                }
-            });
+            );
          }
       }
    }

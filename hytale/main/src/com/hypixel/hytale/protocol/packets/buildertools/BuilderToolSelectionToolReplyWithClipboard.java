@@ -1,6 +1,8 @@
 package com.hypixel.hytale.protocol.packets.buildertools;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import com.hypixel.hytale.protocol.io.VarInt;
@@ -11,7 +13,7 @@ import java.util.Arrays;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class BuilderToolSelectionToolReplyWithClipboard implements Packet {
+public class BuilderToolSelectionToolReplyWithClipboard implements Packet, ToClientPacket {
    public static final int PACKET_ID = 411;
    public static final boolean IS_COMPRESSED = true;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -27,6 +29,11 @@ public class BuilderToolSelectionToolReplyWithClipboard implements Packet {
    @Override
    public int getId() {
       return 411;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public BuilderToolSelectionToolReplyWithClipboard() {

@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class BlockSetPatternAsset extends PatternAsset {
+   @Nonnull
    public static final BuilderCodec<BlockSetPatternAsset> CODEC = BuilderCodec.builder(
          BlockSetPatternAsset.class, BlockSetPatternAsset::new, PatternAsset.ABSTRACT_CODEC
       )

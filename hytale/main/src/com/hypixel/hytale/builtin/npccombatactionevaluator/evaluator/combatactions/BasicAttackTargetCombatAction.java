@@ -19,6 +19,7 @@ import javax.annotation.Nonnull;
 
 public class BasicAttackTargetCombatAction extends CombatActionOption {
    private static final double BASIC_ATTACK_DISTANCE_OFFSET = 0.1;
+   @Nonnull
    public static final BuilderCodec<BasicAttackTargetCombatAction> CODEC = BuilderCodec.builder(
          BasicAttackTargetCombatAction.class, BasicAttackTargetCombatAction::new, Option.ABSTRACT_CODEC
       )

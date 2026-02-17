@@ -2,7 +2,7 @@ package com.hypixel.hytale.server.core.asset.type.fluid;
 
 import com.hypixel.hytale.assetstore.AssetUpdateQuery;
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateFluids;
 import com.hypixel.hytale.server.core.asset.packet.AssetPacketGenerator;
@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
 
 public class FluidTypePacketGenerator extends AssetPacketGenerator<String, Fluid, IndexedLookupTableAssetMap<String, Fluid>> {
    @Nonnull
-   public Packet generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, Fluid> assetMap, @Nonnull Map<String, Fluid> assets) {
+   public ToClientPacket generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, Fluid> assetMap, @Nonnull Map<String, Fluid> assets) {
       UpdateFluids packet = new UpdateFluids();
       packet.type = UpdateType.Init;
       HashMap<Integer, com.hypixel.hytale.protocol.Fluid> fluidTypes = new HashMap<>();
@@ -34,7 +34,7 @@ public class FluidTypePacketGenerator extends AssetPacketGenerator<String, Fluid
    }
 
    @Nonnull
-   public Packet generateUpdatePacket(
+   public ToClientPacket generateUpdatePacket(
       @Nonnull IndexedLookupTableAssetMap<String, Fluid> assetMap, @Nonnull Map<String, Fluid> loadedAssets, @Nonnull AssetUpdateQuery query
    ) {
       UpdateFluids packet = new UpdateFluids();
@@ -56,7 +56,7 @@ public class FluidTypePacketGenerator extends AssetPacketGenerator<String, Fluid
    }
 
    @Nonnull
-   public Packet generateRemovePacket(
+   public ToClientPacket generateRemovePacket(
       @Nonnull IndexedLookupTableAssetMap<String, Fluid> assetMap, @Nonnull Set<String> removed, @Nonnull AssetUpdateQuery query
    ) {
       UpdateFluids packet = new UpdateFluids();

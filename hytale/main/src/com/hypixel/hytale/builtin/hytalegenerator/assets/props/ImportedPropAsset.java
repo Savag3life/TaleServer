@@ -8,6 +8,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import javax.annotation.Nonnull;
 
 public class ImportedPropAsset extends PropAsset {
+   @Nonnull
    public static final BuilderCodec<ImportedPropAsset> CODEC = BuilderCodec.builder(ImportedPropAsset.class, ImportedPropAsset::new, PropAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Name", Codec.STRING, true), (asset, v) -> asset.name = v, asset -> asset.name)
       .add()

@@ -10,6 +10,7 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import javax.annotation.Nonnull;
 
 public class RangeIntAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, RangeIntAsset>> {
+   @Nonnull
    public static final AssetBuilderCodec<String, RangeIntAsset> CODEC = AssetBuilderCodec.builder(
          RangeIntAsset.class,
          RangeIntAsset::new,

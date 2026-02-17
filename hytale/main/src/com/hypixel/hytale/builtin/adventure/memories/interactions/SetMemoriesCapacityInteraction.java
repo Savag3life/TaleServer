@@ -21,6 +21,15 @@ import com.hypixel.hytale.server.core.util.NotificationUtil;
 import javax.annotation.Nonnull;
 
 public class SetMemoriesCapacityInteraction extends SimpleInstantInteraction {
+   @Nonnull
+   private static final String NOTIFICATION_ICON_MEMORIES = "NotificationIcons/MemoriesIcon.png";
+   @Nonnull
+   private static final Message MESSAGE_SERVER_MEMORIES_GENERAL_FEATURE_UNLOCKED_NOTIFICATION = Message.translation(
+      "server.memories.general.featureUnlockedNotification"
+   );
+   @Nonnull
+   private static final Message MESSAGE_SERVER_MEMORIES_GENERAL_FEATURE_UNLOCKED_MESSAGE = Message.translation("server.memories.general.featureUnlockedMessage");
+   @Nonnull
    public static final BuilderCodec<SetMemoriesCapacityInteraction> CODEC = BuilderCodec.builder(
          SetMemoriesCapacityInteraction.class, SetMemoriesCapacityInteraction::new, SimpleInstantInteraction.CODEC
       )
@@ -48,15 +57,14 @@ public class SetMemoriesCapacityInteraction extends SimpleInstantInteraction {
          memoriesComponent.setMemoriesCapacity(this.capacity);
          if (previousCapacity <= 0) {
             PlayerRef playerRefComponent = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
-
-            assert playerRefComponent != null;
-
-            PacketHandler playerConnection = playerRefComponent.getPacketHandler();
-            playerConnection.writeNoCache(new UpdateMemoriesFeatureStatus(true));
-            NotificationUtil.sendNotification(
-               playerConnection, Message.translation("server.memories.general.featureUnlockedNotification"), null, "NotificationIcons/MemoriesIcon.png"
-            );
-            playerRefComponent.sendMessage(Message.translation("server.memories.general.featureUnlockedMessage"));
+            if (playerRefComponent != null) {
+               PacketHandler playerConnection = playerRefComponent.getPacketHandler();
+               playerConnection.writeNoCache(new UpdateMemoriesFeatureStatus(true));
+               NotificationUtil.sendNotification(
+                  playerConnection, MESSAGE_SERVER_MEMORIES_GENERAL_FEATURE_UNLOCKED_NOTIFICATION, null, "NotificationIcons/MemoriesIcon.png"
+               );
+               playerRefComponent.sendMessage(MESSAGE_SERVER_MEMORIES_GENERAL_FEATURE_UNLOCKED_MESSAGE);
+            }
          }
 
          context.getState().state = InteractionState.Finished;

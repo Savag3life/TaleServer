@@ -17,12 +17,18 @@ public class WallPattern extends Pattern {
    private final List<WallPattern.WallDirection> directions;
    private final boolean matchAll;
    private final SpaceSize readSpaceSize;
+   @Nonnull
+   private final Vector3i rWallPosition;
+   @Nonnull
+   private final Pattern.Context rWallContext;
 
    public WallPattern(@Nonnull Pattern wallPattern, @Nonnull Pattern originPattern, @Nonnull List<WallPattern.WallDirection> wallDirections, boolean matchAll) {
       this.wallPattern = wallPattern;
       this.originPattern = originPattern;
       this.directions = new ArrayList<>(wallDirections);
       this.matchAll = matchAll;
+      this.rWallPosition = new Vector3i();
+      this.rWallContext = new Pattern.Context();
       SpaceSize originSpace = originPattern.readSpace();
       SpaceSize wallSpace = wallPattern.readSpace();
       SpaceSize totalSpace = originSpace;
@@ -57,24 +63,24 @@ public class WallPattern extends Pattern {
    }
 
    private boolean matches(@Nonnull Pattern.Context context, @Nonnull WallPattern.WallDirection direction) {
-      Vector3i wallPosition = context.position.clone();
+      this.rWallPosition.assign(context.position);
       switch (direction) {
          case N:
-            wallPosition.z--;
+            this.rWallPosition.z--;
             break;
          case S:
-            wallPosition.z++;
+            this.rWallPosition.z++;
             break;
          case E:
-            wallPosition.x++;
+            this.rWallPosition.x++;
             break;
          case W:
-            wallPosition.x--;
+            this.rWallPosition.x--;
       }
 
-      Pattern.Context wallContext = new Pattern.Context(context);
-      wallContext.position = wallPosition;
-      return this.originPattern.matches(context) && this.wallPattern.matches(wallContext);
+      this.rWallContext.assign(context);
+      this.rWallContext.position = this.rWallPosition;
+      return this.originPattern.matches(context) && this.wallPattern.matches(this.rWallContext);
    }
 
    @Nonnull
@@ -89,6 +95,7 @@ public class WallPattern extends Pattern {
       E,
       W;
 
+      @Nonnull
       public static final Codec<WallPattern.WallDirection> CODEC = new EnumCodec<>(WallPattern.WallDirection.class, EnumCodec.EnumStyle.LEGACY);
    }
 }

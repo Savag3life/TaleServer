@@ -18,8 +18,8 @@ public class BenchRequirement {
    public static final int MAX_SIZE = 1677721600;
    @Nonnull
    public BenchType type = BenchType.Crafting;
-   @Nullable
-   public String id;
+   @Nonnull
+   public String id = "";
    @Nullable
    public String[] categories;
    public int requiredTierLevel;
@@ -27,7 +27,7 @@ public class BenchRequirement {
    public BenchRequirement() {
    }
 
-   public BenchRequirement(@Nonnull BenchType type, @Nullable String id, @Nullable String[] categories, int requiredTierLevel) {
+   public BenchRequirement(@Nonnull BenchType type, @Nonnull String id, @Nullable String[] categories, int requiredTierLevel) {
       this.type = type;
       this.id = id;
       this.categories = categories;
@@ -47,84 +47,77 @@ public class BenchRequirement {
       byte nullBits = buf.getByte(offset);
       obj.type = BenchType.fromValue(buf.getByte(offset + 1));
       obj.requiredTierLevel = buf.getIntLE(offset + 2);
-      if ((nullBits & 1) != 0) {
-         int varPos0 = offset + 14 + buf.getIntLE(offset + 6);
-         int idLen = VarInt.peek(buf, varPos0);
-         if (idLen < 0) {
-            throw ProtocolException.negativeLength("Id", idLen);
-         }
-
-         if (idLen > 4096000) {
-            throw ProtocolException.stringTooLong("Id", idLen, 4096000);
-         }
-
+      int varPos0 = offset + 14 + buf.getIntLE(offset + 6);
+      int idLen = VarInt.peek(buf, varPos0);
+      if (idLen < 0) {
+         throw ProtocolException.negativeLength("Id", idLen);
+      } else if (idLen > 4096000) {
+         throw ProtocolException.stringTooLong("Id", idLen, 4096000);
+      } else {
          obj.id = PacketIO.readVarString(buf, varPos0, PacketIO.UTF8);
-      }
-
-      if ((nullBits & 2) != 0) {
-         int varPos1 = offset + 14 + buf.getIntLE(offset + 10);
-         int categoriesCount = VarInt.peek(buf, varPos1);
-         if (categoriesCount < 0) {
-            throw ProtocolException.negativeLength("Categories", categoriesCount);
-         }
-
-         if (categoriesCount > 4096000) {
-            throw ProtocolException.arrayTooLong("Categories", categoriesCount, 4096000);
-         }
-
-         int varIntLen = VarInt.length(buf, varPos1);
-         if (varPos1 + varIntLen + categoriesCount * 1L > buf.readableBytes()) {
-            throw ProtocolException.bufferTooSmall("Categories", varPos1 + varIntLen + categoriesCount * 1, buf.readableBytes());
-         }
-
-         obj.categories = new String[categoriesCount];
-         int elemPos = varPos1 + varIntLen;
-
-         for (int i = 0; i < categoriesCount; i++) {
-            int strLen = VarInt.peek(buf, elemPos);
-            if (strLen < 0) {
-               throw ProtocolException.negativeLength("categories[" + i + "]", strLen);
+         if ((nullBits & 1) != 0) {
+            varPos0 = offset + 14 + buf.getIntLE(offset + 10);
+            idLen = VarInt.peek(buf, varPos0);
+            if (idLen < 0) {
+               throw ProtocolException.negativeLength("Categories", idLen);
             }
 
-            if (strLen > 4096000) {
-               throw ProtocolException.stringTooLong("categories[" + i + "]", strLen, 4096000);
+            if (idLen > 4096000) {
+               throw ProtocolException.arrayTooLong("Categories", idLen, 4096000);
             }
 
-            int strVarLen = VarInt.length(buf, elemPos);
-            obj.categories[i] = PacketIO.readVarString(buf, elemPos);
-            elemPos += strVarLen + strLen;
-         }
-      }
+            int varIntLen = VarInt.length(buf, varPos0);
+            if (varPos0 + varIntLen + idLen * 1L > buf.readableBytes()) {
+               throw ProtocolException.bufferTooSmall("Categories", varPos0 + varIntLen + idLen * 1, buf.readableBytes());
+            }
 
-      return obj;
+            obj.categories = new String[idLen];
+            int elemPos = varPos0 + varIntLen;
+
+            for (int i = 0; i < idLen; i++) {
+               int strLen = VarInt.peek(buf, elemPos);
+               if (strLen < 0) {
+                  throw ProtocolException.negativeLength("categories[" + i + "]", strLen);
+               }
+
+               if (strLen > 4096000) {
+                  throw ProtocolException.stringTooLong("categories[" + i + "]", strLen, 4096000);
+               }
+
+               int strVarLen = VarInt.length(buf, elemPos);
+               obj.categories[i] = PacketIO.readVarString(buf, elemPos);
+               elemPos += strVarLen + strLen;
+            }
+         }
+
+         return obj;
+      }
    }
 
    public static int computeBytesConsumed(@Nonnull ByteBuf buf, int offset) {
       byte nullBits = buf.getByte(offset);
       int maxEnd = 14;
-      if ((nullBits & 1) != 0) {
-         int fieldOffset0 = buf.getIntLE(offset + 6);
-         int pos0 = offset + 14 + fieldOffset0;
-         int sl = VarInt.peek(buf, pos0);
-         pos0 += VarInt.length(buf, pos0) + sl;
-         if (pos0 - offset > maxEnd) {
-            maxEnd = pos0 - offset;
-         }
+      int fieldOffset0 = buf.getIntLE(offset + 6);
+      int pos0 = offset + 14 + fieldOffset0;
+      int sl = VarInt.peek(buf, pos0);
+      pos0 += VarInt.length(buf, pos0) + sl;
+      if (pos0 - offset > maxEnd) {
+         maxEnd = pos0 - offset;
       }
 
-      if ((nullBits & 2) != 0) {
-         int fieldOffset1 = buf.getIntLE(offset + 10);
-         int pos1 = offset + 14 + fieldOffset1;
-         int arrLen = VarInt.peek(buf, pos1);
-         pos1 += VarInt.length(buf, pos1);
+      if ((nullBits & 1) != 0) {
+         fieldOffset0 = buf.getIntLE(offset + 10);
+         pos0 = offset + 14 + fieldOffset0;
+         sl = VarInt.peek(buf, pos0);
+         pos0 += VarInt.length(buf, pos0);
 
-         for (int i = 0; i < arrLen; i++) {
-            int sl = VarInt.peek(buf, pos1);
-            pos1 += VarInt.length(buf, pos1) + sl;
+         for (int i = 0; i < sl; i++) {
+            int slx = VarInt.peek(buf, pos0);
+            pos0 += VarInt.length(buf, pos0) + slx;
          }
 
-         if (pos1 - offset > maxEnd) {
-            maxEnd = pos1 - offset;
+         if (pos0 - offset > maxEnd) {
+            maxEnd = pos0 - offset;
          }
       }
 
@@ -134,12 +127,8 @@ public class BenchRequirement {
    public void serialize(@Nonnull ByteBuf buf) {
       int startPos = buf.writerIndex();
       byte nullBits = 0;
-      if (this.id != null) {
-         nullBits = (byte)(nullBits | 1);
-      }
-
       if (this.categories != null) {
-         nullBits = (byte)(nullBits | 2);
+         nullBits = (byte)(nullBits | 1);
       }
 
       buf.writeByte(nullBits);
@@ -150,13 +139,8 @@ public class BenchRequirement {
       int categoriesOffsetSlot = buf.writerIndex();
       buf.writeIntLE(0);
       int varBlockStart = buf.writerIndex();
-      if (this.id != null) {
-         buf.setIntLE(idOffsetSlot, buf.writerIndex() - varBlockStart);
-         PacketIO.writeVarString(buf, this.id, 4096000);
-      } else {
-         buf.setIntLE(idOffsetSlot, -1);
-      }
-
+      buf.setIntLE(idOffsetSlot, buf.writerIndex() - varBlockStart);
+      PacketIO.writeVarString(buf, this.id, 4096000);
       if (this.categories != null) {
          buf.setIntLE(categoriesOffsetSlot, buf.writerIndex() - varBlockStart);
          if (this.categories.length > 4096000) {
@@ -175,10 +159,7 @@ public class BenchRequirement {
 
    public int computeSize() {
       int size = 14;
-      if (this.id != null) {
-         size += PacketIO.stringSize(this.id);
-      }
-
+      size += PacketIO.stringSize(this.id);
       if (this.categories != null) {
          int categoriesSize = 0;
 
@@ -197,70 +178,66 @@ public class BenchRequirement {
          return ValidationResult.error("Buffer too small: expected at least 14 bytes");
       } else {
          byte nullBits = buffer.getByte(offset);
-         if ((nullBits & 1) != 0) {
-            int idOffset = buffer.getIntLE(offset + 6);
-            if (idOffset < 0) {
-               return ValidationResult.error("Invalid offset for Id");
-            }
-
+         int idOffset = buffer.getIntLE(offset + 6);
+         if (idOffset < 0) {
+            return ValidationResult.error("Invalid offset for Id");
+         } else {
             int pos = offset + 14 + idOffset;
             if (pos >= buffer.writerIndex()) {
                return ValidationResult.error("Offset out of bounds for Id");
-            }
+            } else {
+               int idLen = VarInt.peek(buffer, pos);
+               if (idLen < 0) {
+                  return ValidationResult.error("Invalid string length for Id");
+               } else if (idLen > 4096000) {
+                  return ValidationResult.error("Id exceeds max length 4096000");
+               } else {
+                  pos += VarInt.length(buffer, pos);
+                  pos += idLen;
+                  if (pos > buffer.writerIndex()) {
+                     return ValidationResult.error("Buffer overflow reading Id");
+                  } else {
+                     if ((nullBits & 1) != 0) {
+                        idOffset = buffer.getIntLE(offset + 10);
+                        if (idOffset < 0) {
+                           return ValidationResult.error("Invalid offset for Categories");
+                        }
 
-            int idLen = VarInt.peek(buffer, pos);
-            if (idLen < 0) {
-               return ValidationResult.error("Invalid string length for Id");
-            }
+                        pos = offset + 14 + idOffset;
+                        if (pos >= buffer.writerIndex()) {
+                           return ValidationResult.error("Offset out of bounds for Categories");
+                        }
 
-            if (idLen > 4096000) {
-               return ValidationResult.error("Id exceeds max length 4096000");
-            }
+                        idLen = VarInt.peek(buffer, pos);
+                        if (idLen < 0) {
+                           return ValidationResult.error("Invalid array count for Categories");
+                        }
 
-            pos += VarInt.length(buffer, pos);
-            pos += idLen;
-            if (pos > buffer.writerIndex()) {
-               return ValidationResult.error("Buffer overflow reading Id");
+                        if (idLen > 4096000) {
+                           return ValidationResult.error("Categories exceeds max length 4096000");
+                        }
+
+                        pos += VarInt.length(buffer, pos);
+
+                        for (int i = 0; i < idLen; i++) {
+                           int strLen = VarInt.peek(buffer, pos);
+                           if (strLen < 0) {
+                              return ValidationResult.error("Invalid string length in Categories");
+                           }
+
+                           pos += VarInt.length(buffer, pos);
+                           pos += strLen;
+                           if (pos > buffer.writerIndex()) {
+                              return ValidationResult.error("Buffer overflow reading string in Categories");
+                           }
+                        }
+                     }
+
+                     return ValidationResult.OK;
+                  }
+               }
             }
          }
-
-         if ((nullBits & 2) != 0) {
-            int categoriesOffset = buffer.getIntLE(offset + 10);
-            if (categoriesOffset < 0) {
-               return ValidationResult.error("Invalid offset for Categories");
-            }
-
-            int posx = offset + 14 + categoriesOffset;
-            if (posx >= buffer.writerIndex()) {
-               return ValidationResult.error("Offset out of bounds for Categories");
-            }
-
-            int categoriesCount = VarInt.peek(buffer, posx);
-            if (categoriesCount < 0) {
-               return ValidationResult.error("Invalid array count for Categories");
-            }
-
-            if (categoriesCount > 4096000) {
-               return ValidationResult.error("Categories exceeds max length 4096000");
-            }
-
-            posx += VarInt.length(buffer, posx);
-
-            for (int i = 0; i < categoriesCount; i++) {
-               int strLen = VarInt.peek(buffer, posx);
-               if (strLen < 0) {
-                  return ValidationResult.error("Invalid string length in Categories");
-               }
-
-               posx += VarInt.length(buffer, posx);
-               posx += strLen;
-               if (posx > buffer.writerIndex()) {
-                  return ValidationResult.error("Buffer overflow reading string in Categories");
-               }
-            }
-         }
-
-         return ValidationResult.OK;
       }
    }
 

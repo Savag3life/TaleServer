@@ -24,6 +24,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class LearnRecipeInteraction extends SimpleInstantInteraction {
+   @Nonnull
    public static final KeyedCodec<String> ITEM_ID = new KeyedCodec<>("ItemId", Codec.STRING);
    @Nonnull
    public static final BuilderCodec<LearnRecipeInteraction> CODEC = BuilderCodec.builder(
@@ -35,7 +36,6 @@ public class LearnRecipeInteraction extends SimpleInstantInteraction {
       )
       .add()
       .build();
-   public static final Message MESSAGE_MODULES_LEARN_RECIPE_INVALID_ITEM = Message.translation("server.modules.learnrecipe.invalidItem");
    @Nullable
    protected String itemId;
 

@@ -8,6 +8,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class ImportedAssignmentsAsset extends AssignmentsAsset {
+   @Nonnull
    public static final BuilderCodec<ImportedAssignmentsAsset> CODEC = BuilderCodec.builder(
          ImportedAssignmentsAsset.class, ImportedAssignmentsAsset::new, AssignmentsAsset.ABSTRACT_CODEC
       )

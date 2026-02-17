@@ -1,5 +1,6 @@
 package com.hypixel.hytale.protocol.io.netty;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -13,6 +14,7 @@ import java.time.Duration;
 import javax.annotation.Nonnull;
 
 public final class ProtocolUtil {
+   public static final AttributeKey<NetworkChannel> STREAM_CHANNEL_KEY = AttributeKey.newInstance("STREAM_CHANNEL_ID");
    public static final AttributeKey<Duration> PACKET_TIMEOUT_KEY = AttributeKey.newInstance("PACKET_TIMEOUT");
    public static final int APPLICATION_NO_ERROR = 0;
    public static final int APPLICATION_RATE_LIMITED = 1;

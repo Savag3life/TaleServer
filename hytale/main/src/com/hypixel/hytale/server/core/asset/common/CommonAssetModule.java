@@ -13,7 +13,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.logger.sentry.SkipSentryException;
 import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.protocol.Asset;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.packets.interface_.Notification;
 import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 import com.hypixel.hytale.protocol.packets.setup.AssetFinalize;
@@ -483,7 +483,7 @@ public class CommonAssetModule extends JavaPlugin {
          CommonAsset thisAsset = toSend.get(i);
          byte[] allBytes = thisAsset.getBlob().join();
          byte[][] parts = ArrayUtil.split(allBytes, 2621440);
-         Packet[] packets = new Packet[2 + parts.length];
+         ToClientPacket[] packets = new ToClientPacket[2 + parts.length];
          packets[0] = new AssetInitialize(thisAsset.toPacket(), allBytes.length);
 
          for (int partIndex = 0; partIndex < parts.length; partIndex++) {
@@ -505,11 +505,15 @@ public class CommonAssetModule extends JavaPlugin {
          CommonAsset thisAsset = toSend.get(i);
          byte[] allBytes = thisAsset.getBlob().join();
          byte[][] parts = ArrayUtil.split(allBytes, 2621440);
-         Packet[] packets = new Packet[2 + parts.length * 2];
+         ToClientPacket[] packets = new ToClientPacket[2 + parts.length * 2];
          packets[0] = new AssetInitialize(thisAsset.toPacket(), allBytes.length);
 
          for (int partIndex = 0; partIndex < parts.length; partIndex++) {
-            packets[1 + partIndex * 2] = new WorldLoadProgress("Loading asset " + thisAsset.getName(), thisPercent, 100 * partIndex / parts.length);
+            packets[1 + partIndex * 2] = new WorldLoadProgress(
+               Message.translation("client.general.worldLoad.loadingAsset").param("assetName", thisAsset.getName()).getFormattedMessage(),
+               thisPercent,
+               100 * partIndex / parts.length
+            );
             packets[1 + partIndex * 2 + 1] = new AssetPart(parts[partIndex]);
          }
 
@@ -528,7 +532,7 @@ public class CommonAssetModule extends JavaPlugin {
             this.getLogger().at(Level.WARNING).log("Failed to send asset: %s, %s", asset.getName(), asset.getHash());
          } else {
             byte[][] parts = ArrayUtil.split(allBytes, 2621440);
-            Packet[] packets = new Packet[2 + (forceRebuild ? 1 : 0) + parts.length];
+            ToClientPacket[] packets = new ToClientPacket[2 + (forceRebuild ? 1 : 0) + parts.length];
             packets[0] = new AssetInitialize(asset.toPacket(), allBytes.length);
 
             for (int i = 0; i < parts.length; i++) {
@@ -554,7 +558,7 @@ public class CommonAssetModule extends JavaPlugin {
       Message message = Message.translation("server.general.assetstore.removedAssets").param("class", "Common").color("#FF3874");
       int packetCountThreshold = 5;
       int packetsCount = 1 + (forceRebuild ? 1 : 0) + (assets.size() < 5 ? assets.size() : 1);
-      Packet[] packets = new Packet[packetsCount];
+      ToClientPacket[] packets = new ToClientPacket[packetsCount];
       int i = 0;
 
       for (CommonAssetRegistry.PackAsset asset : assets) {

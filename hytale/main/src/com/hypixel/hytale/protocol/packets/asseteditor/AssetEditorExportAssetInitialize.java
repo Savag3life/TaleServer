@@ -1,13 +1,15 @@
 package com.hypixel.hytale.protocol.packets.asseteditor;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class AssetEditorExportAssetInitialize implements Packet {
+public class AssetEditorExportAssetInitialize implements Packet, ToClientPacket {
    public static final int PACKET_ID = 343;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -25,6 +27,11 @@ public class AssetEditorExportAssetInitialize implements Packet {
    @Override
    public int getId() {
       return 343;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public AssetEditorExportAssetInitialize() {

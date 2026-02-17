@@ -17,6 +17,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class WeightedMaterialProviderAsset extends MaterialProviderAsset {
+   @Nonnull
    public static final BuilderCodec<WeightedMaterialProviderAsset> CODEC = BuilderCodec.builder(
          WeightedMaterialProviderAsset.class, WeightedMaterialProviderAsset::new, MaterialProviderAsset.ABSTRACT_CODEC
       )
@@ -36,7 +37,7 @@ public class WeightedMaterialProviderAsset extends MaterialProviderAsset {
       .add()
       .build();
    private WeightedMaterialProviderAsset.WeightedMaterialAsset[] weighedMapEntries = new WeightedMaterialProviderAsset.WeightedMaterialAsset[0];
-   private double skipChance = 0.0;
+   private double skipChance;
    private String seed = "";
 
    @Nonnull
@@ -65,6 +66,7 @@ public class WeightedMaterialProviderAsset extends MaterialProviderAsset {
    public static class WeightedMaterialAsset
       implements Cleanable,
       JsonAssetWithMap<String, DefaultAssetMap<String, WeightedMaterialProviderAsset.WeightedMaterialAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, WeightedMaterialProviderAsset.WeightedMaterialAsset> CODEC = AssetBuilderCodec.builder(
             WeightedMaterialProviderAsset.WeightedMaterialAsset.class,
             WeightedMaterialProviderAsset.WeightedMaterialAsset::new,

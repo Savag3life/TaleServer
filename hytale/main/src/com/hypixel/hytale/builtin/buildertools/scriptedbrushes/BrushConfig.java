@@ -89,7 +89,7 @@ public class BrushConfig {
       this.executionErrorMessage = null;
       this.originOffset = new Vector3i(0, 0, 0);
       this.originAfterOffset = null;
-      this.shape = BrushShape.Cube;
+      this.shape = BrushShape.Sphere;
       this.shapeWidth = 5;
       this.shapeHeight = 5;
       this.shapeThickness = 0;

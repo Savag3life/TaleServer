@@ -1,6 +1,5 @@
 package com.hypixel.hytale.server.core.util;
 
-import com.hypixel.fastutil.longs.Long2ObjectConcurrentHashMap;
 import com.hypixel.hytale.common.plugin.PluginManifest;
 import com.hypixel.hytale.common.util.FormatUtil;
 import com.hypixel.hytale.common.util.StringUtil;
@@ -10,7 +9,6 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.metric.ArchetypeChunkData;
 import com.hypixel.hytale.component.system.ISystem;
 import com.hypixel.hytale.logger.backend.HytaleFileHandler;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.metrics.InitStackThread;
 import com.hypixel.hytale.metrics.MetricsRegistry;
@@ -33,14 +31,11 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.universe.world.storage.provider.IndexedStorageChunkStorageProvider;
 import com.hypixel.hytale.server.core.universe.world.worldgen.WorldGenTimingsCollector;
-import com.hypixel.hytale.storage.IndexedStorageFile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -65,7 +60,6 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -619,9 +613,9 @@ public class DumpUtil {
                         printComponentStore(writer, width, height, "Chunks", startNanos, world.getChunkStore().getStore());
                         printComponentStore(writer, width, height, "Entities", startNanos, world.getEntityStore().getStore());
                      }, world).orTimeout(30L, TimeUnit.SECONDS).join();
-                  } catch (CompletionException var41) {
-                     if (!(var41.getCause() instanceof TimeoutException)) {
-                        var41.printStackTrace();
+                  } catch (CompletionException var40) {
+                     if (!(var40.getCause() instanceof TimeoutException)) {
+                        var40.printStackTrace();
                         writer.println("\t\tFAILED TO DUMP COMPONENT STORES! EXCEPTION!");
                      } else {
                         writer.println("\t\tFAILED TO DUMP COMPONENT STORES! TIMEOUT!");
@@ -644,37 +638,6 @@ public class DumpUtil {
                      writer.println("\t\tGenerating Count: " + timings.getGeneratingCount());
                   } else {
                      writer.println("\t\tNo Timings Data Collected!");
-                  }
-
-                  IndexedStorageChunkStorageProvider.IndexedStorageCache storageCache = world.getChunkStore()
-                     .getStore()
-                     .getResource(IndexedStorageChunkStorageProvider.IndexedStorageCache.getResourceType());
-                  if (storageCache != null) {
-                     Long2ObjectConcurrentHashMap<IndexedStorageFile> cache = storageCache.getCache();
-                     writer.println();
-                     writer.println("\tIndexed Storage Cache:");
-                     Iterator i$ = cache.long2ObjectEntrySet().iterator();
-
-                     while (i$.hasNext()) {
-                        Entry<IndexedStorageFile> entry = (Entry<IndexedStorageFile>)i$.next();
-                        long key = entry.getLongKey();
-                        writer.println("\t\t" + ChunkUtil.xOfChunkIndex(key) + ", " + ChunkUtil.zOfChunkIndex(key));
-                        IndexedStorageFile storageFile = (IndexedStorageFile)entry.getValue();
-
-                        try {
-                           writer.println("\t\t- Size: " + FormatUtil.bytesToString(storageFile.size()));
-                        } catch (IOException var40) {
-                           writer.println("\t\t- Size: ERROR: " + var40.getMessage());
-                        }
-
-                        writer.println("\t\t- Blob Count: " + storageFile.keys().size());
-                        int segmentSize = storageFile.segmentSize();
-                        int segmentCount = storageFile.segmentCount();
-                        writer.println("\t\t- Segment Size: " + segmentSize);
-                        writer.println("\t\t- Segment Count: " + segmentCount);
-                        writer.println("\t\t- Segment Used %: " + (double)(segmentCount * 100) / segmentSize + "%");
-                        writer.println("\t\t- " + storageFile);
-                     }
                   }
                }
             );

@@ -9,6 +9,7 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.Axis;
 import com.hypixel.hytale.math.shape.Box;
 import com.hypixel.hytale.math.util.ChunkUtil;
@@ -45,6 +46,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class TeleportConfigInstanceInteraction extends SimpleBlockInteraction {
+   @Nonnull
+   private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
    @Nonnull
    private static final Message MESSAGE_GENERAL_INTERACTION_CONFIGURE_INSTANCE_NO_INSTANCE_NAME = Message.translation(
       "server.general.interaction.configureInstance.noInstanceName"
@@ -139,16 +142,31 @@ public class TeleportConfigInstanceInteraction extends SimpleBlockInteraction {
                            if (removeBlockAfter == 0.0) {
                               long chunkIndex = ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z);
                               WorldChunk worldChunk = world.getChunk(chunkIndex);
-                              worldChunk.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, 0, 256);
+                              if (worldChunk != null) {
+                                 worldChunk.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, 0, 256);
+                              } else {
+                                 ((HytaleLogger.Api)LOGGER.atWarning())
+                                    .log("Failed to remove block at %s,%s,%s as chunk is not loaded", targetBlock.x, targetBlock.y, targetBlock.z);
+                              }
                            } else {
                               int block = world.getBlock(targetBlock);
-                              new CompletableFuture().completeOnTimeout(null, (long)(removeBlockAfter * 1.0E9), TimeUnit.NANOSECONDS).thenRunAsync(() -> {
-                                 if (world.getBlock(targetBlock) == block) {
-                                    long chunkIndex = ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z);
-                                    WorldChunk worldChunkx = world.getChunk(chunkIndex);
-                                    worldChunkx.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, 0, 256);
-                                 }
-                              }, world);
+                              new CompletableFuture()
+                                 .completeOnTimeout(null, (long)(removeBlockAfter * 1.0E9), TimeUnit.NANOSECONDS)
+                                 .thenRunAsync(
+                                    () -> {
+                                       if (world.getBlock(targetBlock) == block) {
+                                          long chunkIndex = ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z);
+                                          WorldChunk worldChunkx = world.getChunk(chunkIndex);
+                                          if (worldChunkx != null) {
+                                             worldChunkx.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, 0, 256);
+                                          } else {
+                                             ((HytaleLogger.Api)LOGGER.atWarning())
+                                                .log("Failed to remove block at %s,%s,%s as chunk is not loaded", targetBlock.x, targetBlock.y, targetBlock.z);
+                                          }
+                                       }
+                                    },
+                                    world
+                                 );
                            }
                         }
                      }
@@ -194,34 +212,41 @@ public class TeleportConfigInstanceInteraction extends SimpleBlockInteraction {
          Ref<ChunkStore> chunkRef = chunkStore.getChunkReference(chunkIndex);
          if (chunkRef != null && chunkRef.isValid()) {
             BlockChunk blockChunkComponent = chunkComponentStore.getComponent(chunkRef, BlockChunk.getComponentType());
-
-            assert blockChunkComponent != null;
-
-            WorldChunk worldChunkComponent = chunkComponentStore.getComponent(chunkRef, WorldChunk.getComponentType());
-
-            assert worldChunkComponent != null;
-
-            BlockType blockType = worldChunkComponent.getBlockType(targetBlock.x, targetBlock.y, targetBlock.z);
-            if (blockType == null) {
-               throw new IllegalArgumentException("Block type not found");
+            if (blockChunkComponent == null) {
+               throw new IllegalArgumentException("Block chunk component not found");
             } else {
-               IndexedLookupTableAssetMap<String, BlockBoundingBoxes> hitboxAssetMap = BlockBoundingBoxes.getAssetMap();
-               BlockSection section = blockChunkComponent.getSectionAtBlockY(targetBlock.y);
-               int rotationIndex = section.getRotationIndex(targetBlock.x, targetBlock.y, targetBlock.z);
-               RotationTuple rotation = RotationTuple.get(rotationIndex);
-               Box hitbox = hitboxAssetMap.getAsset(blockType.getHitboxTypeIndex()).get(rotationIndex).getBoundingBox();
-               Vector3d position = state.getPositionOffset() != null ? rotation.rotate(state.getPositionOffset()) : new Vector3d();
-               position.x = position.x + (hitbox.middleX() + targetBlock.x);
-               position.y = position.y + (hitbox.middleY() + targetBlock.y);
-               position.z = position.z + (hitbox.middleZ() + targetBlock.z);
-               Vector3f rotationOutput = Vector3f.NaN;
-               if (state.getRotation() != null) {
-                  rotationOutput = state.getRotation().clone();
-                  rotationOutput.addRotationOnAxis(Axis.Y, rotation.yaw().getDegrees());
-                  rotationOutput.addRotationOnAxis(Axis.X, rotation.pitch().getDegrees());
-               }
+               WorldChunk worldChunkComponent = chunkComponentStore.getComponent(chunkRef, WorldChunk.getComponentType());
+               if (worldChunkComponent == null) {
+                  throw new IllegalArgumentException("World chunk component not found");
+               } else {
+                  BlockType blockType = worldChunkComponent.getBlockType(targetBlock.x, targetBlock.y, targetBlock.z);
+                  if (blockType == null) {
+                     throw new IllegalArgumentException("Block type not found");
+                  } else {
+                     IndexedLookupTableAssetMap<String, BlockBoundingBoxes> hitboxAssetMap = BlockBoundingBoxes.getAssetMap();
+                     BlockSection section = blockChunkComponent.getSectionAtBlockY(targetBlock.y);
+                     int rotationIndex = section.getRotationIndex(targetBlock.x, targetBlock.y, targetBlock.z);
+                     RotationTuple rotation = RotationTuple.get(rotationIndex);
+                     BlockBoundingBoxes hitboxAsset = hitboxAssetMap.getAsset(blockType.getHitboxTypeIndex());
+                     if (hitboxAsset == null) {
+                        throw new IllegalArgumentException("Hitbox asset not found for block type: " + blockType.getId());
+                     } else {
+                        Box hitbox = hitboxAsset.get(rotationIndex).getBoundingBox();
+                        Vector3d position = state.getPositionOffset() != null ? rotation.rotate(state.getPositionOffset()) : new Vector3d();
+                        position.x = position.x + (hitbox.middleX() + targetBlock.x);
+                        position.y = position.y + (hitbox.middleY() + targetBlock.y);
+                        position.z = position.z + (hitbox.middleZ() + targetBlock.z);
+                        Vector3f rotationOutput = Vector3f.NaN;
+                        if (state.getRotation() != null) {
+                           rotationOutput = state.getRotation().clone();
+                           rotationOutput.addRotationOnAxis(Axis.Y, rotation.yaw().getDegrees());
+                           rotationOutput.addRotationOnAxis(Axis.X, rotation.pitch().getDegrees());
+                        }
 
-               return new Transform(position, rotationOutput);
+                        return new Transform(position, rotationOutput);
+                     }
+                  }
+               }
             }
          } else {
             throw new IllegalArgumentException("Chunk not loaded");

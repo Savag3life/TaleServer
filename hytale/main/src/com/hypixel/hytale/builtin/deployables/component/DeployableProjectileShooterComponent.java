@@ -14,7 +14,9 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 public class DeployableProjectileShooterComponent implements Component<EntityStore> {
+   @Nonnull
    protected final List<Ref<EntityStore>> projectiles = new ObjectArrayList();
+   @Nonnull
    protected final List<Ref<EntityStore>> projectilesForRemoval = new ObjectArrayList();
    protected Ref<EntityStore> activeTarget;
 
@@ -33,10 +35,12 @@ public class DeployableProjectileShooterComponent implements Component<EntitySto
       commandBuffer.getExternalData().getWorld().execute(() -> {});
    }
 
+   @Nonnull
    public List<Ref<EntityStore>> getProjectiles() {
       return this.projectiles;
    }
 
+   @Nonnull
    public List<Ref<EntityStore>> getProjectilesForRemoval() {
       return this.projectilesForRemoval;
    }

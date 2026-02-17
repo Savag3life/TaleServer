@@ -194,7 +194,7 @@ public class InteractionManager implements Component<EntityStore> {
       int highestChainId = -1;
       boolean changed = false;
 
-      label114:
+      label116:
       while (it.hasNext()) {
          SyncInteractionChain packet = it.next();
          if (packet.desync) {
@@ -230,7 +230,7 @@ public class InteractionManager implements Component<EntityStore> {
                      it.remove();
                      this.packetQueueTime = 0L;
                   }
-                  continue label114;
+                  continue label116;
                }
 
                chain = subChain;
@@ -239,50 +239,50 @@ public class InteractionManager implements Component<EntityStore> {
 
          highestChainId = Math.max(highestChainId, packet.chainId);
          boolean isProxy = packet.data != null && !UUIDUtil.isEmptyOrNull(packet.data.proxyId);
-         if ((chain != null || finished) && !isProxy) {
-            if (chain != null) {
-               this.sync(ref, chain, packet);
+         if (chain == null && (!finished || isProxy)) {
+            if (this.syncStart(ref, packet)) {
                changed = true;
                it.remove();
                this.packetQueueTime = 0L;
-            } else if (desynced) {
-               this.sendCancelPacket(packet.chainId, packet.forkedId);
-               it.remove();
-               HytaleLogger.Api ctx = LOGGER.at(Level.FINE);
-               ctx.log("Discarding packet due to desync: %s", packet);
+            } else {
+               if (!this.waitingForClient(ref)) {
+                  long queuedTime;
+                  if (this.packetQueueTime == 0L) {
+                     this.packetQueueTime = this.currentTime;
+                     queuedTime = 0L;
+                  } else {
+                     queuedTime = this.currentTime - this.packetQueueTime;
+                  }
+
+                  HytaleLogger.Api context = LOGGER.at(Level.FINE);
+                  if (context.isEnabled()) {
+                     context.log("Queued chain %d for %s", packet.chainId, FormatUtil.nanosToString(queuedTime));
+                  }
+
+                  if (queuedTime > TimeUnit.MILLISECONDS.toNanos(this.getOperationTimeoutThreshold())) {
+                     this.sendCancelPacket(packet.chainId, packet.forkedId);
+                     it.remove();
+                     context = LOGGER.at(Level.FINE);
+                     if (context.isEnabled()) {
+                        context.log("Discarding packet due to queuing for too long: %s", packet);
+                     }
+                  }
+               }
+
+               if (!desynced && !isProxy) {
+                  finished = true;
+               }
             }
-         } else if (this.syncStart(ref, packet)) {
+         } else if (chain != null) {
+            this.sync(ref, chain, packet);
             changed = true;
             it.remove();
             this.packetQueueTime = 0L;
-         } else {
-            if (!this.waitingForClient(ref)) {
-               long queuedTime;
-               if (this.packetQueueTime == 0L) {
-                  this.packetQueueTime = this.currentTime;
-                  queuedTime = 0L;
-               } else {
-                  queuedTime = this.currentTime - this.packetQueueTime;
-               }
-
-               HytaleLogger.Api context = LOGGER.at(Level.FINE);
-               if (context.isEnabled()) {
-                  context.log("Queued chain %d for %s", packet.chainId, FormatUtil.nanosToString(queuedTime));
-               }
-
-               if (queuedTime > TimeUnit.MILLISECONDS.toNanos(this.getOperationTimeoutThreshold())) {
-                  this.sendCancelPacket(packet.chainId, packet.forkedId);
-                  it.remove();
-                  context = LOGGER.at(Level.FINE);
-                  if (context.isEnabled()) {
-                     context.log("Discarding packet due to queuing for too long: %s", packet);
-                  }
-               }
-            }
-
-            if (!desynced && !isProxy) {
-               finished = true;
-            }
+         } else if (desynced) {
+            this.sendCancelPacket(packet.chainId, packet.forkedId);
+            it.remove();
+            HytaleLogger.Api ctx = LOGGER.at(Level.FINE);
+            ctx.log("Discarding packet due to desync: %s", packet);
          }
       }
 
@@ -421,7 +421,8 @@ public class InteractionManager implements Component<EntityStore> {
 
                long threshold = this.getOperationTimeoutThreshold();
                if (waitMillisx > threshold) {
-                  LOGGER.at(Level.SEVERE).log("Client finished chain earlier than server! %d, %s", chain.getChainId(), chain);
+                  LOGGER.at(Level.FINE).log("Client finished chain earlier than server! %d, %s", chain.getChainId(), chain);
+                  this.cancelChains(chain);
                }
             }
 
@@ -678,10 +679,12 @@ public class InteractionManager implements Component<EntityStore> {
 
          long threshold = this.getOperationTimeoutThreshold();
          if (waitMillis > threshold) {
-            HytaleLogger.Api ctx = LOGGER.at(Level.SEVERE);
+            HytaleLogger.Api ctx = LOGGER.at(Level.FINE);
             if (ctx.isEnabled()) {
                ctx.log("Client finished interaction earlier than server! %d, %s", entry.getIndex(), entry);
             }
+
+            this.cancelChains(chain);
          }
       }
    }

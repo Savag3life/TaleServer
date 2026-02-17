@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator;
 import com.hypixel.hytale.server.worldgen.chunk.ZoneBiomeResult;
 import com.hypixel.hytale.server.worldgen.chunk.populator.PrefabPopulator;
 import com.hypixel.hytale.server.worldgen.climate.ClimateNoise;
+import com.hypixel.hytale.server.worldgen.loader.WorldGenPrefabLoader;
 import com.hypixel.hytale.server.worldgen.loader.WorldGenPrefabSupplier;
 import com.hypixel.hytale.server.worldgen.prefab.PrefabPasteUtil;
 import com.hypixel.hytale.server.worldgen.util.cache.TimeoutCache;
@@ -50,6 +51,7 @@ public class ChunkGeneratorResource {
    public final ZoneBiomeResult zoneBiomeResult;
    public final ClimateNoise.Buffer climateBuffer = new ClimateNoise.Buffer();
    public final PrefabPopulator prefabPopulator = new PrefabPopulator();
+   public final WorldGenPrefabLoader.PrefabPathCollector prefabCollector = new WorldGenPrefabLoader.PrefabPathCollector();
    @Nonnull
    public final Vector2d cacheVector2d;
    protected ChunkGenerator chunkGenerator;

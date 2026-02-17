@@ -10,10 +10,15 @@ import javax.annotation.Nonnull;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 public class OffsetProp extends Prop {
+   @Nonnull
    private final Vector3i offset_voxelGrid;
+   @Nonnull
    private final Prop childProp;
+   @Nonnull
    private final Bounds3i readBounds_voxelGrid;
+   @Nonnull
    private final Bounds3i writeBounds_voxelGrid;
+   @Nonnull
    private final ContextDependency contextDependency;
 
    public OffsetProp(@Nonnull Vector3i offset_voxelGrid, @Nonnull Prop childProp) {
@@ -35,6 +40,7 @@ public class OffsetProp extends Prop {
       this.childProp.place(context);
    }
 
+   @Nonnull
    @Override
    public ContextDependency getContextDependency() {
       return this.contextDependency;

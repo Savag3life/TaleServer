@@ -75,28 +75,27 @@ public class WorldSpawningSystem extends TickingSystem<ChunkStore> {
                   if (chunkRef != null) {
                      int environmentIndex = entry.getEnvironmentIndex();
                      ChunkSpawnData chunkSpawnDataComponent = store.getComponent(chunkRef, this.chunkSpawnDataComponentType);
-
-                     assert chunkSpawnDataComponent != null;
-
-                     ChunkEnvironmentSpawnData environmentSpawnData = chunkSpawnDataComponent.getEnvironmentSpawnData(environmentIndex);
-                     int segmentCount = -environmentSpawnData.getSegmentCount();
-                     worldSpawnDataResource.adjustSegmentCount(segmentCount);
-                     WorldEnvironmentSpawnData worldEnvironmentSpawnData = worldSpawnDataResource.getWorldEnvironmentSpawnData(environmentIndex);
-                     double expectedNPCs = worldEnvironmentSpawnData.getExpectedNPCs();
-                     worldEnvironmentSpawnData.adjustSegmentCount(segmentCount);
-                     worldEnvironmentSpawnData.updateExpectedNPCs(worldTimeResource.getMoonPhase());
-                     environmentSpawnData.markProcessedAsUnspawnable();
-                     HytaleLogger.Api context = LOGGER.at(Level.FINEST);
-                     if (context.isEnabled()) {
-                        Environment environmentAsset = Environment.getAssetMap().getAsset(environmentIndex);
-                        if (environmentAsset != null) {
-                           String environment = environmentAsset.getId();
-                           context.log(
-                              "Reducing expected NPC count for %s due to un-spawnable chunk. Was %s, now %s",
-                              environment,
-                              expectedNPCs,
-                              worldEnvironmentSpawnData.getExpectedNPCs()
-                           );
+                     if (chunkSpawnDataComponent != null) {
+                        ChunkEnvironmentSpawnData environmentSpawnData = chunkSpawnDataComponent.getEnvironmentSpawnData(environmentIndex);
+                        int segmentCount = -environmentSpawnData.getSegmentCount();
+                        worldSpawnDataResource.adjustSegmentCount(segmentCount);
+                        WorldEnvironmentSpawnData worldEnvironmentSpawnData = worldSpawnDataResource.getWorldEnvironmentSpawnData(environmentIndex);
+                        double expectedNPCs = worldEnvironmentSpawnData.getExpectedNPCs();
+                        worldEnvironmentSpawnData.adjustSegmentCount(segmentCount);
+                        worldEnvironmentSpawnData.updateExpectedNPCs(worldTimeResource.getMoonPhase());
+                        environmentSpawnData.markProcessedAsUnspawnable();
+                        HytaleLogger.Api context = LOGGER.at(Level.FINEST);
+                        if (context.isEnabled()) {
+                           Environment environmentAsset = Environment.getAssetMap().getAsset(environmentIndex);
+                           if (environmentAsset != null) {
+                              String environment = environmentAsset.getId();
+                              context.log(
+                                 "Reducing expected NPC count for %s due to un-spawnable chunk. Was %s, now %s",
+                                 environment,
+                                 expectedNPCs,
+                                 worldEnvironmentSpawnData.getExpectedNPCs()
+                              );
+                           }
                         }
                      }
                   }

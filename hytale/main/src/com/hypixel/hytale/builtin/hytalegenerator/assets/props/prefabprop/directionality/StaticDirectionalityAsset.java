@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.prefab.PrefabRotation;
 import javax.annotation.Nonnull;
 
 public class StaticDirectionalityAsset extends DirectionalityAsset {
+   @Nonnull
    public static final BuilderCodec<StaticDirectionalityAsset> CODEC = BuilderCodec.builder(
          StaticDirectionalityAsset.class, StaticDirectionalityAsset::new, DirectionalityAsset.ABSTRACT_CODEC
       )

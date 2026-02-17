@@ -12,6 +12,7 @@ import java.util.HashSet;
 import javax.annotation.Nonnull;
 
 public class ManualCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<ManualCurveAsset> CODEC = BuilderCodec.builder(ManualCurveAsset.class, ManualCurveAsset::new, CurveAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Points", new ArrayCodec<>(PointInOutAsset.CODEC, PointInOutAsset[]::new), true), (t, k) -> t.nodes = k, t -> t.nodes)
       .addValidator((LegacyValidator<? super PointInOutAsset[]>)((v, r) -> {

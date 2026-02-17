@@ -52,6 +52,7 @@ import com.hypixel.hytale.server.core.asset.type.blockbreakingdecal.config.Block
 import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blockparticle.config.BlockParticleSet;
 import com.hypixel.hytale.server.core.asset.type.blocksound.config.BlockSoundSet;
+import com.hypixel.hytale.server.core.asset.type.blocktick.config.RandomTickProcedure;
 import com.hypixel.hytale.server.core.asset.type.blocktick.config.TickProcedure;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.bench.Bench;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.farming.FarmingData;
@@ -244,6 +245,13 @@ public class BlockType implements JsonAssetWithMap<String, BlockTypeAssetMap<Str
          (blockType, v) -> blockType.tickProcedure = v,
          blockType -> blockType.tickProcedure,
          (blockType, parent) -> blockType.tickProcedure = parent.tickProcedure
+      )
+      .add()
+      .appendInherited(
+         new KeyedCodec<>("RandomTickProcedure", RandomTickProcedure.CODEC),
+         (blockType, v) -> blockType.randomTickProcedure = v,
+         blockType -> blockType.randomTickProcedure,
+         (blockType, parent) -> blockType.randomTickProcedure = parent.randomTickProcedure
       )
       .add()
       .appendInherited(
@@ -847,6 +855,7 @@ public class BlockType implements JsonAssetWithMap<String, BlockTypeAssetMap<Str
    protected String blockBreakingDecalId;
    protected Color particleColor;
    protected TickProcedure tickProcedure;
+   private RandomTickProcedure randomTickProcedure;
    protected ShaderType[] effect;
    protected BlockTypeTextures[] textures;
    protected String textureSideMask;
@@ -1376,6 +1385,10 @@ public class BlockType implements JsonAssetWithMap<String, BlockTypeAssetMap<Str
 
    public TickProcedure getTickProcedure() {
       return this.tickProcedure;
+   }
+
+   public RandomTickProcedure getRandomTickProcedure() {
+      return this.randomTickProcedure;
    }
 
    public ShaderType[] getEffect() {

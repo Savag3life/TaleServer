@@ -99,6 +99,7 @@ public class FarmingData {
    }
 
    public static class SoilConfig {
+      @Nonnull
       public static final BuilderCodec<FarmingData.SoilConfig> CODEC = BuilderCodec.builder(FarmingData.SoilConfig.class, FarmingData.SoilConfig::new)
          .appendInherited(
             new KeyedCodec<>("TargetBlock", Codec.STRING), (o, v) -> o.targetBlock = v, o -> o.targetBlock, (o, p) -> o.targetBlock = p.targetBlock

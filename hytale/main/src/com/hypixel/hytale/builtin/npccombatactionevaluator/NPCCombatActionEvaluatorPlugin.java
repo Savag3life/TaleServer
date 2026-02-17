@@ -30,9 +30,13 @@ import com.hypixel.hytale.server.npc.decisionmaker.core.conditions.base.Conditio
 import javax.annotation.Nonnull;
 
 public class NPCCombatActionEvaluatorPlugin extends JavaPlugin {
+   @Nonnull
    public static final String CAE_MARKED_TARGET_SLOT = "CAETargetSlot";
+   @Nonnull
    public static final String CAE_MIN_RANGE_PARAMETER = "CAEMinRange";
+   @Nonnull
    public static final String CAE_MAX_RANGE_PARAMETER = "CAEMaxRange";
+   @Nonnull
    public static final String CAE_POSITIONING_ANGLE_PARAMETER = "CAEPositioningAngle";
    private static NPCCombatActionEvaluatorPlugin instance;
    private ComponentType<EntityStore, TargetMemory> targetMemoryComponentType;

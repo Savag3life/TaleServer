@@ -3,7 +3,7 @@ package com.hypixel.hytale.builtin.adventure.camera.asset.viewbobbing;
 import com.hypixel.hytale.assetstore.AssetMap;
 import com.hypixel.hytale.protocol.CachedPacket;
 import com.hypixel.hytale.protocol.MovementType;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateViewBobbing;
 import com.hypixel.hytale.server.core.asset.packet.SimpleAssetPacketGenerator;
@@ -16,19 +16,19 @@ import javax.annotation.Nonnull;
 public class ViewBobbingPacketGenerator extends SimpleAssetPacketGenerator<MovementType, ViewBobbing, AssetMap<MovementType, ViewBobbing>> {
    @Nonnull
    @Override
-   public Packet generateInitPacket(AssetMap<MovementType, ViewBobbing> assetMap, @Nonnull Map<MovementType, ViewBobbing> assets) {
+   public ToClientPacket generateInitPacket(AssetMap<MovementType, ViewBobbing> assetMap, @Nonnull Map<MovementType, ViewBobbing> assets) {
       return toCachedPacket(UpdateType.Init, assets);
    }
 
    @Nonnull
    @Override
-   protected Packet generateUpdatePacket(AssetMap<MovementType, ViewBobbing> assetMap, @Nonnull Map<MovementType, ViewBobbing> loadedAssets) {
+   protected ToClientPacket generateUpdatePacket(AssetMap<MovementType, ViewBobbing> assetMap, @Nonnull Map<MovementType, ViewBobbing> loadedAssets) {
       return toCachedPacket(UpdateType.AddOrUpdate, loadedAssets);
    }
 
    @Nonnull
    @Override
-   protected Packet generateRemovePacket(AssetMap<MovementType, ViewBobbing> assetMap, @Nonnull Set<MovementType> removed) {
+   protected ToClientPacket generateRemovePacket(AssetMap<MovementType, ViewBobbing> assetMap, @Nonnull Set<MovementType> removed) {
       UpdateViewBobbing packet = new UpdateViewBobbing();
       packet.type = UpdateType.Remove;
       packet.profiles = new EnumMap<>(MovementType.class);
@@ -41,7 +41,7 @@ public class ViewBobbingPacketGenerator extends SimpleAssetPacketGenerator<Movem
    }
 
    @Nonnull
-   protected static Packet toCachedPacket(UpdateType type, @Nonnull Map<MovementType, ViewBobbing> assets) {
+   protected static ToClientPacket toCachedPacket(@Nonnull UpdateType type, @Nonnull Map<MovementType, ViewBobbing> assets) {
       UpdateViewBobbing packet = new UpdateViewBobbing();
       packet.type = type;
       packet.profiles = new EnumMap<>(MovementType.class);

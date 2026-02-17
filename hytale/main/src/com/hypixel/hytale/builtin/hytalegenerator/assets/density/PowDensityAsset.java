@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class PowDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<PowDensityAsset> CODEC = BuilderCodec.builder(PowDensityAsset.class, PowDensityAsset::new, DensityAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Exponent", Codec.DOUBLE, true), (t, k) -> t.exponent = k, t -> t.exponent)
       .add()

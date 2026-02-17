@@ -7,6 +7,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class NotConditionAsset extends ConditionAsset {
+   @Nonnull
    public static final BuilderCodec<NotConditionAsset> CODEC = BuilderCodec.builder(
          NotConditionAsset.class, NotConditionAsset::new, ConditionAsset.ABSTRACT_CODEC
       )

@@ -51,57 +51,69 @@ public class TeleportOtherToPlayerCommand extends CommandBase {
             World targetWorld = targetStore.getExternalData().getWorld();
             sourceWorld.execute(
                () -> {
-                  TransformComponent transformComponent = sourceStore.getComponent(sourceRef, TransformComponent.getComponentType());
+                  if (!sourceRef.isValid()) {
+                     context.sendMessage(MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_IN_WORLD);
+                  } else if (!targetRef.isValid()) {
+                     context.sendMessage(MESSAGE_COMMANDS_ERRORS_TARGET_NOT_IN_WORLD);
+                  } else {
+                     TransformComponent transformComponent = sourceStore.getComponent(sourceRef, TransformComponent.getComponentType());
 
-                  assert transformComponent != null;
+                     assert transformComponent != null;
 
-                  HeadRotation headRotationComponent = sourceStore.getComponent(sourceRef, HeadRotation.getComponentType());
+                     HeadRotation headRotationComponent = sourceStore.getComponent(sourceRef, HeadRotation.getComponentType());
 
-                  assert headRotationComponent != null;
+                     assert headRotationComponent != null;
 
-                  Vector3d pos = transformComponent.getPosition().clone();
-                  Vector3f rotation = headRotationComponent.getRotation().clone();
-                  targetWorld.execute(
-                     () -> {
-                        TransformComponent targetTransformComponent = targetStore.getComponent(targetRef, TransformComponent.getComponentType());
+                     Vector3d pos = transformComponent.getPosition().clone();
+                     Vector3f rotation = headRotationComponent.getRotation().clone();
+                     targetWorld.execute(
+                        () -> {
+                           TransformComponent targetTransformComponent = targetStore.getComponent(targetRef, TransformComponent.getComponentType());
 
-                        assert targetTransformComponent != null;
+                           assert targetTransformComponent != null;
 
-                        HeadRotation targetHeadRotationComponent = targetStore.getComponent(targetRef, HeadRotation.getComponentType());
+                           HeadRotation targetHeadRotationComponent = targetStore.getComponent(targetRef, HeadRotation.getComponentType());
 
-                        assert targetHeadRotationComponent != null;
+                           assert targetHeadRotationComponent != null;
 
-                        Vector3d targetPosition = targetTransformComponent.getPosition().clone();
-                        Vector3f targetHeadRotation = targetHeadRotationComponent.getRotation().clone();
-                        Transform targetTransform = new Transform(targetPosition, targetHeadRotation);
-                        sourceWorld.execute(
-                           () -> {
-                              Teleport teleportComponent = Teleport.createForPlayer(targetWorld, targetTransform);
-                              sourceStore.addComponent(sourceRef, Teleport.getComponentType(), teleportComponent);
-                              PlayerRef sourcePlayerRefComponent = sourceStore.getComponent(sourceRef, PlayerRef.getComponentType());
+                           Vector3d targetPosition = targetTransformComponent.getPosition().clone();
+                           Vector3f targetHeadRotation = targetHeadRotationComponent.getRotation().clone();
+                           Transform targetTransform = new Transform(targetPosition, targetHeadRotation);
+                           sourceWorld.execute(
+                              () -> {
+                                 if (!sourceRef.isValid()) {
+                                    context.sendMessage(MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_IN_WORLD);
+                                 } else if (!targetRef.isValid()) {
+                                    context.sendMessage(MESSAGE_COMMANDS_ERRORS_TARGET_NOT_IN_WORLD);
+                                 } else {
+                                    Teleport teleportComponent = Teleport.createForPlayer(targetWorld, targetTransform);
+                                    sourceStore.addComponent(sourceRef, Teleport.getComponentType(), teleportComponent);
+                                    PlayerRef sourcePlayerRefComponent = sourceStore.getComponent(sourceRef, PlayerRef.getComponentType());
 
-                              assert sourcePlayerRefComponent != null;
+                                    assert sourcePlayerRefComponent != null;
 
-                              PlayerRef targetPlayerRefComponent = targetStore.getComponent(targetRef, PlayerRef.getComponentType());
+                                    PlayerRef targetPlayerRefComponent = targetStore.getComponent(targetRef, PlayerRef.getComponentType());
 
-                              assert targetPlayerRefComponent != null;
+                                    assert targetPlayerRefComponent != null;
 
-                              context.sendMessage(
-                                 Message.translation("server.commands.teleport.teleportedOtherToPlayer")
-                                    .param("targetName", sourcePlayerRefComponent.getUsername())
-                                    .param("toName", targetPlayerRefComponent.getUsername())
-                              );
-                              sourceStore.ensureAndGetComponent(sourceRef, TeleportHistory.getComponentType())
-                                 .append(
-                                    sourceWorld,
-                                    pos,
-                                    rotation,
-                                    "Teleport to " + targetPlayerRefComponent.getUsername() + " by " + context.sender().getDisplayName()
-                                 );
-                           }
-                        );
-                     }
-                  );
+                                    context.sendMessage(
+                                       Message.translation("server.commands.teleport.teleportedOtherToPlayer")
+                                          .param("targetName", sourcePlayerRefComponent.getUsername())
+                                          .param("toName", targetPlayerRefComponent.getUsername())
+                                    );
+                                    sourceStore.ensureAndGetComponent(sourceRef, TeleportHistory.getComponentType())
+                                       .append(
+                                          sourceWorld,
+                                          pos,
+                                          rotation,
+                                          "Teleport to " + targetPlayerRefComponent.getUsername() + " by " + context.sender().getDisplayName()
+                                       );
+                                 }
+                              }
+                           );
+                        }
+                     );
+                  }
                }
             );
          } else {

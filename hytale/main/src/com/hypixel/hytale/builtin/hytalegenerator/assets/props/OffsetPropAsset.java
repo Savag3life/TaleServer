@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class OffsetPropAsset extends PropAsset {
+   @Nonnull
    public static final BuilderCodec<OffsetPropAsset> CODEC = BuilderCodec.builder(OffsetPropAsset.class, OffsetPropAsset::new, PropAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Offset", Vector3i.CODEC, true), (asset, value) -> asset.offset_voxelGrid = value, asset -> asset.offset_voxelGrid)
       .add()

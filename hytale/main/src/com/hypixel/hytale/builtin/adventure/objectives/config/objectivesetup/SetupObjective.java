@@ -15,6 +15,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class SetupObjective extends ObjectiveTypeSetup {
+   @Nonnull
    public static final BuilderCodec<SetupObjective> CODEC = BuilderCodec.builder(SetupObjective.class, SetupObjective::new)
       .append(
          new KeyedCodec<>("ObjectiveId", Codec.STRING), (setupObjective, s) -> setupObjective.objectiveId = s, setupObjective -> setupObjective.objectiveId

@@ -79,7 +79,8 @@ public class PortalDeviceActivePage extends InteractiveCustomUIPage<PortalDevice
       }
    }
 
-   private static Message createPlayerCountMsg(World world) {
+   @Nonnull
+   private static Message createPlayerCountMsg(@Nonnull World world) {
       int playerCount = world.getPlayerCount();
       String pinkEnoughColor = "#ea4fa46b";
       if (playerCount == 0) {
@@ -98,7 +99,8 @@ public class PortalDeviceActivePage extends InteractiveCustomUIPage<PortalDevice
       }
    }
 
-   private PortalDeviceActivePage.State computeState(Ref<EntityStore> ref, @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
+   @Nonnull
+   private PortalDeviceActivePage.State computeState(@Nonnull Ref<EntityStore> ref, @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
       if (!this.blockRef.isValid()) {
          return PortalDeviceActivePage.Error.INVALID_BLOCK;
       } else {
@@ -117,12 +119,13 @@ public class PortalDeviceActivePage extends InteractiveCustomUIPage<PortalDevice
                   return PortalDeviceActivePage.Error.DESTINATION_NOT_FRAGMENT;
                } else {
                   UUIDComponent uuidComponent = componentAccessor.getComponent(ref, UUIDComponent.getComponentType());
-
-                  assert uuidComponent != null;
-
-                  UUID playerUUID = uuidComponent.getUuid();
-                  boolean diedInside = portalWorld.getDiedInWorld().contains(playerUUID);
-                  return new PortalDeviceActivePage.PortalIsOpen(destinationWorld, portalWorld, diedInside);
+                  if (uuidComponent == null) {
+                     return PortalDeviceActivePage.Error.INACTIVE_PORTAL;
+                  } else {
+                     UUID playerUUID = uuidComponent.getUuid();
+                     boolean diedInside = portalWorld.getDiedInWorld().contains(playerUUID);
+                     return new PortalDeviceActivePage.PortalIsOpen(destinationWorld, portalWorld, diedInside);
+                  }
                }
             }
          }
@@ -130,6 +133,7 @@ public class PortalDeviceActivePage extends InteractiveCustomUIPage<PortalDevice
    }
 
    protected static class Data {
+      @Nonnull
       public static final BuilderCodec<PortalDeviceActivePage.Data> CODEC = BuilderCodec.builder(
             PortalDeviceActivePage.Data.class, PortalDeviceActivePage.Data::new
          )

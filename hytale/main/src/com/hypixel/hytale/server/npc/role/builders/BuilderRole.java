@@ -96,11 +96,11 @@ public class BuilderRole extends SpawnableWithModelBuilder<Role> implements Spaw
    protected double collisionForceFalloff;
    protected double collisionRadius;
    protected float collisionViewAngle;
-   protected double separationDistance;
-   protected double separationWeight;
-   protected double separationDistanceTarget;
-   protected double separationNearRadiusTarget;
-   protected double separationFarRadiusTarget;
+   protected final DoubleHolder separationDistance = new DoubleHolder();
+   protected final DoubleHolder separationWeight = new DoubleHolder();
+   protected final DoubleHolder separationDistanceTarget = new DoubleHolder();
+   protected final DoubleHolder separationNearRadiusTarget = new DoubleHolder();
+   protected final DoubleHolder separationFarRadiusTarget = new DoubleHolder();
    protected final BooleanHolder applySeparation = new BooleanHolder();
    protected boolean stayInEnvironment;
    protected String allowedEnvironments;
@@ -426,7 +426,7 @@ public class BuilderRole extends SpawnableWithModelBuilder<Role> implements Spaw
       this.getDouble(
          data,
          "SeparationDistance",
-         d -> this.separationDistance = d,
+         this.separationDistance,
          3.0,
          DoubleSingleValidator.greater0(),
          BuilderDescriptorState.Experimental,
@@ -436,7 +436,7 @@ public class BuilderRole extends SpawnableWithModelBuilder<Role> implements Spaw
       this.getDouble(
          data,
          "SeparationWeight",
-         d -> this.separationWeight = d,
+         this.separationWeight,
          1.0,
          DoubleSingleValidator.greaterEqual0(),
          BuilderDescriptorState.Experimental,
@@ -446,7 +446,7 @@ public class BuilderRole extends SpawnableWithModelBuilder<Role> implements Spaw
       this.getDouble(
          data,
          "SeparationDistanceTarget",
-         d -> this.separationDistanceTarget = d,
+         this.separationDistanceTarget,
          1.0,
          DoubleSingleValidator.greaterEqual0(),
          BuilderDescriptorState.Experimental,
@@ -456,7 +456,7 @@ public class BuilderRole extends SpawnableWithModelBuilder<Role> implements Spaw
       this.getDouble(
          data,
          "SeparationNearRadiusTarget",
-         d -> this.separationNearRadiusTarget = d,
+         this.separationNearRadiusTarget,
          1.0,
          DoubleSingleValidator.greater0(),
          BuilderDescriptorState.Experimental,
@@ -466,7 +466,7 @@ public class BuilderRole extends SpawnableWithModelBuilder<Role> implements Spaw
       this.getDouble(
          data,
          "SeparationFarRadiusTarget",
-         d -> this.separationFarRadiusTarget = d,
+         this.separationFarRadiusTarget,
          5.0,
          DoubleSingleValidator.greater0(),
          BuilderDescriptorState.Experimental,
@@ -1051,24 +1051,24 @@ public class BuilderRole extends SpawnableWithModelBuilder<Role> implements Spaw
       return this.collisionRadius;
    }
 
-   public double getSeparationDistance() {
-      return this.separationDistance;
+   public double getSeparationDistance(BuilderSupport support) {
+      return this.separationDistance.get(support.getExecutionContext());
    }
 
-   public double getSeparationWeight() {
-      return this.separationWeight;
+   public double getSeparationWeight(BuilderSupport support) {
+      return this.separationWeight.get(support.getExecutionContext());
    }
 
-   public double getSeparationDistanceTarget() {
-      return this.separationDistanceTarget;
+   public double getSeparationDistanceTarget(BuilderSupport support) {
+      return this.separationDistanceTarget.get(support.getExecutionContext());
    }
 
-   public double getSeparationNearRadiusTarget() {
-      return this.separationNearRadiusTarget;
+   public double getSeparationNearRadiusTarget(BuilderSupport support) {
+      return this.separationNearRadiusTarget.get(support.getExecutionContext());
    }
 
-   public double getSeparationFarRadiusTarget() {
-      return this.separationFarRadiusTarget;
+   public double getSeparationFarRadiusTarget(BuilderSupport support) {
+      return this.separationFarRadiusTarget.get(support.getExecutionContext());
    }
 
    public boolean isApplySeparation(BuilderSupport support) {

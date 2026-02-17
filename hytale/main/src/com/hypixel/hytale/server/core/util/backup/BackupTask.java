@@ -1,7 +1,8 @@
 package com.hypixel.hytale.server.core.util.backup;
 
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.Options;
+import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.config.BackupConfig;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -45,7 +46,7 @@ public class BackupTask {
                Files.createDirectories(backupDir);
                Files.createDirectories(archiveDir);
                BackupTask.cleanOrArchiveOldBackups(backupDir, archiveDir);
-               BackupTask.cleanOldBackups(archiveDir);
+               BackupTask.cleanOldArchives(archiveDir);
                String backupName = BackupTask.BACKUP_FILE_DATE_FORMATTER.format(LocalDateTime.now()) + ".zip";
                Path tempZip = backupDir.resolve(backupName + ".tmp");
                BackupUtil.walkFileTreeAndZip(universeDir, tempZip);
@@ -65,7 +66,8 @@ public class BackupTask {
    }
 
    private static void cleanOrArchiveOldBackups(@Nonnull Path sourceDir, @Nonnull Path archiveDir) throws IOException {
-      int maxCount = (Integer)Options.getOptionSet().valueOf(Options.BACKUP_MAX_COUNT);
+      BackupConfig backupConfig = HytaleServer.get().getConfig().getBackupConfig();
+      int maxCount = backupConfig.getMaxCount();
       if (maxCount >= 1) {
          List<Path> oldBackups = BackupUtil.findOldBackups(sourceDir, maxCount);
          if (oldBackups != null && !oldBackups.isEmpty()) {
@@ -73,7 +75,7 @@ public class BackupTask {
             FileTime oldestBackupTime = Files.getLastModifiedTime(oldestBackup);
             FileTime lastArchive = getMostRecentArchive(archiveDir);
             boolean doArchive = lastArchive == null
-               || Duration.between(oldestBackupTime.toInstant(), lastArchive.toInstant()).compareTo(BACKUP_ARCHIVE_FREQUENCY) > 0;
+               || Duration.between(lastArchive.toInstant(), oldestBackupTime.toInstant()).compareTo(BACKUP_ARCHIVE_FREQUENCY) > 0;
             if (doArchive) {
                oldBackups = oldBackups.subList(1, oldBackups.size());
                Files.move(oldestBackup, archiveDir.resolve(oldestBackup.getFileName()), StandardCopyOption.REPLACE_EXISTING);
@@ -88,13 +90,14 @@ public class BackupTask {
       }
    }
 
-   private static void cleanOldBackups(@Nonnull Path dir) throws IOException {
-      int maxCount = (Integer)Options.getOptionSet().valueOf(Options.BACKUP_MAX_COUNT);
+   private static void cleanOldArchives(@Nonnull Path dir) throws IOException {
+      BackupConfig backupConfig = HytaleServer.get().getConfig().getBackupConfig();
+      int maxCount = backupConfig.getArchiveMaxCount();
       if (maxCount >= 1) {
          List<Path> oldBackups = BackupUtil.findOldBackups(dir, maxCount);
          if (oldBackups != null && !oldBackups.isEmpty()) {
             for (Path path : oldBackups) {
-               LOGGER.at(Level.INFO).log("Clearing old backup: %s", path);
+               LOGGER.at(Level.INFO).log("Clearing old archive backup: %s", path);
                Files.deleteIfExists(path);
             }
          }
@@ -108,9 +111,9 @@ public class BackupTask {
       try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
          for (Path path : stream) {
             if (Files.isRegularFile(path)) {
-               FileTime modifiedTime = Files.getLastModifiedTime(path);
-               if (mostRecent == null || modifiedTime.compareTo(mostRecent) > 0) {
-                  mostRecent = modifiedTime;
+               FileTime modificationTime = Files.getLastModifiedTime(path);
+               if (mostRecent == null || modificationTime.compareTo(mostRecent) > 0) {
+                  mostRecent = modificationTime;
                }
             }
          }

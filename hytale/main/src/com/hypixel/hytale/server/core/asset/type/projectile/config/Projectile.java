@@ -389,6 +389,7 @@ public class Projectile implements JsonAssetWithMap<String, DefaultAssetMap<Stri
       return this.verticalCenterShot;
    }
 
+   @Override
    public double getHorizontalCenterShot() {
       return this.horizontalCenterShot;
    }

@@ -8,26 +8,25 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.server.core.asset.type.item.config.Item;
-import com.hypixel.hytale.server.core.asset.type.model.config.Model;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.DropItemEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.InteractivelyPickupItemEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer;
 import com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction;
 import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation;
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
-import com.hypixel.hytale.server.core.modules.entity.player.PlayerSettings;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.logging.Level;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class ItemUtils {
+   @Nonnull
+   public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
    public static void interactivelyPickupItem(
       @Nonnull Ref<EntityStore> ref, @Nonnull ItemStack itemStack, @Nullable Vector3d origin, @Nonnull ComponentAccessor<EntityStore> componentAccessor
    ) {
@@ -39,19 +38,8 @@ public class ItemUtils {
       } else {
          Player playerComponent = componentAccessor.getComponent(ref, Player.getComponentType());
          if (playerComponent != null) {
-            TransformComponent transformComponent = componentAccessor.getComponent(ref, TransformComponent.getComponentType());
-
-            assert transformComponent != null;
-
-            PlayerSettings playerSettingsComponent = componentAccessor.getComponent(ref, PlayerSettings.getComponentType());
-            if (playerSettingsComponent == null) {
-               playerSettingsComponent = PlayerSettings.defaults();
-            }
-
             Holder<EntityStore> pickupItemHolder = null;
-            Item item = itemStack.getItem();
-            ItemContainer itemContainer = playerComponent.getInventory().getContainerForItemPickup(item, playerSettingsComponent);
-            ItemStackTransaction transaction = itemContainer.addItemStack(itemStack);
+            ItemStackTransaction transaction = playerComponent.giveItem(itemStack, ref, componentAccessor);
             ItemStack remainder = transaction.getRemainder();
             if (remainder != null && !remainder.isEmpty()) {
                int quantity = itemStack.getQuantity() - remainder.getQuantity();
@@ -93,14 +81,11 @@ public class ItemUtils {
          itemStack = event.getItemStack();
          if (!itemStack.isEmpty() && itemStack.isValid()) {
             HeadRotation headRotationComponent = componentAccessor.getComponent(ref, HeadRotation.getComponentType());
-
-            assert headRotationComponent != null;
-
-            Vector3f rotation = headRotationComponent.getRotation();
+            Vector3f rotation = headRotationComponent != null ? headRotationComponent.getRotation() : new Vector3f(0.0F, 0.0F, 0.0F);
             Vector3d direction = Transform.getDirection(rotation.getPitch(), rotation.getYaw());
             return throwItem(ref, componentAccessor, itemStack, direction, throwSpeed);
          } else {
-            HytaleLogger.getLogger().at(Level.WARNING).log("Attempted to throw invalid item %s at %s by %s", itemStack, throwSpeed, ref.getIndex());
+            LOGGER.at(Level.WARNING).log("Attempted to throw invalid item %s at %s by %s", itemStack, throwSpeed, ref.getIndex());
             return null;
          }
       }
@@ -114,35 +99,43 @@ public class ItemUtils {
       @Nonnull Vector3d throwDirection,
       float throwSpeed
    ) {
-      TransformComponent transformComponent = store.getComponent(ref, TransformComponent.getComponentType());
-
-      assert transformComponent != null;
-
-      ModelComponent modelComponent = store.getComponent(ref, ModelComponent.getComponentType());
-
-      assert modelComponent != null;
-
-      Vector3d throwPosition = transformComponent.getPosition().clone();
-      Model model = modelComponent.getModel();
-      throwPosition.add(0.0, model.getEyeHeight(ref, store), 0.0).add(throwDirection);
-      Holder<EntityStore> itemEntityHolder = ItemComponent.generateItemDrop(
-         store,
-         itemStack,
-         throwPosition,
-         Vector3f.ZERO,
-         (float)throwDirection.x * throwSpeed,
-         (float)throwDirection.y * throwSpeed,
-         (float)throwDirection.z * throwSpeed
-      );
-      if (itemEntityHolder == null) {
+      if (!ref.isValid()) {
+         LOGGER.at(Level.WARNING).log("Attempted to throw item %s by invalid entity %s", itemStack, ref.getIndex());
          return null;
       } else {
-         ItemComponent itemComponent = itemEntityHolder.getComponent(ItemComponent.getComponentType());
-         if (itemComponent != null) {
-            itemComponent.setPickupDelay(1.5F);
-         }
+         TransformComponent transformComponent = store.getComponent(ref, TransformComponent.getComponentType());
+         if (transformComponent == null) {
+            LOGGER.at(Level.WARNING).log("Attempted to throw item %s by entity %s without a TransformComponent", itemStack, ref.getIndex());
+            return null;
+         } else {
+            float eyeHeight = 0.0F;
+            ModelComponent modelComponent = store.getComponent(ref, ModelComponent.getComponentType());
+            if (modelComponent != null) {
+               eyeHeight = modelComponent.getModel().getEyeHeight(ref, store);
+            }
 
-         return store.addEntity(itemEntityHolder, AddReason.SPAWN);
+            Vector3d throwPosition = transformComponent.getPosition().clone();
+            throwPosition.add(0.0, eyeHeight, 0.0).add(throwDirection);
+            Holder<EntityStore> itemEntityHolder = ItemComponent.generateItemDrop(
+               store,
+               itemStack,
+               throwPosition,
+               Vector3f.ZERO,
+               (float)throwDirection.x * throwSpeed,
+               (float)throwDirection.y * throwSpeed,
+               (float)throwDirection.z * throwSpeed
+            );
+            if (itemEntityHolder == null) {
+               return null;
+            } else {
+               ItemComponent itemComponent = itemEntityHolder.getComponent(ItemComponent.getComponentType());
+               if (itemComponent != null) {
+                  itemComponent.setPickupDelay(1.5F);
+               }
+
+               return store.addEntity(itemEntityHolder, AddReason.SPAWN);
+            }
+         }
       }
    }
 

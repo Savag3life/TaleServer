@@ -8,6 +8,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class SolidityMaterialProviderAsset extends MaterialProviderAsset {
+   @Nonnull
    public static final BuilderCodec<SolidityMaterialProviderAsset> CODEC = BuilderCodec.builder(
          SolidityMaterialProviderAsset.class, SolidityMaterialProviderAsset::new, MaterialProviderAsset.ABSTRACT_CODEC
       )

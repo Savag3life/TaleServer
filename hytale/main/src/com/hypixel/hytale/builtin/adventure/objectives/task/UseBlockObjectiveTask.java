@@ -16,6 +16,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public class UseBlockObjectiveTask extends CountObjectiveTask {
+   @Nonnull
    public static final BuilderCodec<UseBlockObjectiveTask> CODEC = BuilderCodec.builder(
          UseBlockObjectiveTask.class, UseBlockObjectiveTask::new, CountObjectiveTask.CODEC
       )

@@ -32,6 +32,7 @@ public class Box implements Shape {
       })
       .build();
    public static final Box UNIT = new Box(Vector3d.ZERO, Vector3d.ALL_ONES);
+   public static final Box ZERO = new Box(Vector3d.ZERO, Vector3d.ZERO);
    @Nonnull
    public final Vector3d min = new Vector3d();
    @Nonnull

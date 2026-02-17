@@ -29,7 +29,7 @@ public class WorldMapClearMarkersCommand extends AbstractPlayerCommand {
       assert playerComponent != null;
 
       PlayerWorldData perWorldData = playerComponent.getPlayerConfigData().getPerWorldData(world.getName());
-      perWorldData.setWorldMapMarkers(null);
+      perWorldData.setUserMapMarkers(null);
       context.sendMessage(MESSAGE_COMMANDS_WORLD_MAP_MARKERS_CLEARED);
    }
 }

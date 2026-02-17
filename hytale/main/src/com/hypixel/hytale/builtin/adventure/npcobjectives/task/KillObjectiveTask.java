@@ -8,8 +8,6 @@ import com.hypixel.hytale.builtin.tagset.config.NPCGroup;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.entity.Entity;
-import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
@@ -18,6 +16,7 @@ import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import javax.annotation.Nonnull;
 
 public abstract class KillObjectiveTask extends CountObjectiveTask implements KillTask {
+   @Nonnull
    public static final BuilderCodec<KillObjectiveTask> CODEC = BuilderCodec.abstractBuilder(KillObjectiveTask.class, CountObjectiveTask.CODEC).build();
 
    public KillObjectiveTask(@Nonnull KillObjectiveTaskAsset asset, int taskSetIndex, int taskIndex) {
@@ -41,16 +40,14 @@ public abstract class KillObjectiveTask extends CountObjectiveTask implements Ki
       if (index == Integer.MIN_VALUE) {
          throw new IllegalArgumentException("Unknown npc group! " + key);
       } else if (TagSetPlugin.get(NPCGroup.class).tagInSet(index, npc.getNPCTypeIndex())) {
-         if (info.getSource() instanceof Damage.EntitySource) {
-            Ref<EntityStore> attackerEntityRef = ((Damage.EntitySource)info.getSource()).getRef();
-            Entity attackerEntity = EntityUtils.getEntity(attackerEntityRef, attackerEntityRef.getStore());
-            if (attackerEntity instanceof Player) {
-               UUIDComponent attackerUuidComponent = store.getComponent(attackerEntityRef, UUIDComponent.getComponentType());
-
-               assert attackerUuidComponent != null;
-
-               if (objective.getActivePlayerUUIDs().contains(attackerUuidComponent.getUuid())) {
-                  this.increaseTaskCompletion(store, npcRef, 1, objective);
+         if (info.getSource() instanceof Damage.EntitySource entitySource) {
+            Ref var11 = entitySource.getRef();
+            if (store.getArchetype(var11).contains(Player.getComponentType())) {
+               UUIDComponent sourceUuidComponent = store.getComponent(var11, UUIDComponent.getComponentType());
+               if (sourceUuidComponent != null) {
+                  if (objective.getActivePlayerUUIDs().contains(sourceUuidComponent.getUuid())) {
+                     this.increaseTaskCompletion(store, npcRef, 1, objective);
+                  }
                }
             }
          }

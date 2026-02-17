@@ -14,6 +14,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class BoxPropAsset extends PropAsset {
+   @Nonnull
    public static final BuilderCodec<BoxPropAsset> CODEC = BuilderCodec.builder(BoxPropAsset.class, BoxPropAsset::new, PropAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Range", Vector3i.CODEC, true), (asset, v) -> asset.range = v, asset -> asset.range)
       .add()

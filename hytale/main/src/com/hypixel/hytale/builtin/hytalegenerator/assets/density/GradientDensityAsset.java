@@ -12,6 +12,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class GradientDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<GradientDensityAsset> CODEC = BuilderCodec.builder(
          GradientDensityAsset.class, GradientDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )

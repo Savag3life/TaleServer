@@ -43,6 +43,7 @@ public class PrefabSavePage extends InteractiveCustomUIPage<PrefabSavePage.PageD
       commandBuilder.set("#Overwrite #CheckBox.Value", false);
       commandBuilder.set("#FromClipboard #CheckBox.Value", false);
       commandBuilder.set("#UsePlayerAnchor #CheckBox.Value", false);
+      commandBuilder.set("#ClearSupport #CheckBox.Value", false);
       eventBuilder.addEventBinding(
          CustomUIEventBindingType.Activating,
          "#SaveButton",
@@ -54,6 +55,7 @@ public class PrefabSavePage extends InteractiveCustomUIPage<PrefabSavePage.PageD
             .append("@Overwrite", "#Overwrite #CheckBox.Value")
             .append("@FromClipboard", "#FromClipboard #CheckBox.Value")
             .append("@UsePlayerAnchor", "#UsePlayerAnchor #CheckBox.Value")
+            .append("@ClearSupport", "#ClearSupport #CheckBox.Value")
       );
       eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#CancelButton", new EventData().append("Action", PrefabSavePage.Action.Cancel.name()));
    }
@@ -75,9 +77,9 @@ public class PrefabSavePage extends InteractiveCustomUIPage<PrefabSavePage.PageD
             Vector3i playerAnchor = this.getPlayerAnchor(ref, store, data.usePlayerAnchor && !data.fromClipboard);
             BuilderToolsPlugin.addToQueue(playerComponent, this.playerRef, (r, s, componentAccessor) -> {
                if (data.fromClipboard) {
-                  s.save(r, data.name, true, data.overwrite, componentAccessor);
+                  s.save(r, data.name, true, data.overwrite, data.clearSupport, componentAccessor);
                } else {
-                  s.saveFromSelection(r, data.name, true, data.overwrite, data.entities, data.empty, playerAnchor, componentAccessor);
+                  s.saveFromSelection(r, data.name, true, data.overwrite, data.entities, data.empty, playerAnchor, data.clearSupport, componentAccessor);
                }
             });
             break;
@@ -113,6 +115,7 @@ public class PrefabSavePage extends InteractiveCustomUIPage<PrefabSavePage.PageD
       public static final String OVERWRITE = "@Overwrite";
       public static final String FROM_CLIPBOARD = "@FromClipboard";
       public static final String USE_PLAYER_ANCHOR = "@UsePlayerAnchor";
+      public static final String CLEAR_SUPPORT = "@ClearSupport";
       public static final BuilderCodec<PrefabSavePage.PageData> CODEC = BuilderCodec.builder(PrefabSavePage.PageData.class, PrefabSavePage.PageData::new)
          .append(
             new KeyedCodec<>("Action", new EnumCodec<>(PrefabSavePage.Action.class, EnumCodec.EnumStyle.LEGACY)),
@@ -132,6 +135,8 @@ public class PrefabSavePage extends InteractiveCustomUIPage<PrefabSavePage.PageD
          .add()
          .append(new KeyedCodec<>("@UsePlayerAnchor", Codec.BOOLEAN), (o, usePlayerAnchor) -> o.usePlayerAnchor = usePlayerAnchor, o -> o.usePlayerAnchor)
          .add()
+         .append(new KeyedCodec<>("@ClearSupport", Codec.BOOLEAN), (o, clearSupport) -> o.clearSupport = clearSupport, o -> o.clearSupport)
+         .add()
          .build();
       public PrefabSavePage.Action action;
       public String name;
@@ -140,6 +145,7 @@ public class PrefabSavePage extends InteractiveCustomUIPage<PrefabSavePage.PageD
       public boolean overwrite = false;
       public boolean fromClipboard = false;
       public boolean usePlayerAnchor = false;
+      public boolean clearSupport = false;
 
       public PageData() {
       }

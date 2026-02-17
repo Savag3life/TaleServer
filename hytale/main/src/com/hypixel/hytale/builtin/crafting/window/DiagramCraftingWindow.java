@@ -44,6 +44,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class DiagramCraftingWindow extends CraftingWindow implements ItemContainerWindow {
+   @Nonnull
    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
    private String category;
    private String itemCategory;

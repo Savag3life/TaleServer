@@ -28,6 +28,7 @@ public class DeployableOwnerComponent implements Component<EntityStore> {
    private final Object2IntMap<String> deployableCountPerId = new Object2IntOpenHashMap();
    @Nonnull
    private final List<Ref<EntityStore>> deployablesForDestruction = new ObjectArrayList();
+   @Nonnull
    private final List<Pair<String, Ref<EntityStore>>> tempDestructionList = new ObjectArrayList();
 
    @Nonnull

@@ -42,7 +42,6 @@ public class TransformComponent implements Component<EntityStore> {
    @Nullable
    private Ref<ChunkStore> chunkRef;
 
-   @Nonnull
    public static ComponentType<EntityStore, TransformComponent> getComponentType() {
       return EntityModule.get().getTransformComponentType();
    }

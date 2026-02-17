@@ -11,6 +11,7 @@ import java.util.EnumSet;
 import javax.annotation.Nonnull;
 
 public class BuilderActionCompleteTask extends BuilderActionPlayAnimation {
+   @Nonnull
    protected final BooleanHolder playAnimation = new BooleanHolder();
 
    @Nonnull

@@ -6,6 +6,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderSensorBase;
+import com.hypixel.hytale.server.npc.corecomponents.entity.filters.EntityFilterViewSector;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.npc.movement.controllers.MotionController;
 import com.hypixel.hytale.server.npc.role.Role;
@@ -105,5 +106,15 @@ public abstract class SensorWithEntityFilters extends SensorBase implements IAnn
       }
 
       return true;
+   }
+
+   protected float findViewAngleFromFilters() {
+      for (IEntityFilter filter : this.filters) {
+         if (filter instanceof EntityFilterViewSector viewSector) {
+            return viewSector.getViewAngle();
+         }
+      }
+
+      return 0.0F;
    }
 }

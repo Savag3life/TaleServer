@@ -14,8 +14,7 @@ import javax.annotation.Nullable;
 import org.bson.BsonDocument;
 
 public class PrefabLoader {
-   @Nonnull
-   public static void loadAllPrefabBuffersUnder(@Nonnull Path dirPath, List<PrefabBuffer> pathPrefabs) {
+   public static void loadAllPrefabBuffersUnder(@Nonnull Path dirPath, @Nonnull List<PrefabBuffer> pathPrefabs) {
       if (!Files.isDirectory(dirPath)) {
          PrefabBuffer prefab = loadPrefabBufferAt(dirPath);
          if (prefab != null) {

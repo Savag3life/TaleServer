@@ -20,14 +20,22 @@ import javax.annotation.Nonnull;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 public class ClusterProp extends Prop {
+   @Nonnull
    private final Double2DoubleFunction weightCurve;
+   @Nonnull
    private final SeedGenerator seedGenerator;
+   @Nonnull
    private final WeightedMap<Prop> propWeightedMap;
    private final int range;
+   @Nonnull
    private final ContextDependency contextDependency;
+   @Nonnull
    private final Pattern pattern;
+   @Nonnull
    private final Scanner scanner;
+   @Nonnull
    private final Bounds3i readBounds_voxelGrid;
+   @Nonnull
    private final Bounds3i writeBounds_voxelGrid;
 
    public ClusterProp(
@@ -63,6 +71,7 @@ public class ClusterProp extends Prop {
       }
    }
 
+   @Nonnull
    public PositionListScanResult scan(@Nonnull Vector3i position, @Nonnull VoxelSpace<Material> materialSpace, @Nonnull WorkerIndexer.Id id) {
       Scanner.Context scannerContext = new Scanner.Context(position, this.pattern, materialSpace, id);
       List<Vector3i> validPositions = this.scanner.scan(scannerContext);
@@ -106,6 +115,7 @@ public class ClusterProp extends Prop {
       }
    }
 
+   @Nonnull
    @Override
    public ContextDependency getContextDependency() {
       return this.contextDependency.clone();

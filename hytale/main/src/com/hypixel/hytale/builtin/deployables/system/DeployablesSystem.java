@@ -29,7 +29,9 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import javax.annotation.Nonnull;
 
 public class DeployablesSystem {
-   private static void spawnParticleEffect(Ref<EntityStore> sourceRef, CommandBuffer<EntityStore> commandBuffer, Vector3d position, ModelParticle particle) {
+   private static void spawnParticleEffect(
+      @Nonnull Ref<EntityStore> sourceRef, @Nonnull CommandBuffer<EntityStore> commandBuffer, @Nonnull Vector3d position, @Nonnull ModelParticle particle
+   ) {
       Vector3f particlePositionOffset = particle.getPositionOffset();
       Direction particleRotationOffset = particle.getRotationOffset();
       Vector3d particlePosition = new Vector3d(position.x, position.y, position.z);
@@ -66,8 +68,13 @@ public class DeployablesSystem {
       }
 
       @Override
-      public void tick(float dt, int index, ArchetypeChunk<EntityStore> archetypeChunk, Store<EntityStore> store, CommandBuffer<EntityStore> commandBuffer) {
+      public void tick(
+         float dt, int index, ArchetypeChunk<EntityStore> archetypeChunk, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer
+      ) {
          DeployableOwnerComponent deployableOwnerComponent = archetypeChunk.getComponent(index, DeployableOwnerComponent.getComponentType());
+
+         assert deployableOwnerComponent != null;
+
          deployableOwnerComponent.tick(commandBuffer);
       }
    }
@@ -79,7 +86,9 @@ public class DeployablesSystem {
          Ref<EntityStore> ownerRef = deployableComponent.getOwner();
          if (ownerRef != null && ownerRef.isValid()) {
             DeployableOwnerComponent deployableOwnerComponent = ownerRef.getStore().getComponent(ownerRef, DeployableOwnerComponent.getComponentType());
-            deployableOwnerComponent.deRegisterDeployable(deployableConfig.getId(), ref);
+            if (deployableOwnerComponent != null) {
+               deployableOwnerComponent.deRegisterDeployable(deployableConfig.getId(), ref);
+            }
          }
       }
 
@@ -93,24 +102,30 @@ public class DeployablesSystem {
          @Nonnull Ref<EntityStore> ref, @Nonnull AddReason reason, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer
       ) {
          DeployableComponent deployableComponent = store.getComponent(ref, DeployableComponent.getComponentType());
-         DeployableConfig deployableConfig = deployableComponent.getConfig();
-         Vector3d position = store.getComponent(ref, TransformComponent.getComponentType()).getPosition();
-         Ref<EntityStore> ownerRef = deployableComponent.getOwner();
-         int soundIndex = deployableConfig.getDeploySoundEventIndex();
-         SoundUtil.playSoundEvent3d(null, soundIndex, position, commandBuffer);
-         ModelParticle[] particles = deployableConfig.getSpawnParticles();
-         if (particles != null) {
-            for (ModelParticle particle : particles) {
-               DeployablesSystem.spawnParticleEffect(ref, commandBuffer, position, particle);
+
+         assert deployableComponent != null;
+
+         TransformComponent transformComponent = store.getComponent(ref, TransformComponent.getComponentType());
+         if (transformComponent != null) {
+            DeployableConfig deployableConfig = deployableComponent.getConfig();
+            Vector3d position = transformComponent.getPosition();
+            Ref<EntityStore> ownerRef = deployableComponent.getOwner();
+            int soundIndex = deployableConfig.getDeploySoundEventIndex();
+            SoundUtil.playSoundEvent3d(null, soundIndex, position, commandBuffer);
+            ModelParticle[] particles = deployableConfig.getSpawnParticles();
+            if (particles != null) {
+               for (ModelParticle particle : particles) {
+                  DeployablesSystem.spawnParticleEffect(ref, commandBuffer, position, particle);
+               }
             }
-         }
 
-         if (ownerRef.isValid()) {
-            DeployableOwnerComponent deployableOwnerComponent = ownerRef.getStore().getComponent(ownerRef, DeployableOwnerComponent.getComponentType());
+            if (ownerRef.isValid()) {
+               DeployableOwnerComponent deployableOwnerComponent = ownerRef.getStore().getComponent(ownerRef, DeployableOwnerComponent.getComponentType());
 
-            assert deployableOwnerComponent != null;
+               assert deployableOwnerComponent != null;
 
-            deployableOwnerComponent.registerDeployable(ownerRef, deployableComponent, deployableConfig.getId(), ref, store);
+               deployableOwnerComponent.registerDeployable(ownerRef, deployableComponent, deployableConfig.getId(), ref, store);
+            }
          }
       }
 
@@ -119,8 +134,15 @@ public class DeployablesSystem {
          @Nonnull Ref<EntityStore> ref, @Nonnull RemoveReason reason, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer
       ) {
          DeployableComponent deployableComponent = store.getComponent(ref, DeployableComponent.getComponentType());
+
+         assert deployableComponent != null;
+
+         TransformComponent transformComponent = store.getComponent(ref, TransformComponent.getComponentType());
+
+         assert transformComponent != null;
+
          DeployableConfig deployableConfig = deployableComponent.getConfig();
-         Vector3d position = store.getComponent(ref, TransformComponent.getComponentType()).getPosition();
+         Vector3d position = transformComponent.getPosition();
          int despawnSoundIndex = deployableConfig.getDespawnSoundEventIndex();
          int dieSoundIndex = deployableConfig.getDieSoundEventIndex();
          if (dieSoundIndex != 0) {
@@ -152,9 +174,14 @@ public class DeployablesSystem {
       }
 
       @Override
-      public void tick(float dt, int index, ArchetypeChunk<EntityStore> archetypeChunk, Store<EntityStore> store, CommandBuffer<EntityStore> commandBuffer) {
-         DeployableComponent comp = archetypeChunk.getComponent(index, DeployableComponent.getComponentType());
-         comp.tick(dt, index, archetypeChunk, store, commandBuffer);
+      public void tick(
+         float dt, int index, ArchetypeChunk<EntityStore> archetypeChunk, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer
+      ) {
+         DeployableComponent deployableComponent = archetypeChunk.getComponent(index, DeployableComponent.getComponentType());
+
+         assert deployableComponent != null;
+
+         deployableComponent.tick(dt, index, archetypeChunk, store, commandBuffer);
       }
    }
 }

@@ -10,6 +10,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class Cache2dDensityAsset_Deprecated extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<Cache2dDensityAsset_Deprecated> CODEC = BuilderCodec.builder(
          Cache2dDensityAsset_Deprecated.class, Cache2dDensityAsset_Deprecated::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -27,7 +28,7 @@ public class Cache2dDensityAsset_Deprecated extends DensityAsset {
          if (input == null) {
             return new ConstantValueDensity(0.0);
          } else {
-            Density cacheDensity = new MultiCacheDensity(input, argument.workerIndexer.getWorkerCount(), CacheDensityAsset.DEFAULT_CAPACITY);
+            Density cacheDensity = new MultiCacheDensity(input, CacheDensityAsset.DEFAULT_CAPACITY);
             return new YOverrideDensity(cacheDensity, this.y);
          }
       } else {

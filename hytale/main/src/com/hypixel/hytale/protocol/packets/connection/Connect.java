@@ -1,7 +1,9 @@
 package com.hypixel.hytale.protocol.packets.connection;
 
 import com.hypixel.hytale.protocol.HostAddress;
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.PacketIO;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
@@ -13,7 +15,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class Connect implements Packet {
+public class Connect implements Packet, ToServerPacket {
    public static final int PACKET_ID = 0;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -43,6 +45,11 @@ public class Connect implements Packet {
    @Override
    public int getId() {
       return 0;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public Connect() {

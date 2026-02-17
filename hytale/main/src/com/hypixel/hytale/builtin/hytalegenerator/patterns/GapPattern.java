@@ -19,6 +19,10 @@ public class GapPattern extends Pattern {
    private Pattern gapPattern;
    private Pattern anchorPattern;
    private SpaceSize readSpaceSize;
+   @Nonnull
+   private final Vector3i rChildPosition;
+   @Nonnull
+   private final Pattern.Context rChildContext;
 
    public GapPattern(
       @Nonnull List<Float> angles,
@@ -38,6 +42,8 @@ public class GapPattern extends Pattern {
          this.anchorRoughness = anchorRoughness;
          this.depthDown = depthDown;
          this.depthUp = depthUp;
+         this.rChildPosition = new Vector3i();
+         this.rChildContext = new Pattern.Context();
          this.depthPositionedPatterns = this.renderDepths();
          this.axisPositionedPatterns = new ArrayList<>(angles.size());
 
@@ -70,6 +76,44 @@ public class GapPattern extends Pattern {
       } else {
          throw new IllegalArgumentException("negative sizes");
       }
+   }
+
+   @Override
+   public boolean matches(@Nonnull Pattern.Context context) {
+      this.rChildPosition.assign(0, 0, 0);
+      this.rChildContext.assign(context);
+      this.rChildContext.position = this.rChildPosition;
+
+      for (GapPattern.PositionedPattern entry : this.depthPositionedPatterns) {
+         this.rChildPosition.assign(entry.position).add(context.position);
+         if (!entry.pattern.matches(this.rChildContext)) {
+            return false;
+         }
+      }
+
+      for (List<GapPattern.PositionedPattern> patternsInDirection : this.axisPositionedPatterns) {
+         boolean matchesDirection = true;
+
+         for (GapPattern.PositionedPattern entryx : patternsInDirection) {
+            this.rChildPosition.assign(entryx.position).add(context.position);
+            if (!entryx.pattern.matches(context)) {
+               matchesDirection = false;
+               break;
+            }
+         }
+
+         if (matchesDirection) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   @Nonnull
+   @Override
+   public SpaceSize readSpace() {
+      return this.readSpaceSize.clone();
    }
 
    @Nonnull
@@ -159,44 +203,6 @@ public class GapPattern extends Pattern {
       wallTip.add(mov.clone().setLength(halfWall));
       positions.add(new GapPattern.PositionedPattern(this.anchorPattern, wallTip.toVector3i()));
       return positions;
-   }
-
-   @Override
-   public boolean matches(@Nonnull Pattern.Context context) {
-      Vector3i childPosition = new Vector3i();
-      Pattern.Context childContext = new Pattern.Context(context);
-      childContext.position = childPosition;
-
-      for (GapPattern.PositionedPattern entry : this.depthPositionedPatterns) {
-         childPosition.assign(entry.position).add(context.position);
-         if (!entry.pattern.matches(childContext)) {
-            return false;
-         }
-      }
-
-      for (List<GapPattern.PositionedPattern> patternsInDirection : this.axisPositionedPatterns) {
-         boolean matchesDirection = true;
-
-         for (GapPattern.PositionedPattern entryx : patternsInDirection) {
-            childPosition.assign(entryx.position).add(context.position);
-            if (!entryx.pattern.matches(context)) {
-               matchesDirection = false;
-               break;
-            }
-         }
-
-         if (matchesDirection) {
-            return true;
-         }
-      }
-
-      return false;
-   }
-
-   @Nonnull
-   @Override
-   public SpaceSize readSpace() {
-      return this.readSpaceSize.clone();
    }
 
    public static class PositionedPattern {

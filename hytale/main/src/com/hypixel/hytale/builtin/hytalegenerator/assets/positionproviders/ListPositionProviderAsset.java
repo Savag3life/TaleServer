@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class ListPositionProviderAsset extends PositionProviderAsset {
+   @Nonnull
    public static final BuilderCodec<ListPositionProviderAsset> CODEC = BuilderCodec.builder(
          ListPositionProviderAsset.class, ListPositionProviderAsset::new, PositionProviderAsset.ABSTRACT_CODEC
       )
@@ -45,6 +46,7 @@ public class ListPositionProviderAsset extends PositionProviderAsset {
    }
 
    public static class PositionAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, ListPositionProviderAsset.PositionAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, ListPositionProviderAsset.PositionAsset> CODEC = AssetBuilderCodec.builder(
             ListPositionProviderAsset.PositionAsset.class,
             ListPositionProviderAsset.PositionAsset::new,

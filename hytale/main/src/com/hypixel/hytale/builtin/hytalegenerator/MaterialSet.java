@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.ints.IntSets;
 import java.util.List;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class MaterialSet implements Predicate<Material> {
    private final boolean isInclusive;
@@ -46,7 +47,7 @@ public class MaterialSet implements Predicate<Material> {
       }
    }
 
-   public boolean test(Material value) {
+   public boolean test(@Nullable Material value) {
       if (value == null) {
          return false;
       } else {

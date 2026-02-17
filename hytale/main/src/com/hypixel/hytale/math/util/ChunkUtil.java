@@ -13,6 +13,7 @@ public class ChunkUtil {
    public static final int SIZE_COLUMNS = 1024;
    public static final int SIZE_COLUMNS_MASK = 1023;
    public static final int SIZE_BLOCKS = 32768;
+   public static final int SIZE_BLOCKS_MASK = 32767;
    public static final int BITS2 = 10;
    public static final int NON_CHUNK_MASK = -32;
    public static final int HEIGHT_SECTIONS = 10;

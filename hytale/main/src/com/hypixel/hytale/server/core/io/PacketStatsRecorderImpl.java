@@ -151,7 +151,7 @@ public class PacketStatsRecorderImpl implements PacketStatsRecorder {
       @Nullable
       @Override
       public String getName() {
-         PacketRegistry.PacketInfo info = PacketRegistry.getById(this.packetId);
+         PacketRegistry.PacketInfo info = PacketRegistry.all().get(this.packetId);
          return info != null ? info.name() : null;
       }
 

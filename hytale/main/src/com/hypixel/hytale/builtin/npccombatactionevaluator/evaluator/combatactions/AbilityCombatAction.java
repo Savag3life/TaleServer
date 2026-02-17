@@ -37,14 +37,17 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 
 public class AbilityCombatAction extends CombatActionOption {
+   @Nonnull
    public static final EnumCodec<AbilityCombatAction.AbilityType> MODE_CODEC = new EnumCodec<>(AbilityCombatAction.AbilityType.class)
       .documentKey(AbilityCombatAction.AbilityType.Primary, "Use primary attack.")
       .documentKey(AbilityCombatAction.AbilityType.Secondary, "Use secondary attack.");
+   @Nonnull
    public static final EnumCodec<Positioning> POSITIONING_CODEC = new EnumCodec<>(Positioning.class)
       .documentKey(Positioning.Any, "Don't care about positioning.")
       .documentKey(Positioning.Front, "Try to be in front of the target.")
       .documentKey(Positioning.Behind, "Try to be behind the target.")
       .documentKey(Positioning.Flank, "Try to be on the target's flank.");
+   @Nonnull
    public static final BuilderCodec<AbilityCombatAction> CODEC = BuilderCodec.builder(
          AbilityCombatAction.class, AbilityCombatAction::new, CombatActionOption.BASE_CODEC
       )
@@ -170,6 +173,7 @@ public class AbilityCombatAction extends CombatActionOption {
       .addValidator(Validators.greaterThanOrEqual(0.0))
       .add()
       .build();
+   @Nonnull
    protected static final ComponentType<EntityStore, TransformComponent> TRANSFORM_COMPONENT_TYPE = TransformComponent.getComponentType();
    protected String ability;
    protected AbilityCombatAction.AbilityType abilityType = AbilityCombatAction.AbilityType.Primary;

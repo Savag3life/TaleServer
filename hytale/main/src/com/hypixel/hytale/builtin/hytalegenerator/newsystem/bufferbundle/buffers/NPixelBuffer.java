@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 
 public abstract class NPixelBuffer<T> extends NBuffer {
    public static final int BUFFER_SIZE_BITS = 3;
+   @Nonnull
    public static final Vector3i SIZE = new Vector3i(8, 1, 8);
 
    @Nullable

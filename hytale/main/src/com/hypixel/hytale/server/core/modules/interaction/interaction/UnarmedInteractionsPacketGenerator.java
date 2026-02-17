@@ -2,7 +2,7 @@ package com.hypixel.hytale.server.core.modules.interaction.interaction;
 
 import com.hypixel.hytale.assetstore.map.DefaultAssetMap;
 import com.hypixel.hytale.protocol.InteractionType;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateUnarmedInteractions;
 import com.hypixel.hytale.server.core.asset.packet.DefaultAssetPacketGenerator;
@@ -16,7 +16,7 @@ import javax.annotation.Nonnull;
 public class UnarmedInteractionsPacketGenerator extends DefaultAssetPacketGenerator<String, UnarmedInteractions> {
    @Nonnull
    @Override
-   public Packet generateInitPacket(@Nonnull DefaultAssetMap<String, UnarmedInteractions> assetMap, Map<String, UnarmedInteractions> assets) {
+   public ToClientPacket generateInitPacket(@Nonnull DefaultAssetMap<String, UnarmedInteractions> assetMap, Map<String, UnarmedInteractions> assets) {
       UpdateUnarmedInteractions packet = new UpdateUnarmedInteractions();
       packet.type = UpdateType.Init;
       UnarmedInteractions unarmedInteraction = assetMap.getAsset("Empty");
@@ -32,7 +32,7 @@ public class UnarmedInteractionsPacketGenerator extends DefaultAssetPacketGenera
 
    @Nonnull
    @Override
-   public Packet generateUpdatePacket(@Nonnull Map<String, UnarmedInteractions> loadedAssets) {
+   public ToClientPacket generateUpdatePacket(@Nonnull Map<String, UnarmedInteractions> loadedAssets) {
       UpdateUnarmedInteractions packet = new UpdateUnarmedInteractions();
       packet.type = UpdateType.AddOrUpdate;
       UnarmedInteractions unarmedInteraction = loadedAssets.get("Empty");
@@ -48,7 +48,7 @@ public class UnarmedInteractionsPacketGenerator extends DefaultAssetPacketGenera
 
    @Nonnull
    @Override
-   public Packet generateRemovePacket(Set<String> removed) {
+   public ToClientPacket generateRemovePacket(Set<String> removed) {
       UpdateUnarmedInteractions packet = new UpdateUnarmedInteractions();
       packet.type = UpdateType.Remove;
       return packet;

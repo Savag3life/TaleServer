@@ -24,7 +24,7 @@ import org.bson.BsonDocument;
 public class DiskPlayerStorageProvider implements PlayerStorageProvider {
    public static final String ID = "Disk";
    public static final BuilderCodec<DiskPlayerStorageProvider> CODEC = BuilderCodec.builder(DiskPlayerStorageProvider.class, DiskPlayerStorageProvider::new)
-      .append(new KeyedCodec<>("Path", Codec.STRING), (o, s) -> o.path = PathUtil.get(s), o -> o.path.toString())
+      .append(new KeyedCodec<>("Path", Codec.STRING), (o, s) -> o.path = Path.of(s), o -> o.path.toString())
       .add()
       .build();
    @Nonnull
@@ -38,7 +38,11 @@ public class DiskPlayerStorageProvider implements PlayerStorageProvider {
    @Nonnull
    @Override
    public PlayerStorage getPlayerStorage() {
-      return new DiskPlayerStorageProvider.DiskPlayerStorage(this.path);
+      if (!PathUtil.isInTrustedRoot(this.path)) {
+         throw new IllegalStateException("Player storage path must be within a trusted directory: " + this.path);
+      } else {
+         return new DiskPlayerStorageProvider.DiskPlayerStorage(this.path);
+      }
    }
 
    @Nonnull

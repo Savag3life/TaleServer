@@ -27,7 +27,9 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 public abstract class DeployableConfig implements NetworkSerializable<com.hypixel.hytale.protocol.DeployableConfig> {
+   @Nonnull
    public static final CodecMapCodec<DeployableConfig> CODEC = new CodecMapCodec<>("Type");
+   @Nonnull
    public static final BuilderCodec<DeployableConfig> BASE_CODEC = BuilderCodec.abstractBuilder(DeployableConfig.class)
       .appendInherited(new KeyedCodec<>("Id", Codec.STRING), (o, i) -> o.id = i, o -> o.id, (o, p) -> o.id = p.id)
       .documentation("Used to identify this deployable for uses such as MaxLiveCount")
@@ -192,7 +194,7 @@ public abstract class DeployableConfig implements NetworkSerializable<com.hypixe
    protected DeployableConfig() {
    }
 
-   private static void processConfig(DeployableConfig config) {
+   private static void processConfig(@Nonnull DeployableConfig config) {
       if (config.deploySoundEventId != null) {
          config.deploySoundEventIndex = SoundEvent.getAssetMap().getIndex(config.deploySoundEventId);
       }
@@ -225,17 +227,19 @@ public abstract class DeployableConfig implements NetworkSerializable<com.hypixe
    protected static void playAnimation(
       @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull DeployableConfig config, @Nonnull String animationSetKey
    ) {
-      EntityStore externalData = store.getExternalData();
       NetworkId networkIdComponent = store.getComponent(ref, NetworkId.getComponentType());
-      DeployablesUtils.playAnimation(store, networkIdComponent.getId(), ref, config, AnimationSlot.Action, null, animationSetKey);
+      if (networkIdComponent != null) {
+         DeployablesUtils.playAnimation(store, networkIdComponent.getId(), ref, config, AnimationSlot.Action, null, animationSetKey);
+      }
    }
 
    protected static void stopAnimation(@Nonnull Store<EntityStore> store, @Nonnull ArchetypeChunk<EntityStore> archetypeChunk, int index) {
-      EntityStore externalData = store.getExternalData();
       Ref<EntityStore> ref = archetypeChunk.getReferenceTo(index);
-      if (ref != null && ref.isValid()) {
+      if (ref.isValid()) {
          NetworkId networkIdComponent = archetypeChunk.getComponent(index, NetworkId.getComponentType());
-         DeployablesUtils.stopAnimation(store, networkIdComponent.getId(), ref, AnimationSlot.Action);
+         if (networkIdComponent != null) {
+            DeployablesUtils.stopAnimation(store, networkIdComponent.getId(), ref, AnimationSlot.Action);
+         }
       }
    }
 
@@ -347,6 +351,7 @@ public abstract class DeployableConfig implements NetworkSerializable<com.hypixe
    ) {
    }
 
+   @Nonnull
    public com.hypixel.hytale.protocol.DeployableConfig toPacket() {
       com.hypixel.hytale.protocol.DeployableConfig config = new com.hypixel.hytale.protocol.DeployableConfig();
       config.model = this.getModel().toPacket();
@@ -364,6 +369,7 @@ public abstract class DeployableConfig implements NetworkSerializable<com.hypixe
    }
 
    public static class StatConfig {
+      @Nonnull
       private static final BuilderCodec<DeployableConfig.StatConfig> CODEC = BuilderCodec.builder(
             DeployableConfig.StatConfig.class, DeployableConfig.StatConfig::new
          )

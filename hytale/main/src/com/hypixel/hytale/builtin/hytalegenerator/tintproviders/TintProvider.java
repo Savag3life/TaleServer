@@ -32,6 +32,7 @@ public abstract class TintProvider {
    }
 
    public static class Result {
+      @Nonnull
       public static final TintProvider.Result WITHOUT_VALUE = new TintProvider.Result();
       public final int tint;
       public final boolean hasValue;

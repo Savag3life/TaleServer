@@ -1,15 +1,17 @@
 package com.hypixel.hytale.protocol.packets.entities;
 
 import com.hypixel.hytale.protocol.ChangeVelocityType;
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.Position;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class ApplyKnockback implements Packet {
+public class ApplyKnockback implements Packet, ToClientPacket {
    public static final int PACKET_ID = 164;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -28,6 +30,11 @@ public class ApplyKnockback implements Packet {
    @Override
    public int getId() {
       return 164;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public ApplyKnockback() {

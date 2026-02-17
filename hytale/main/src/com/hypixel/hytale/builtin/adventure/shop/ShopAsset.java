@@ -16,6 +16,7 @@ import java.util.Arrays;
 import javax.annotation.Nonnull;
 
 public class ShopAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, ShopAsset>> {
+   @Nonnull
    public static final AssetBuilderCodec<String, ShopAsset> CODEC = AssetBuilderCodec.builder(
          ShopAsset.class,
          ShopAsset::new,
@@ -31,12 +32,14 @@ public class ShopAsset implements JsonAssetWithMap<String, DefaultAssetMap<Strin
          shopAsset -> shopAsset.elements
       )
       .build();
+   @Nonnull
    public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(ShopAsset::getAssetStore));
    private static AssetStore<String, ShopAsset, DefaultAssetMap<String, ShopAsset>> ASSET_STORE;
    protected AssetExtraInfo.Data extraData;
    protected String id;
    protected ChoiceElement[] elements;
 
+   @Nonnull
    public static AssetStore<String, ShopAsset, DefaultAssetMap<String, ShopAsset>> getAssetStore() {
       if (ASSET_STORE == null) {
          ASSET_STORE = AssetRegistry.getAssetStore(ShopAsset.class);

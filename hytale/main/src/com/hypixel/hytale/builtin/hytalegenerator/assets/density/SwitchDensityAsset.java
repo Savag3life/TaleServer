@@ -17,6 +17,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 public class SwitchDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<SwitchDensityAsset> CODEC = BuilderCodec.builder(
          SwitchDensityAsset.class, SwitchDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -27,7 +28,9 @@ public class SwitchDensityAsset extends DensityAsset {
       )
       .add()
       .build();
+   @Nonnull
    public static final String DEFAULT_STATE = "Default";
+   @Nonnull
    public static final int DEFAULT_STATE_HASH = 0;
    private SwitchDensityAsset.SwitchCaseAsset[] switchCaseAssets = new SwitchDensityAsset.SwitchCaseAsset[0];
 
@@ -68,6 +71,7 @@ public class SwitchDensityAsset extends DensityAsset {
    }
 
    public static class SwitchCaseAsset implements Cleanable, JsonAssetWithMap<String, DefaultAssetMap<String, SwitchDensityAsset.SwitchCaseAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, SwitchDensityAsset.SwitchCaseAsset> CODEC = AssetBuilderCodec.builder(
             SwitchDensityAsset.SwitchCaseAsset.class,
             SwitchDensityAsset.SwitchCaseAsset::new,

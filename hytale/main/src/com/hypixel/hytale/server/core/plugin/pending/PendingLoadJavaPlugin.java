@@ -8,7 +8,6 @@ import com.hypixel.hytale.server.core.plugin.PluginClassLoader;
 import com.hypixel.hytale.server.core.plugin.PluginManager;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
-import java.util.logging.Level;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -33,28 +32,18 @@ public class PendingLoadJavaPlugin extends PendingLoadPlugin {
       return this.urlClassLoader.isInServerClassPath();
    }
 
-   @Nullable
-   public JavaPlugin load() {
-      try {
-         PluginManifest manifest = this.getManifest();
-         Class<?> mainClass = this.urlClassLoader.loadLocalClass(manifest.getMain());
-         if (JavaPlugin.class.isAssignableFrom(mainClass)) {
-            Constructor<?> constructor = mainClass.getConstructor(JavaPluginInit.class);
-            Path dataDirectory = PluginManager.MODS_PATH.resolve(manifest.getGroup() + "_" + manifest.getName());
-            JavaPluginInit init = new JavaPluginInit(manifest, dataDirectory, this.getPath(), this.urlClassLoader);
-            return (JavaPlugin)constructor.newInstance(init);
-         }
-
+   @Nonnull
+   public JavaPlugin load() throws Exception {
+      PluginManifest manifest = this.getManifest();
+      Class<?> mainClass = this.urlClassLoader.loadLocalClass(manifest.getMain());
+      if (JavaPlugin.class.isAssignableFrom(mainClass)) {
+         Constructor<?> constructor = mainClass.getConstructor(JavaPluginInit.class);
+         Path dataDirectory = PluginManager.MODS_PATH.resolve(manifest.getGroup() + "_" + manifest.getName());
+         JavaPluginInit init = new JavaPluginInit(manifest, dataDirectory, this.getPath(), this.urlClassLoader);
+         return (JavaPlugin)constructor.newInstance(init);
+      } else {
          throw new ClassCastException(manifest.getMain() + " does not extend JavaPlugin");
-      } catch (ClassNotFoundException var6) {
-         ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var6)).log("Failed to load plugin %s. Failed to find main class!", this.getPath());
-      } catch (NoSuchMethodException var7) {
-         ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var7)).log("Failed to load plugin %s. Requires default constructor!", this.getPath());
-      } catch (Throwable var8) {
-         ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var8)).log("Failed to load plugin %s", this.getPath());
       }
-
-      return null;
    }
 
    @Nonnull

@@ -17,13 +17,19 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 public abstract class PointGeneratorAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, PointGeneratorAsset>> {
+   @Nonnull
    private static final PointGeneratorAsset[] EMPTY_INPUTS = new PointGeneratorAsset[0];
+   @Nonnull
    public static final AssetCodecMapCodec<String, PointGeneratorAsset> CODEC = new AssetCodecMapCodec<>(
       Codec.STRING, (t, k) -> t.id = k, t -> t.id, (t, data) -> t.data = data, t -> t.data
    );
+   @Nonnull
    private static final Map<String, PointGeneratorAsset> exportedNodes = new HashMap<>();
+   @Nonnull
    public static final Codec<String> CHILD_ASSET_CODEC = new ContainedAssetCodec<>(PointGeneratorAsset.class, CODEC);
+   @Nonnull
    public static final Codec<String[]> CHILD_ASSET_CODEC_ARRAY = new ArrayCodec<>(CHILD_ASSET_CODEC, String[]::new);
+   @Nonnull
    public static final BuilderCodec<PointGeneratorAsset> ABSTRACT_CODEC = BuilderCodec.abstractBuilder(PointGeneratorAsset.class)
       .append(new KeyedCodec<>("Skip", Codec.BOOLEAN, false), (t, k) -> t.skip = k, t -> t.skip)
       .add()
@@ -38,8 +44,9 @@ public abstract class PointGeneratorAsset implements JsonAssetWithMap<String, De
       .build();
    private String id;
    private AssetExtraInfo.Data data;
+   @Nonnull
    private PointGeneratorAsset[] inputs = EMPTY_INPUTS;
-   private boolean skip = false;
+   private boolean skip;
    private String exportName = "";
 
    protected PointGeneratorAsset() {
@@ -47,6 +54,7 @@ public abstract class PointGeneratorAsset implements JsonAssetWithMap<String, De
 
    public abstract PointProvider build(@Nonnull SeedBox var1);
 
+   @Nonnull
    public PointGeneratorAsset[] inputs() {
       return this.inputs;
    }

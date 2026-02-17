@@ -7,6 +7,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefChangeSystem;
+import com.hypixel.hytale.protocol.packets.interface_.Page;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.InteractionManager;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
@@ -16,6 +17,7 @@ import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.interaction.InteractionModule;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class RespawnSystems {
    public static class CheckBrokenItemsRespawnSystem extends RespawnSystems.OnRespawnSystem {
@@ -67,6 +69,24 @@ public class RespawnSystems {
       ) {
          InteractionManager interactionManagerComponent = store.getComponent(ref, InteractionModule.get().getInteractionManagerComponent());
          interactionManagerComponent.clear();
+      }
+   }
+
+   public static class ClearRespawnUI extends RespawnSystems.OnRespawnSystem {
+      public void onComponentRemoved(
+         @Nonnull Ref<EntityStore> ref, @Nonnull DeathComponent component, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer
+      ) {
+         Player playerComponent = commandBuffer.getComponent(ref, Player.getComponentType());
+
+         assert playerComponent != null;
+
+         playerComponent.getPageManager().setPage(ref, store, Page.None);
+      }
+
+      @Nullable
+      @Override
+      public Query<EntityStore> getQuery() {
+         return Player.getComponentType();
       }
    }
 

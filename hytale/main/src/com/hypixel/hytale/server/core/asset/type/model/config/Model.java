@@ -40,12 +40,18 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
    private final Box boundingBox;
    @Nullable
    private final Box crouchBoundingBox;
+   @Nullable
+   private final Box sittingBoundingBox;
+   @Nullable
+   private final Box sleepingBoundingBox;
    private final String model;
    private final String texture;
    private final String gradientSet;
    private final String gradientId;
    private final float eyeHeight;
    private final float crouchOffset;
+   private final float sittingOffset;
+   private final float sleepingOffset;
    private final Map<String, ModelAsset.AnimationSet> animationSetMap;
    private final CameraSettings camera;
    private final ColorLight light;
@@ -69,6 +75,8 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
       String gradientId,
       float eyeHeight,
       float crouchOffset,
+      float sittingOffset,
+      float sleepingOffset,
       Map<String, ModelAsset.AnimationSet> animationSetMap,
       CameraSettings camera,
       ColorLight light,
@@ -90,6 +98,8 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
       this.gradientId = gradientId;
       this.eyeHeight = eyeHeight;
       this.crouchOffset = crouchOffset;
+      this.sittingOffset = sittingOffset;
+      this.sleepingOffset = sleepingOffset;
       this.animationSetMap = animationSetMap;
       this.camera = camera;
       this.light = light;
@@ -98,6 +108,8 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
       this.physicsValues = physicsValues;
       this.detailBoxes = detailBoxes;
       this.crouchBoundingBox = boundingBox == null ? null : new Box(boundingBox.min.clone(), boundingBox.max.clone().add(0.0, crouchOffset, 0.0));
+      this.sittingBoundingBox = boundingBox == null ? null : new Box(boundingBox.min.clone(), boundingBox.max.clone().add(0.0, sittingOffset, 0.0));
+      this.sleepingBoundingBox = boundingBox == null ? null : new Box(boundingBox.min.clone(), boundingBox.max.clone().add(0.0, sleepingOffset, 0.0));
       this.phobia = phobia;
       this.phobiaModelAssetId = phobiaModelAssetId;
    }
@@ -114,6 +126,8 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
       this.gradientId = other.gradientId;
       this.eyeHeight = other.eyeHeight;
       this.crouchOffset = other.crouchOffset;
+      this.sittingOffset = other.sittingOffset;
+      this.sleepingOffset = other.sleepingOffset;
       this.animationSetMap = other.animationSetMap;
       this.camera = other.camera;
       this.light = other.light;
@@ -121,6 +135,8 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
       this.trails = other.trails;
       this.physicsValues = other.physicsValues;
       this.crouchBoundingBox = other.crouchBoundingBox;
+      this.sittingBoundingBox = other.sittingBoundingBox;
+      this.sleepingBoundingBox = other.sleepingBoundingBox;
       this.detailBoxes = other.detailBoxes;
       this.phobia = other.phobia;
       this.phobiaModelAssetId = other.phobiaModelAssetId;
@@ -161,6 +177,14 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
 
          if (this.crouchOffset != 0.0F) {
             packet.crouchOffset = this.crouchOffset;
+         }
+
+         if (this.sittingOffset != 0.0F) {
+            packet.sittingOffset = this.sittingOffset;
+         }
+
+         if (this.sleepingOffset != 0.0F) {
+            packet.sleepingOffset = this.sleepingOffset;
          }
 
          if (this.animationSetMap != null) {
@@ -241,8 +265,12 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
    public Box getBoundingBox(@Nullable MovementStates movementStates) {
       if (movementStates == null) {
          return this.boundingBox;
+      } else if (movementStates.crouching || movementStates.forcedCrouching || movementStates.sliding) {
+         return this.crouchBoundingBox;
+      } else if (movementStates.sitting) {
+         return this.sittingBoundingBox;
       } else {
-         return !movementStates.crouching && !movementStates.forcedCrouching ? this.boundingBox : this.crouchBoundingBox;
+         return movementStates.sleeping ? this.sleepingBoundingBox : this.boundingBox;
       }
    }
 
@@ -254,6 +282,16 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
    @Nullable
    public Box getCrouchBoundingBox() {
       return this.crouchBoundingBox;
+   }
+
+   @Nullable
+   public Box getSittingBoundingBox() {
+      return this.sittingBoundingBox;
+   }
+
+   @Nullable
+   public Box getSleepingBoundingBox() {
+      return this.sleepingBoundingBox;
    }
 
    public String getModel() {
@@ -278,6 +316,14 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
 
    public float getCrouchOffset() {
       return this.crouchOffset;
+   }
+
+   public float getSittingOffset() {
+      return this.sittingOffset;
+   }
+
+   public float getSleepingOffset() {
+      return this.sleepingOffset;
    }
 
    public Map<String, ModelAsset.AnimationSet> getAnimationSetMap() {
@@ -350,7 +396,13 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
             return this.getEyeHeight();
          } else {
             MovementStates movementStates = movementStatesComponent.getMovementStates();
-            return movementStates.crouching ? this.getEyeHeight() + this.getCrouchOffset() : this.getEyeHeight();
+            if (movementStates.crouching || movementStates.sliding) {
+               return this.getEyeHeight() + this.getCrouchOffset();
+            } else if (movementStates.sitting) {
+               return this.getEyeHeight() + this.getSittingOffset();
+            } else {
+               return movementStates.sleeping ? this.getEyeHeight() + this.getSleepingOffset() : this.getEyeHeight();
+            }
          }
       } else {
          return this.getEyeHeight();
@@ -368,6 +420,10 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
          } else if (Float.compare(model1.eyeHeight, this.eyeHeight) != 0) {
             return false;
          } else if (Float.compare(model1.crouchOffset, this.crouchOffset) != 0) {
+            return false;
+         } else if (Float.compare(model1.sittingOffset, this.sittingOffset) != 0) {
+            return false;
+         } else if (Float.compare(model1.sleepingOffset, this.sleepingOffset) != 0) {
             return false;
          } else if (!Objects.equals(this.modelAssetId, model1.modelAssetId)) {
             return false;
@@ -414,6 +470,8 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
       result = 31 * result + (this.gradientId != null ? this.gradientId.hashCode() : 0);
       result = 31 * result + (this.eyeHeight != 0.0F ? Float.floatToIntBits(this.eyeHeight) : 0);
       result = 31 * result + (this.crouchOffset != 0.0F ? Float.floatToIntBits(this.crouchOffset) : 0);
+      result = 31 * result + (this.sittingOffset != 0.0F ? Float.floatToIntBits(this.sittingOffset) : 0);
+      result = 31 * result + (this.sleepingOffset != 0.0F ? Float.floatToIntBits(this.sleepingOffset) : 0);
       result = 31 * result + (this.animationSetMap != null ? this.animationSetMap.hashCode() : 0);
       result = 31 * result + (this.camera != null ? this.camera.hashCode() : 0);
       result = 31 * result + (this.light != null ? this.light.hashCode() : 0);
@@ -436,6 +494,10 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
          + this.boundingBox
          + ", crouchBoundingBox="
          + this.crouchBoundingBox
+         + ", sittingBoundingBox="
+         + this.sittingBoundingBox
+         + ", sleepingBoundingBox="
+         + this.sleepingBoundingBox
          + ", model='"
          + this.model
          + "', texture='"
@@ -448,6 +510,10 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
          + this.eyeHeight
          + ", crouchOffset="
          + this.crouchOffset
+         + ", sittingOffset="
+         + this.sittingOffset
+         + ", sleepingOffset="
+         + this.sleepingOffset
          + ", animationSetMap="
          + this.animationSetMap
          + ", camera="
@@ -518,6 +584,8 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
          Map<String, DetailBox[]> detailBoxes = modelAsset.getDetailBoxes();
          float eyeHeight = modelAsset.getEyeHeight();
          float crouchOffset = modelAsset.getCrouchOffset();
+         float sittingOffset = modelAsset.getSittingOffset();
+         float sleepingOffset = modelAsset.getSleepingOffset();
          CameraSettings camera = modelAsset.getCamera();
          PhysicsValues physicsValues = modelAsset.getPhysicsValues();
          ModelParticle[] particles = modelAsset.getParticles();
@@ -536,6 +604,8 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
 
             eyeHeight *= scale;
             crouchOffset *= scale;
+            sittingOffset *= scale;
+            sleepingOffset *= scale;
             if (camera != null) {
                camera = camera.clone().scale(scale);
             }
@@ -589,6 +659,8 @@ public class Model implements NetworkSerializable<com.hypixel.hytale.protocol.Mo
             modelAsset.getGradientId(),
             eyeHeight,
             crouchOffset,
+            sittingOffset,
+            sleepingOffset,
             animationSetMap,
             camera,
             modelAsset.getLight(),

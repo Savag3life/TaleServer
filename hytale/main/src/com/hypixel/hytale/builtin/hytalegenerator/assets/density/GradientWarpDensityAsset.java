@@ -10,6 +10,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class GradientWarpDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<GradientWarpDensityAsset> CODEC = BuilderCodec.builder(
          GradientWarpDensityAsset.class, GradientWarpDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -25,8 +26,8 @@ public class GradientWarpDensityAsset extends DensityAsset {
       .build();
    private double sampleRange = 1.0;
    private double warpFactor = 1.0;
-   private boolean is2d = false;
-   private double y2d = 0.0;
+   private boolean is2d;
+   private double y2d;
 
    @Nonnull
    @Override

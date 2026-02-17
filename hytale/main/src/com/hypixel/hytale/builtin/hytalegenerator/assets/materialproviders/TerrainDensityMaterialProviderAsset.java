@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class TerrainDensityMaterialProviderAsset extends MaterialProviderAsset {
+   @Nonnull
    public static final BuilderCodec<TerrainDensityMaterialProviderAsset> CODEC = BuilderCodec.builder(
          TerrainDensityMaterialProviderAsset.class, TerrainDensityMaterialProviderAsset::new, MaterialProviderAsset.ABSTRACT_CODEC
       )
@@ -62,6 +63,7 @@ public class TerrainDensityMaterialProviderAsset extends MaterialProviderAsset {
    public static class DelimiterAsset
       implements Cleanable,
       JsonAssetWithMap<String, DefaultAssetMap<String, TerrainDensityMaterialProviderAsset.DelimiterAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, TerrainDensityMaterialProviderAsset.DelimiterAsset> CODEC = AssetBuilderCodec.builder(
             TerrainDensityMaterialProviderAsset.DelimiterAsset.class,
             TerrainDensityMaterialProviderAsset.DelimiterAsset::new,
@@ -80,8 +82,8 @@ public class TerrainDensityMaterialProviderAsset extends MaterialProviderAsset {
          .build();
       private String id;
       private AssetExtraInfo.Data data;
-      private double from = 0.0;
-      private double to = 0.0;
+      private double from;
+      private double to;
       private MaterialProviderAsset materialProviderAsset = new ConstantMaterialProviderAsset();
 
       public String getId() {

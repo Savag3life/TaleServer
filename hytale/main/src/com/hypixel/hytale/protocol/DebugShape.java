@@ -7,7 +7,9 @@ public enum DebugShape {
    Cylinder(1),
    Cone(2),
    Cube(3),
-   Frustum(4);
+   Frustum(4),
+   Sector(5),
+   Disc(6);
 
    public static final DebugShape[] VALUES = values();
    private final int value;

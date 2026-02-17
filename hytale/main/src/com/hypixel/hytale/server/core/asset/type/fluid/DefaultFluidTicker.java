@@ -110,7 +110,7 @@ public class DefaultFluidTicker extends FluidTicker {
                         int z = offset.y;
                         int blockX = worldX + x;
                         int blockZ = worldZ + z;
-                        if (!blocksFluidFrom(sourceBlock, sourceRotationIndex, -x, -z, sourceFiller)) {
+                        if (!this.blocksFluidFrom(sourceBlock, sourceRotationIndex, -x, -z, sourceFiller)) {
                            boolean isDifferentSection = !ChunkUtil.isSameChunkSection(worldX, worldY, worldZ, blockX, worldY, blockZ);
                            FluidSection otherFluidSection = isDifferentSection ? accessor.getFluidSectionByBlock(blockX, worldY, blockZ) : fluidSection;
                            BlockSection otherBlockSection = isDifferentSection ? accessor.getBlockSectionByBlock(blockX, worldY, blockZ) : blockSection;
@@ -121,7 +121,7 @@ public class DefaultFluidTicker extends FluidTicker {
                            BlockType block = blockMap.getAsset(otherBlockSection.get(blockX, worldY, blockZ));
                            int rotationIndex = otherBlockSection.getRotationIndex(blockX, worldY, blockZ);
                            int destFiller = otherBlockSection.getFiller(blockX, worldY, blockZ);
-                           if (!blocksFluidFrom(block, rotationIndex, x, z, destFiller)) {
+                           if (!this.blocksFluidFrom(block, rotationIndex, x, z, destFiller)) {
                               int otherFluidId = otherFluidSection.getFluidId(blockX, worldY, blockZ);
                               if (otherFluidId != 0 && otherFluidId != spreadFluidId) {
                                  DefaultFluidTicker.FluidCollisionConfig config = (DefaultFluidTicker.FluidCollisionConfig)this.getCollisionMap()

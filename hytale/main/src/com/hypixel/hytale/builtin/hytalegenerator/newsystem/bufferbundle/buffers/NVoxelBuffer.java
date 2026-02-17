@@ -10,7 +10,9 @@ import javax.annotation.Nullable;
 
 public class NVoxelBuffer<T> extends NBuffer {
    public static final int BUFFER_SIZE_BITS = 3;
+   @Nonnull
    public static final Vector3i SIZE = new Vector3i(8, 8, 8);
+   @Nonnull
    private static final Bounds3i bounds = new Bounds3i(Vector3i.ZERO, SIZE);
    @Nonnull
    private final Class<T> voxelType;
@@ -135,6 +137,7 @@ public class NVoxelBuffer<T> extends NBuffer {
    }
 
    public static class ArrayContents<T> implements MemInstrument {
+      @Nonnull
       private final T[] array = (T[])(new Object[NVoxelBuffer.SIZE.x * NVoxelBuffer.SIZE.y * NVoxelBuffer.SIZE.z]);
 
       @Nonnull

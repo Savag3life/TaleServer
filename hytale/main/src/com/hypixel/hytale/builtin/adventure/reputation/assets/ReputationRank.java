@@ -29,6 +29,7 @@ public class ReputationRank implements JsonAssetWithMap<String, DefaultAssetMap<
          }
       })
       .build();
+   @Nonnull
    public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(ReputationRank::getAssetStore));
    private static AssetStore<String, ReputationRank, DefaultAssetMap<String, ReputationRank>> ASSET_STORE;
    protected AssetExtraInfo.Data data;
@@ -37,6 +38,7 @@ public class ReputationRank implements JsonAssetWithMap<String, DefaultAssetMap<
    protected int maxValue;
    protected Attitude attitude;
 
+   @Nonnull
    public static AssetStore<String, ReputationRank, DefaultAssetMap<String, ReputationRank>> getAssetStore() {
       if (ASSET_STORE == null) {
          ASSET_STORE = AssetRegistry.getAssetStore(ReputationRank.class);

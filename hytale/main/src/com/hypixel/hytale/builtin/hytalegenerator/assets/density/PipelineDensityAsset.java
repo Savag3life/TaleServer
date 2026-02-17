@@ -8,7 +8,9 @@ import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import javax.annotation.Nonnull;
 
 public class PipelineDensityAsset extends DensityAsset {
+   @Nonnull
    private static final DensityAsset[] EMPTY_INPUTS = new DensityAsset[0];
+   @Nonnull
    public static final BuilderCodec<PipelineDensityAsset> CODEC = BuilderCodec.builder(
          PipelineDensityAsset.class, PipelineDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )

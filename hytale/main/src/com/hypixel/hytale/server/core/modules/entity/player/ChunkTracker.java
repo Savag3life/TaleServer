@@ -15,7 +15,8 @@ import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.metrics.MetricsRegistry;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.NetworkChannel;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.packets.world.UnloadChunk;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -142,7 +143,7 @@ public class ChunkTracker implements Component<EntityStore> {
       float dt,
       @Nonnull CommandBuffer<EntityStore> commandBuffer
    ) {
-      if (this.readyForChunks) {
+      if (this.readyForChunks && playerRefComponent.getPacketHandler().getChannel(NetworkChannel.Chunks).isWritable()) {
          this.transformComponent = transformComponent;
          int chunkViewRadius = this.chunkViewRadius = playerComponent.getViewRadius();
          Vector3d position = transformComponent.getPosition();
@@ -527,11 +528,11 @@ public class ChunkTracker implements Component<EntityStore> {
             Ref<ChunkStore> chunkRef = chunkComponentStore.getChunkReference(chunkIndex);
             if (chunkRef != null) {
                Store<ChunkStore> chunkStore = chunkComponentStore.getStore();
-               ObjectArrayList<Packet> packets = new ObjectArrayList();
+               ObjectArrayList<ToClientPacket> packets = new ObjectArrayList();
                chunkStore.fetch(Collections.singletonList(chunkRef), ChunkStore.UNLOAD_PACKETS_DATA_QUERY_SYSTEM_TYPE, playerRef, packets);
 
                for (int i = 0; i < packets.size(); i++) {
-                  packetHandler.write((Packet)packets.get(i));
+                  packetHandler.write((ToClientPacket)packets.get(i));
                }
             }
 
@@ -618,17 +619,17 @@ public class ChunkTracker implements Component<EntityStore> {
    private CompletableFuture<Void> _loadChunkAsync(
       long chunkIndex, @Nonnull PlayerRef playerRefComponent, @Nonnull Ref<ChunkStore> chunkRef, @Nonnull ChunkStore chunkComponentStore
    ) {
-      List<Packet> packets = new ObjectArrayList();
+      List<ToClientPacket> packets = new ObjectArrayList();
       chunkComponentStore.getStore().fetch(Collections.singletonList(chunkRef), ChunkStore.LOAD_PACKETS_DATA_QUERY_SYSTEM_TYPE, playerRefComponent, packets);
-      ObjectArrayList<CompletableFuture<Packet>> futurePackets = new ObjectArrayList();
+      ObjectArrayList<CompletableFuture<ToClientPacket>> futurePackets = new ObjectArrayList();
       chunkComponentStore.getStore()
          .fetch(Collections.singletonList(chunkRef), ChunkStore.LOAD_FUTURE_PACKETS_DATA_QUERY_SYSTEM_TYPE, playerRefComponent, futurePackets);
       return CompletableFuture.allOf((CompletableFuture<?>[])futurePackets.toArray(CompletableFuture[]::new)).thenAcceptAsync(o -> {
          Iterator i$ = futurePackets.iterator();
 
          while (i$.hasNext()) {
-            CompletableFuture<Packet> futurePacket = (CompletableFuture<Packet>)i$.next();
-            Packet packet = futurePacket.join();
+            CompletableFuture<ToClientPacket> futurePacket = (CompletableFuture<ToClientPacket>)i$.next();
+            ToClientPacket packet = futurePacket.join();
             if (packet != null) {
                packets.add(packet);
             }

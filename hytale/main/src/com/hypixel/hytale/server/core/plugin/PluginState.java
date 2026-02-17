@@ -6,5 +6,13 @@ public enum PluginState {
    START,
    ENABLED,
    SHUTDOWN,
-   DISABLED;
+   DISABLED,
+   FAILED;
+
+   public boolean isInactive() {
+      return switch (this) {
+         case NONE, DISABLED, FAILED -> true;
+         default -> false;
+      };
+   }
 }

@@ -7,6 +7,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class InverterDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<InverterDensityAsset> CODEC = BuilderCodec.builder(
          InverterDensityAsset.class, InverterDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )

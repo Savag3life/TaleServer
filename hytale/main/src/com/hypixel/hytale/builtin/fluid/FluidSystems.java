@@ -4,6 +4,7 @@ import com.hypixel.hytale.builtin.blocktick.system.ChunkBlockTickSystem;
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
@@ -18,7 +19,7 @@ import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.component.system.tick.RunWhenPausedSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.packets.world.ServerSetFluid;
 import com.hypixel.hytale.protocol.packets.world.ServerSetFluids;
 import com.hypixel.hytale.protocol.packets.world.SetFluidCmd;
@@ -57,11 +58,20 @@ public class FluidSystems {
 
    public static class EnsureFluidSection extends HolderSystem<ChunkStore> {
       @Nonnull
-      private static final Query<ChunkStore> QUERY = Query.and(ChunkSection.getComponentType(), Query.not(FluidSection.getComponentType()));
+      private final ComponentType<ChunkStore, FluidSection> fluidSectionComponentType;
+      @Nonnull
+      private final Query<ChunkStore> query;
+
+      public EnsureFluidSection(
+         @Nonnull ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType, @Nonnull ComponentType<ChunkStore, FluidSection> fluidSectionComponentType
+      ) {
+         this.fluidSectionComponentType = fluidSectionComponentType;
+         this.query = Query.and(chunkSectionComponentType, Query.not(fluidSectionComponentType));
+      }
 
       @Override
       public void onEntityAdd(@Nonnull Holder<ChunkStore> holder, @Nonnull AddReason reason, @Nonnull Store<ChunkStore> store) {
-         holder.addComponent(FluidSection.getComponentType(), new FluidSection());
+         holder.addComponent(this.fluidSectionComponentType, new FluidSection());
       }
 
       @Override
@@ -71,7 +81,7 @@ public class FluidSystems {
       @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return QUERY;
+         return this.query;
       }
 
       @Nonnull
@@ -82,20 +92,32 @@ public class FluidSystems {
    }
 
    public static class LoadPacketGenerator extends ChunkStore.LoadFuturePacketDataQuerySystem {
+      @Nonnull
+      private final ComponentType<ChunkStore, ChunkColumn> chunkColumnComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, FluidSection> fluidSectionComponentType;
+
+      public LoadPacketGenerator(
+         @Nonnull ComponentType<ChunkStore, ChunkColumn> chunkColumnComponentType, @Nonnull ComponentType<ChunkStore, FluidSection> fluidSectionComponentType
+      ) {
+         this.chunkColumnComponentType = chunkColumnComponentType;
+         this.fluidSectionComponentType = fluidSectionComponentType;
+      }
+
       public void fetch(
          int index,
          @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
          Store<ChunkStore> store,
          @Nonnull CommandBuffer<ChunkStore> commandBuffer,
          PlayerRef query,
-         @Nonnull List<CompletableFuture<Packet>> results
+         @Nonnull List<CompletableFuture<ToClientPacket>> results
       ) {
-         ChunkColumn chunkColumnComponent = archetypeChunk.getComponent(index, ChunkColumn.getComponentType());
+         ChunkColumn chunkColumnComponent = archetypeChunk.getComponent(index, this.chunkColumnComponentType);
 
          assert chunkColumnComponent != null;
 
          for (Ref<ChunkStore> sectionRef : chunkColumnComponent.getSections()) {
-            FluidSection fluidSectionComponent = commandBuffer.getComponent(sectionRef, FluidSection.getComponentType());
+            FluidSection fluidSectionComponent = commandBuffer.getComponent(sectionRef, this.fluidSectionComponentType);
             if (fluidSectionComponent != null) {
                results.add(fluidSectionComponent.getCachedPacket().exceptionally(throwable -> {
                   if (throwable != null) {
@@ -108,39 +130,59 @@ public class FluidSystems {
          }
       }
 
+      @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return ChunkColumn.getComponentType();
+         return this.chunkColumnComponentType;
       }
    }
 
    public static class MigrateFromColumn extends ChunkColumnMigrationSystem {
       @Nonnull
-      private final Query<ChunkStore> QUERY = Query.and(ChunkColumn.getComponentType(), BlockChunk.getComponentType());
+      private final ComponentType<ChunkStore, ChunkColumn> chunkColumnComponentType;
       @Nonnull
-      private final Set<Dependency<ChunkStore>> DEPENDENCIES = Set.of(new SystemDependency<>(Order.BEFORE, LegacyModule.MigrateLegacySections.class));
+      private final ComponentType<ChunkStore, BlockChunk> blockChunkComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, FluidSection> fluidSectionComponentType;
+      @Nonnull
+      private final Query<ChunkStore> query;
+      @Nonnull
+      private final Set<Dependency<ChunkStore>> dependencies = Set.of(new SystemDependency<>(Order.BEFORE, LegacyModule.MigrateLegacySections.class));
+
+      public MigrateFromColumn(
+         @Nonnull ComponentType<ChunkStore, ChunkColumn> chunkColumnComponentType,
+         @Nonnull ComponentType<ChunkStore, BlockChunk> blockChunkComponentType,
+         @Nonnull ComponentType<ChunkStore, FluidSection> fluidSectionComponentType
+      ) {
+         this.chunkColumnComponentType = chunkColumnComponentType;
+         this.blockChunkComponentType = blockChunkComponentType;
+         this.fluidSectionComponentType = fluidSectionComponentType;
+         this.query = Query.and(chunkColumnComponentType, blockChunkComponentType);
+      }
 
       @Override
       public void onEntityAdd(@Nonnull Holder<ChunkStore> holder, @Nonnull AddReason reason, @Nonnull Store<ChunkStore> store) {
-         ChunkColumn chunkColumnComponent = holder.getComponent(ChunkColumn.getComponentType());
+         ChunkColumn chunkColumnComponent = holder.getComponent(this.chunkColumnComponentType);
 
          assert chunkColumnComponent != null;
 
-         BlockChunk blockChunkComponent = holder.getComponent(BlockChunk.getComponentType());
+         BlockChunk blockChunkComponent = holder.getComponent(this.blockChunkComponentType);
 
          assert blockChunkComponent != null;
 
          Holder<ChunkStore>[] sections = chunkColumnComponent.getSectionHolders();
-         BlockSection[] legacySections = blockChunkComponent.getMigratedSections();
-         if (legacySections != null) {
-            for (int i = 0; i < sections.length; i++) {
-               Holder<ChunkStore> section = sections[i];
-               BlockSection paletteSection = legacySections[i];
-               if (section != null && paletteSection != null) {
-                  FluidSection fluid = paletteSection.takeMigratedFluid();
-                  if (fluid != null) {
-                     section.putComponent(FluidSection.getComponentType(), fluid);
-                     blockChunkComponent.markNeedsSaving();
+         if (sections != null) {
+            BlockSection[] legacySections = blockChunkComponent.getMigratedSections();
+            if (legacySections != null) {
+               for (int i = 0; i < sections.length; i++) {
+                  Holder<ChunkStore> section = sections[i];
+                  BlockSection paletteSection = legacySections[i];
+                  if (section != null && paletteSection != null) {
+                     FluidSection fluid = paletteSection.takeMigratedFluid();
+                     if (fluid != null) {
+                        section.putComponent(this.fluidSectionComponentType, fluid);
+                        blockChunkComponent.markNeedsSaving();
+                     }
                   }
                }
             }
@@ -154,19 +196,36 @@ public class FluidSystems {
       @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return this.QUERY;
+         return this.query;
       }
 
       @Nonnull
       @Override
       public Set<Dependency<ChunkStore>> getDependencies() {
-         return this.DEPENDENCIES;
+         return this.dependencies;
       }
    }
 
    public static class ReplicateChanges extends EntityTickingSystem<ChunkStore> implements RunWhenPausedSystem<ChunkStore> {
       @Nonnull
-      private static final Query<ChunkStore> QUERY = Query.and(ChunkSection.getComponentType(), FluidSection.getComponentType());
+      private final ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, FluidSection> fluidSectionComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, WorldChunk> worldChunkComponentType;
+      @Nonnull
+      private final Query<ChunkStore> query;
+
+      public ReplicateChanges(
+         @Nonnull ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType,
+         @Nonnull ComponentType<ChunkStore, FluidSection> fluidSectionComponentType,
+         @Nonnull ComponentType<ChunkStore, WorldChunk> worldChunkComponentType
+      ) {
+         this.chunkSectionComponentType = chunkSectionComponentType;
+         this.fluidSectionComponentType = fluidSectionComponentType;
+         this.worldChunkComponentType = worldChunkComponentType;
+         this.query = Query.and(chunkSectionComponentType, fluidSectionComponentType);
+      }
 
       @Override
       public boolean isParallel(int archetypeChunkSize, int taskCount) {
@@ -181,18 +240,18 @@ public class FluidSystems {
          @Nonnull Store<ChunkStore> store,
          @Nonnull CommandBuffer<ChunkStore> commandBuffer
       ) {
-         FluidSection fluidSectionComponent = archetypeChunk.getComponent(index, FluidSection.getComponentType());
+         FluidSection fluidSectionComponent = archetypeChunk.getComponent(index, this.fluidSectionComponentType);
 
          assert fluidSectionComponent != null;
 
          IntOpenHashSet changes = fluidSectionComponent.getAndClearChangedPositions();
          if (!changes.isEmpty()) {
-            ChunkSection chunkSectionComponent = archetypeChunk.getComponent(index, ChunkSection.getComponentType());
+            ChunkSection chunkSectionComponent = archetypeChunk.getComponent(index, this.chunkSectionComponentType);
 
             assert chunkSectionComponent != null;
 
             World world = commandBuffer.getExternalData().getWorld();
-            WorldChunk worldChunkComponent = commandBuffer.getComponent(chunkSectionComponent.getChunkColumnReference(), WorldChunk.getComponentType());
+            WorldChunk worldChunkComponent = commandBuffer.getComponent(chunkSectionComponent.getChunkColumnReference(), this.worldChunkComponentType);
             int sectionY = chunkSectionComponent.getY();
             world.execute(() -> {
                if (worldChunkComponent != null && worldChunkComponent.getWorld() != null) {
@@ -280,7 +339,7 @@ public class FluidSystems {
       @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return QUERY;
+         return this.query;
       }
 
       @Nonnull
@@ -292,17 +351,29 @@ public class FluidSystems {
 
    public static class SetupSection extends HolderSystem<ChunkStore> {
       @Nonnull
-      private static final Query<ChunkStore> QUERY = Query.and(ChunkSection.getComponentType(), FluidSection.getComponentType());
+      private final ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType;
       @Nonnull
-      private static final Set<Dependency<ChunkStore>> DEPENDENCIES = Set.of(new SystemDependency<>(Order.AFTER, FluidSystems.MigrateFromColumn.class));
+      private final ComponentType<ChunkStore, FluidSection> fluidSectionComponentType;
+      @Nonnull
+      private final Query<ChunkStore> query;
+      @Nonnull
+      private final Set<Dependency<ChunkStore>> dependencies = Set.of(new SystemDependency<>(Order.AFTER, FluidSystems.MigrateFromColumn.class));
+
+      public SetupSection(
+         @Nonnull ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType, @Nonnull ComponentType<ChunkStore, FluidSection> fluidSectionComponentType
+      ) {
+         this.chunkSectionComponentType = chunkSectionComponentType;
+         this.fluidSectionComponentType = fluidSectionComponentType;
+         this.query = Query.and(chunkSectionComponentType, fluidSectionComponentType);
+      }
 
       @Override
       public void onEntityAdd(@Nonnull Holder<ChunkStore> holder, @Nonnull AddReason reason, @Nonnull Store<ChunkStore> store) {
-         ChunkSection chunkSectionComponent = holder.getComponent(ChunkSection.getComponentType());
+         ChunkSection chunkSectionComponent = holder.getComponent(this.chunkSectionComponentType);
 
          assert chunkSectionComponent != null;
 
-         FluidSection fluidSectionComponent = holder.getComponent(FluidSection.getComponentType());
+         FluidSection fluidSectionComponent = holder.getComponent(this.fluidSectionComponentType);
 
          assert fluidSectionComponent != null;
 
@@ -316,23 +387,40 @@ public class FluidSystems {
       @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return QUERY;
+         return this.query;
       }
 
       @Nonnull
       @Override
       public Set<Dependency<ChunkStore>> getDependencies() {
-         return DEPENDENCIES;
+         return this.dependencies;
       }
    }
 
    public static class Ticking extends EntityTickingSystem<ChunkStore> {
       @Nonnull
-      private static final Query<ChunkStore> QUERY = Query.and(FluidSection.getComponentType(), ChunkSection.getComponentType());
+      private final ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType;
       @Nonnull
-      private static final Set<Dependency<ChunkStore>> DEPENDENCIES = Set.of(
+      private final ComponentType<ChunkStore, FluidSection> fluidSectionComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, BlockChunk> blockChunkComponentType;
+      @Nonnull
+      private final Query<ChunkStore> query;
+      @Nonnull
+      private final Set<Dependency<ChunkStore>> dependencies = Set.of(
          new SystemDependency<>(Order.AFTER, ChunkBlockTickSystem.PreTick.class), new SystemDependency<>(Order.BEFORE, ChunkBlockTickSystem.Ticking.class)
       );
+
+      public Ticking(
+         @Nonnull ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType,
+         @Nonnull ComponentType<ChunkStore, FluidSection> fluidSectionComponentType,
+         @Nonnull ComponentType<ChunkStore, BlockChunk> blockChunkComponentType
+      ) {
+         this.chunkSectionComponentType = chunkSectionComponentType;
+         this.fluidSectionComponentType = fluidSectionComponentType;
+         this.blockChunkComponentType = blockChunkComponentType;
+         this.query = Query.and(fluidSectionComponentType, chunkSectionComponentType);
+      }
 
       @Override
       public boolean isParallel(int archetypeChunkSize, int taskCount) {
@@ -347,36 +435,35 @@ public class FluidSystems {
          @Nonnull Store<ChunkStore> store,
          @Nonnull CommandBuffer<ChunkStore> commandBuffer
       ) {
-         ChunkSection chunkSectionComponent = archetypeChunk.getComponent(index, ChunkSection.getComponentType());
+         ChunkSection chunkSectionComponent = archetypeChunk.getComponent(index, this.chunkSectionComponentType);
 
          assert chunkSectionComponent != null;
 
-         FluidSection fluidSectionComponent = archetypeChunk.getComponent(index, FluidSection.getComponentType());
+         FluidSection fluidSectionComponent = archetypeChunk.getComponent(index, this.fluidSectionComponentType);
 
          assert fluidSectionComponent != null;
 
          Ref<ChunkStore> chunkRef = chunkSectionComponent.getChunkColumnReference();
-         BlockChunk blockChunkComponent = commandBuffer.getComponent(chunkRef, BlockChunk.getComponentType());
-
-         assert blockChunkComponent != null;
-
-         BlockSection blockSection = blockChunkComponent.getSectionAtIndex(fluidSectionComponent.getY());
-         if (blockSection != null) {
-            if (blockSection.getTickingBlocksCountCopy() != 0) {
-               FluidTicker.CachedAccessor accessor = FluidTicker.CachedAccessor.of(commandBuffer, fluidSectionComponent, blockSection, 5);
-               blockSection.forEachTicking(accessor, commandBuffer, fluidSectionComponent.getY(), (accessor1, commandBuffer1, x, y, z, block) -> {
-                  FluidSection fluidSection1 = accessor1.selfFluidSection;
-                  BlockSection blockSection1 = accessor1.selfBlockSection;
-                  int fluidId = fluidSection1.getFluidId(x, y, z);
-                  if (fluidId == 0) {
-                     return BlockTickStrategy.IGNORED;
-                  } else {
-                     Fluid fluid = Fluid.getAssetMap().getAsset(fluidId);
-                     int blockX = fluidSection1.getX() << 5 | x;
-                     int blockZ = fluidSection1.getZ() << 5 | z;
-                     return fluid.getTicker().tick(commandBuffer1, accessor1, fluidSection1, blockSection1, fluid, fluidId, blockX, y, blockZ);
-                  }
-               });
+         BlockChunk blockChunkComponent = commandBuffer.getComponent(chunkRef, this.blockChunkComponentType);
+         if (blockChunkComponent != null) {
+            BlockSection blockSection = blockChunkComponent.getSectionAtIndex(fluidSectionComponent.getY());
+            if (blockSection != null) {
+               if (blockSection.getTickingBlocksCountCopy() != 0) {
+                  FluidTicker.CachedAccessor accessor = FluidTicker.CachedAccessor.of(commandBuffer, fluidSectionComponent, blockSection, 5);
+                  blockSection.forEachTicking(accessor, commandBuffer, fluidSectionComponent.getY(), (accessor1, commandBuffer1, x, y, z, block) -> {
+                     FluidSection fluidSection1 = accessor1.selfFluidSection;
+                     BlockSection blockSection1 = accessor1.selfBlockSection;
+                     int fluidId = fluidSection1.getFluidId(x, y, z);
+                     if (fluidId == 0) {
+                        return BlockTickStrategy.IGNORED;
+                     } else {
+                        int blockX = fluidSection1.getX() << 5 | x;
+                        int blockZ = fluidSection1.getZ() << 5 | z;
+                        Fluid fluid = Fluid.getAssetMap().getAsset(fluidId);
+                        return fluid.getTicker().tick(commandBuffer1, accessor1, fluidSection1, blockSection1, fluid, fluidId, blockX, y, blockZ);
+                     }
+                  });
+               }
             }
          }
       }
@@ -384,13 +471,13 @@ public class FluidSystems {
       @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return QUERY;
+         return this.query;
       }
 
       @Nonnull
       @Override
       public Set<Dependency<ChunkStore>> getDependencies() {
-         return DEPENDENCIES;
+         return this.dependencies;
       }
    }
 }

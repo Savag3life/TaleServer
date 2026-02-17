@@ -2,13 +2,13 @@ package com.hypixel.hytale.server.core.update.command;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.HytaleServer;
-import com.hypixel.hytale.server.core.HytaleServerConfig;
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.Options;
 import com.hypixel.hytale.server.core.ShutdownReason;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.FlagArg;
 import com.hypixel.hytale.server.core.command.system.basecommands.CommandBase;
+import com.hypixel.hytale.server.core.config.BackupConfig;
+import com.hypixel.hytale.server.core.config.UpdateConfig;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.update.UpdateService;
 import com.hypixel.hytale.server.core.util.io.FileUtil;
@@ -20,9 +20,13 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 
 public class UpdateApplyCommand extends CommandBase {
+   @Nonnull
    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+   @Nonnull
    private static final Message MSG_NO_STAGED = Message.translation("server.commands.update.no_staged");
+   @Nonnull
    private static final Message MSG_BACKUP_FAILED = Message.translation("server.commands.update.backup_failed");
+   @Nonnull
    private final FlagArg confirmFlag = this.withFlagArg("confirm", "server.commands.update.apply.confirm.desc");
    private static final String[] CONFIG_FILES = new String[]{"config.json", "permissions.json", "bans.json", "whitelist.json"};
 
@@ -45,11 +49,12 @@ public class UpdateApplyCommand extends CommandBase {
             context.sendMessage(Message.translation("server.commands.update.applying").param("version", stagedVersion));
          }
 
-         HytaleServerConfig.UpdateConfig config = HytaleServer.get().getConfig().getUpdateConfig();
+         UpdateConfig config = HytaleServer.get().getConfig().getUpdateConfig();
 
          try {
             this.backupCurrentFiles();
-            if (config.isRunBackupBeforeUpdate() && Options.getOptionSet().has(Options.BACKUP_DIRECTORY)) {
+            BackupConfig backupConfig = HytaleServer.get().getConfig().getBackupConfig();
+            if (config.isRunBackupBeforeUpdate() && backupConfig.getDirectory() != null) {
                Universe universe = Universe.get();
                if (universe != null) {
                   LOGGER.at(Level.INFO).log("Running server backup before update...");
@@ -57,14 +62,14 @@ public class UpdateApplyCommand extends CommandBase {
                   LOGGER.at(Level.INFO).log("Server backup completed");
                }
             } else if (config.isRunBackupBeforeUpdate()) {
-               LOGGER.at(Level.WARNING).log("RunBackupBeforeUpdate is enabled but backups are not configured (no --backup-dir)");
+               LOGGER.at(Level.WARNING).log("RunBackupBeforeUpdate is enabled but backups are not configured");
             }
 
             if (config.isBackupConfigBeforeUpdate()) {
                this.backupConfigFiles();
             }
-         } catch (IOException var5) {
-            ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var5)).log("Failed to create backups before update");
+         } catch (IOException var6) {
+            ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var6)).log("Failed to create backups before update");
             context.sendMessage(MSG_BACKUP_FAILED);
             return;
          }

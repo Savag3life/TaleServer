@@ -7,22 +7,21 @@ import com.hypixel.hytale.protocol.io.VarInt;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
-public class CombatTextUpdate {
-   public static final int NULLABLE_BIT_FIELD_SIZE = 1;
-   public static final int FIXED_BLOCK_SIZE = 5;
+public class CombatTextUpdate extends ComponentUpdate {
+   public static final int NULLABLE_BIT_FIELD_SIZE = 0;
+   public static final int FIXED_BLOCK_SIZE = 4;
    public static final int VARIABLE_FIELD_COUNT = 1;
-   public static final int VARIABLE_BLOCK_START = 5;
-   public static final int MAX_SIZE = 16384010;
+   public static final int VARIABLE_BLOCK_START = 4;
+   public static final int MAX_SIZE = 16384009;
    public float hitAngleDeg;
-   @Nullable
-   public String text;
+   @Nonnull
+   public String text = "";
 
    public CombatTextUpdate() {
    }
 
-   public CombatTextUpdate(float hitAngleDeg, @Nullable String text) {
+   public CombatTextUpdate(float hitAngleDeg, @Nonnull String text) {
       this.hitAngleDeg = hitAngleDeg;
       this.text = text;
    }
@@ -35,84 +34,57 @@ public class CombatTextUpdate {
    @Nonnull
    public static CombatTextUpdate deserialize(@Nonnull ByteBuf buf, int offset) {
       CombatTextUpdate obj = new CombatTextUpdate();
-      byte nullBits = buf.getByte(offset);
-      obj.hitAngleDeg = buf.getFloatLE(offset + 1);
-      int pos = offset + 5;
-      if ((nullBits & 1) != 0) {
-         int textLen = VarInt.peek(buf, pos);
-         if (textLen < 0) {
-            throw ProtocolException.negativeLength("Text", textLen);
-         }
-
-         if (textLen > 4096000) {
-            throw ProtocolException.stringTooLong("Text", textLen, 4096000);
-         }
-
+      obj.hitAngleDeg = buf.getFloatLE(offset + 0);
+      int pos = offset + 4;
+      int textLen = VarInt.peek(buf, pos);
+      if (textLen < 0) {
+         throw ProtocolException.negativeLength("Text", textLen);
+      } else if (textLen > 4096000) {
+         throw ProtocolException.stringTooLong("Text", textLen, 4096000);
+      } else {
          int textVarLen = VarInt.length(buf, pos);
          obj.text = PacketIO.readVarString(buf, pos, PacketIO.UTF8);
          pos += textVarLen + textLen;
+         return obj;
       }
-
-      return obj;
    }
 
    public static int computeBytesConsumed(@Nonnull ByteBuf buf, int offset) {
-      byte nullBits = buf.getByte(offset);
-      int pos = offset + 5;
-      if ((nullBits & 1) != 0) {
-         int sl = VarInt.peek(buf, pos);
-         pos += VarInt.length(buf, pos) + sl;
-      }
-
+      int pos = offset + 4;
+      int sl = VarInt.peek(buf, pos);
+      pos += VarInt.length(buf, pos) + sl;
       return pos - offset;
    }
 
-   public void serialize(@Nonnull ByteBuf buf) {
-      byte nullBits = 0;
-      if (this.text != null) {
-         nullBits = (byte)(nullBits | 1);
-      }
-
-      buf.writeByte(nullBits);
+   @Override
+   public int serialize(@Nonnull ByteBuf buf) {
+      int startPos = buf.writerIndex();
       buf.writeFloatLE(this.hitAngleDeg);
-      if (this.text != null) {
-         PacketIO.writeVarString(buf, this.text, 4096000);
-      }
+      PacketIO.writeVarString(buf, this.text, 4096000);
+      return buf.writerIndex() - startPos;
    }
 
+   @Override
    public int computeSize() {
-      int size = 5;
-      if (this.text != null) {
-         size += PacketIO.stringSize(this.text);
-      }
-
-      return size;
+      int size = 4;
+      return size + PacketIO.stringSize(this.text);
    }
 
    public static ValidationResult validateStructure(@Nonnull ByteBuf buffer, int offset) {
-      if (buffer.readableBytes() - offset < 5) {
-         return ValidationResult.error("Buffer too small: expected at least 5 bytes");
+      if (buffer.readableBytes() - offset < 4) {
+         return ValidationResult.error("Buffer too small: expected at least 4 bytes");
       } else {
-         byte nullBits = buffer.getByte(offset);
-         int pos = offset + 5;
-         if ((nullBits & 1) != 0) {
-            int textLen = VarInt.peek(buffer, pos);
-            if (textLen < 0) {
-               return ValidationResult.error("Invalid string length for Text");
-            }
-
-            if (textLen > 4096000) {
-               return ValidationResult.error("Text exceeds max length 4096000");
-            }
-
+         int pos = offset + 4;
+         int textLen = VarInt.peek(buffer, pos);
+         if (textLen < 0) {
+            return ValidationResult.error("Invalid string length for Text");
+         } else if (textLen > 4096000) {
+            return ValidationResult.error("Text exceeds max length 4096000");
+         } else {
             pos += VarInt.length(buffer, pos);
             pos += textLen;
-            if (pos > buffer.writerIndex()) {
-               return ValidationResult.error("Buffer overflow reading Text");
-            }
+            return pos > buffer.writerIndex() ? ValidationResult.error("Buffer overflow reading Text") : ValidationResult.OK;
          }
-
-         return ValidationResult.OK;
       }
    }
 

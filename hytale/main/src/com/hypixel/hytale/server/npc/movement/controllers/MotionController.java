@@ -16,10 +16,13 @@ import com.hypixel.hytale.server.npc.movement.MovementState;
 import com.hypixel.hytale.server.npc.movement.NavState;
 import com.hypixel.hytale.server.npc.movement.Steering;
 import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.role.RoleDebugFlags;
+import com.hypixel.hytale.server.npc.role.support.DebugSupport;
+import java.util.EnumSet;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public interface MotionController {
+public interface MotionController extends DebugSupport.DebugFlagsChangeListener {
    String getType();
 
    Role getRole();
@@ -214,6 +217,10 @@ public interface MotionController {
             };
          }
       }
+   }
+
+   @Override
+   default void onDebugFlagsChanged(EnumSet<RoleDebugFlags> newFlags) {
    }
 
    static {

@@ -49,6 +49,7 @@ import com.hypixel.hytale.server.core.inventory.container.filter.FilterType;
 import com.hypixel.hytale.server.core.inventory.transaction.ListTransaction;
 import com.hypixel.hytale.server.core.inventory.transaction.MaterialSlotTransaction;
 import com.hypixel.hytale.server.core.inventory.transaction.MaterialTransaction;
+import com.hypixel.hytale.server.core.modules.entity.player.PlayerSettings;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -423,7 +424,18 @@ public class CraftingManager implements Component<EntityStore> {
       } else {
          List<ItemStack> itemStacks = getOutputItemStacks(craftingRecipe, quantity);
          Inventory inventory = playerComponent.getInventory();
-         SimpleItemContainer.addOrDropItemStacks(componentAccessor, ref, inventory.getCombinedArmorHotbarStorage(), itemStacks);
+         PlayerSettings playerSettings = componentAccessor.getComponent(ref, PlayerSettings.getComponentType());
+         if (playerSettings == null) {
+            playerSettings = PlayerSettings.defaults();
+         }
+
+         for (ItemStack itemStack : itemStacks) {
+            if (!ItemStack.isEmpty(itemStack)) {
+               SimpleItemContainer.addOrDropItemStack(
+                  componentAccessor, ref, inventory.getContainerForItemPickup(itemStack.getItem(), playerSettings), itemStack
+               );
+            }
+         }
       }
    }
 
@@ -875,6 +887,7 @@ public class CraftingManager implements Component<EntityStore> {
          this.timeSeconds = timeSeconds;
       }
 
+      @Nonnull
       @Override
       public String toString() {
          return "BenchUpgradingJob{window=" + this.window + ", timeSeconds=" + this.timeSeconds + "}";

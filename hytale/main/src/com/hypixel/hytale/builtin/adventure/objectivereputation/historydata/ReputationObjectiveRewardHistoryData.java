@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public final class ReputationObjectiveRewardHistoryData extends ObjectiveRewardHistoryData {
+   @Nonnull
    public static final BuilderCodec<ReputationObjectiveRewardHistoryData> CODEC = BuilderCodec.builder(
          ReputationObjectiveRewardHistoryData.class, ReputationObjectiveRewardHistoryData::new, ObjectiveRewardHistoryData.BASE_CODEC
       )

@@ -32,7 +32,6 @@ public class SimpleNoiseCarta<T> extends BiCarta<T> {
    public T apply(int x, int z, @Nonnull WorkerIndexer.Id id) {
       Density.Context context = new Density.Context();
       context.position = new Vector3d(x, 0.0, z);
-      context.workerId = id;
       double noiseValue = this.density.process(context);
       T value = this.rangeMap.get(noiseValue);
       return value == null ? this.defaultValue : value;

@@ -7,6 +7,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.universe.world.World;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class FilterQuery implements SpatialQuery {
@@ -24,8 +25,9 @@ public class FilterQuery implements SpatialQuery {
       this.failFast = failFast;
    }
 
+   @Nonnull
    @Override
-   public Stream<Vector3d> createCandidates(World world, Vector3d origin, @Nullable SpatialQueryDebug debug) {
+   public Stream<Vector3d> createCandidates(@Nonnull World world, @Nonnull Vector3d origin, @Nullable SpatialQueryDebug debug) {
       Stream<Vector3d> stream = this.query.createCandidates(world, origin, debug);
       AtomicBoolean failed = new AtomicBoolean();
       if (this.failFast) {
@@ -35,7 +37,7 @@ public class FilterQuery implements SpatialQuery {
       return stream.filter(candidate -> {
          boolean accepted = this.predicate.test(world, candidate);
          if (debug != null) {
-            debug.appendLine(this.predicate.getClass().getSimpleName() + " on " + debug.fmt(candidate) + " = " + accepted);
+            debug.appendLine(this.predicate.getClass().getSimpleName() + " on " + SpatialQueryDebug.fmt(candidate) + " = " + accepted);
          }
 
          if (!accepted) {

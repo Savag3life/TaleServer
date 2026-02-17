@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class FieldFunctionAssignmentsAsset extends AssignmentsAsset {
+   @Nonnull
    public static final BuilderCodec<FieldFunctionAssignmentsAsset> CODEC = BuilderCodec.builder(
          FieldFunctionAssignmentsAsset.class, FieldFunctionAssignmentsAsset::new, AssignmentsAsset.ABSTRACT_CODEC
       )
@@ -60,6 +61,7 @@ public class FieldFunctionAssignmentsAsset extends AssignmentsAsset {
    }
 
    public static class DelimiterAsset implements Cleanable, JsonAssetWithMap<String, DefaultAssetMap<String, FieldFunctionAssignmentsAsset.DelimiterAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, FieldFunctionAssignmentsAsset.DelimiterAsset> CODEC = AssetBuilderCodec.builder(
             FieldFunctionAssignmentsAsset.DelimiterAsset.class,
             FieldFunctionAssignmentsAsset.DelimiterAsset::new,

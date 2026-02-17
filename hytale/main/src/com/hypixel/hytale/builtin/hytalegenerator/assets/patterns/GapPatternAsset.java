@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class GapPatternAsset extends PatternAsset {
+   @Nonnull
    public static final BuilderCodec<GapPatternAsset> CODEC = BuilderCodec.builder(GapPatternAsset.class, GapPatternAsset::new, PatternAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("GapPattern", PatternAsset.CODEC, true), (t, k) -> t.gapPatternAsset = k, k -> k.gapPatternAsset)
       .add()

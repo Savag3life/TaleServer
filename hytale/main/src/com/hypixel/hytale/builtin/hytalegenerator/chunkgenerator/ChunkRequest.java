@@ -13,10 +13,12 @@ public record ChunkRequest(@Nonnull ChunkRequest.GeneratorProfile generatorProfi
       @Nonnull
       private final String worldStructureName;
       private int seed;
+      private int worldCounter;
 
-      public GeneratorProfile(@Nonnull String worldStructureName, int seed) {
+      public GeneratorProfile(@Nonnull String worldStructureName, int seed, int worldCounter) {
          this.worldStructureName = worldStructureName;
          this.seed = seed;
+         this.worldCounter = worldCounter;
       }
 
       @Nonnull
@@ -33,25 +35,25 @@ public record ChunkRequest(@Nonnull ChunkRequest.GeneratorProfile generatorProfi
       }
 
       @Override
-      public boolean equals(Object obj) {
-         if (obj == this) {
-            return true;
-         } else if (obj != null && obj.getClass() == this.getClass()) {
-            ChunkRequest.GeneratorProfile that = (ChunkRequest.GeneratorProfile)obj;
-            return Objects.equals(this.worldStructureName, that.worldStructureName) && this.seed == that.seed;
-         } else {
-            return false;
-         }
+      public boolean equals(Object o) {
+         return !(o instanceof ChunkRequest.GeneratorProfile that)
+            ? false
+            : this.seed == that.seed && this.worldCounter == that.worldCounter && Objects.equals(this.worldStructureName, that.worldStructureName);
       }
 
       @Override
       public int hashCode() {
-         return Objects.hash(this.worldStructureName, this.seed);
+         return Objects.hash(this.worldStructureName, this.seed, this.worldCounter);
       }
 
+      public ChunkRequest.GeneratorProfile clone() {
+         return new ChunkRequest.GeneratorProfile(this.worldStructureName, this.seed, this.worldCounter);
+      }
+
+      @Nonnull
       @Override
       public String toString() {
-         return "GeneratorProfile[worldStructureName=" + this.worldStructureName + ", seed=" + this.seed + "]";
+         return "GeneratorProfile{worldStructureName='" + this.worldStructureName + "', seed=" + this.seed + ", worldCounter=" + this.worldCounter + "}";
       }
    }
 }

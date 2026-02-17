@@ -8,10 +8,13 @@ import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import java.time.Instant;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class FarmingBlock implements Component<ChunkStore> {
+   @Nonnull
    public static final String DEFAULT_STAGE_SET = "Default";
+   @Nonnull
    public static final BuilderCodec<FarmingBlock> CODEC = BuilderCodec.builder(FarmingBlock.class, FarmingBlock::new)
       .append(
          new KeyedCodec<>("CurrentStageSet", Codec.STRING),
@@ -56,13 +59,14 @@ public class FarmingBlock implements Component<ChunkStore> {
       )
       .add()
       .build();
+   @Nonnull
    private String currentStageSet = "Default";
    private float growthProgress;
    private Instant lastTickGameTime;
    private int generation;
    private String previousBlockType;
    private float spreadRate = 1.0F;
-   private int executions = 0;
+   private int executions;
 
    public static ComponentType<ChunkStore, FarmingBlock> getComponentType() {
       return FarmingPlugin.get().getFarmingBlockComponentType();
@@ -72,7 +76,13 @@ public class FarmingBlock implements Component<ChunkStore> {
    }
 
    public FarmingBlock(
-      String currentStageSet, float growthProgress, Instant lastTickGameTime, int generation, String previousBlockType, float spreadRate, int executions
+      @Nonnull String currentStageSet,
+      float growthProgress,
+      Instant lastTickGameTime,
+      int generation,
+      String previousBlockType,
+      float spreadRate,
+      int executions
    ) {
       this.currentStageSet = currentStageSet;
       this.growthProgress = growthProgress;
@@ -83,11 +93,12 @@ public class FarmingBlock implements Component<ChunkStore> {
       this.executions = executions;
    }
 
+   @Nonnull
    public String getCurrentStageSet() {
       return this.currentStageSet;
    }
 
-   public void setCurrentStageSet(String currentStageSet) {
+   public void setCurrentStageSet(@Nullable String currentStageSet) {
       this.currentStageSet = currentStageSet != null ? currentStageSet : "Default";
    }
 
@@ -147,6 +158,7 @@ public class FarmingBlock implements Component<ChunkStore> {
       );
    }
 
+   @Nonnull
    @Override
    public String toString() {
       return "FarmingBlock{currentStageSet='"

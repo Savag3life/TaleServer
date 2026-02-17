@@ -105,35 +105,34 @@ public class PrefabEditSessionManager {
 
    private void onPlayerReady(@Nonnull PlayerReadyEvent event) {
       Ref<EntityStore> playerRef = event.getPlayer().getReference();
+      if (playerRef != null && playerRef.isValid()) {
+         Store<EntityStore> store = playerRef.getStore();
+         World world = store.getExternalData().getWorld();
+         world.execute(() -> {
+            UUIDComponent uuidComponent = store.getComponent(playerRef, UUIDComponent.getComponentType());
 
-      assert playerRef != null && !playerRef.isValid();
+            assert uuidComponent != null;
 
-      Store<EntityStore> store = playerRef.getStore();
-      World world = store.getExternalData().getWorld();
-      world.execute(() -> {
-         UUIDComponent uuidComponent = store.getComponent(playerRef, UUIDComponent.getComponentType());
+            UUID playerUUID = uuidComponent.getUuid();
+            if (this.inProgressTeleportations.containsKey(playerUUID)) {
+               this.inProgressTeleportations.remove(playerUUID);
+               MovementStatesComponent movementStatesComponent = store.getComponent(playerRef, MovementStatesComponent.getComponentType());
 
-         assert uuidComponent != null;
+               assert movementStatesComponent != null;
 
-         UUID playerUUID = uuidComponent.getUuid();
-         if (this.inProgressTeleportations.containsKey(playerUUID)) {
-            this.inProgressTeleportations.remove(playerUUID);
-            MovementStatesComponent movementStatesComponent = store.getComponent(playerRef, MovementStatesComponent.getComponentType());
+               MovementStates movementStates = movementStatesComponent.getMovementStates();
+               Player playerComponent = store.getComponent(playerRef, Player.getComponentType());
 
-            assert movementStatesComponent != null;
+               assert playerComponent != null;
 
-            MovementStates movementStates = movementStatesComponent.getMovementStates();
-            Player playerComponent = store.getComponent(playerRef, Player.getComponentType());
-
-            assert playerComponent != null;
-
-            playerComponent.applyMovementStates(playerRef, new SavedMovementStates(true), movementStates, store);
-            PlayerRef playerRefComponent = store.getComponent(playerRef, PlayerRef.getComponentType());
-            if (playerRefComponent != null) {
-               this.givePrefabSelectorTool(playerComponent, playerRefComponent);
+               playerComponent.applyMovementStates(playerRef, new SavedMovementStates(true), movementStates, store);
+               PlayerRef playerRefComponent = store.getComponent(playerRef, PlayerRef.getComponentType());
+               if (playerRefComponent != null) {
+                  this.givePrefabSelectorTool(playerComponent, playerRefComponent);
+               }
             }
-         }
-      });
+         });
+      }
    }
 
    private void givePrefabSelectorTool(@Nonnull Player playerComponent, @Nonnull PlayerRef playerRef) {

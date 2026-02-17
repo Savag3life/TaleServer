@@ -9,6 +9,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public abstract class CountObjectiveTaskAsset extends ObjectiveTaskAsset {
+   @Nonnull
    public static final BuilderCodec<CountObjectiveTaskAsset> CODEC = BuilderCodec.abstractBuilder(CountObjectiveTaskAsset.class, BASE_CODEC)
       .append(new KeyedCodec<>("Count", Codec.INTEGER), (taskAsset, count) -> taskAsset.count = count, taskAsset -> taskAsset.count)
       .addValidator(Validators.greaterThan(0))

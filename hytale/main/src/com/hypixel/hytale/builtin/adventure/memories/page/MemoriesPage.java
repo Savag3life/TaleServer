@@ -35,11 +35,8 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -51,9 +48,10 @@ public class MemoriesPage extends InteractiveCustomUIPage<MemoriesPage.PageEvent
    private String currentCategory;
    @Nullable
    private Memory selectedMemory;
-   private Vector3d recordMemoriesParticlesPosition;
+   @Nonnull
+   private final Vector3d recordMemoriesParticlesPosition;
 
-   public MemoriesPage(@Nonnull PlayerRef playerRef, BlockPosition blockPosition) {
+   public MemoriesPage(@Nonnull PlayerRef playerRef, @Nonnull BlockPosition blockPosition) {
       super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, MemoriesPage.PageEventData.CODEC);
       this.recordMemoriesParticlesPosition = new Vector3d(blockPosition.x, blockPosition.y, blockPosition.z);
    }
@@ -104,11 +102,11 @@ public class MemoriesPage extends InteractiveCustomUIPage<MemoriesPage.PageEvent
             commandBuilder.set(selector + "#TotalMemoryCountComplete.Text", String.valueOf(memoriesInCategory.size()));
             boolean isCategoryComplete = recordedMemoriesCount == memoriesInCategory.size();
             if (isCategoryComplete) {
-               commandBuilder.set(selector + "#CategoryIcon.Background", "Pages/Memories/categories/" + category + "Complete.png");
+               commandBuilder.set(selector + "#CategoryIcon.AssetPath", "UI/Custom/Pages/Memories/categories/" + category + "Complete.png");
                commandBuilder.set(selector + "#CompleteCategoryBackground.Visible", true);
                commandBuilder.set(selector + "#CompleteCategoryCounter.Visible", true);
             } else {
-               commandBuilder.set(selector + "#CategoryIcon.Background", "Pages/Memories/categories/" + category + ".png");
+               commandBuilder.set(selector + "#CategoryIcon.AssetPath", "UI/Custom/Pages/Memories/categories/" + category + ".png");
                commandBuilder.set(selector + "#NotCompleteCategoryCounter.Visible", true);
             }
 
@@ -359,10 +357,9 @@ public class MemoriesPage extends InteractiveCustomUIPage<MemoriesPage.PageEvent
       if (memory instanceof NPCMemory npcMemory) {
          Message locationNameKey = npcMemory.getLocationMessage();
          long capturedTimestamp = npcMemory.getCapturedTimestamp();
-         String timeString = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
-            .withLocale(Locale.getDefault())
-            .format(Instant.ofEpochMilli(capturedTimestamp).atZone(ZoneOffset.UTC));
-         Message memoryLocationTimeText = Message.translation("server.memories.general.foundIn").param("location", locationNameKey).param("time", timeString);
+         Message memoryLocationTimeText = Message.translation("server.memories.general.foundIn")
+            .param("location", locationNameKey)
+            .param("dateValue", Instant.ofEpochMilli(capturedTimestamp).atZone(ZoneOffset.UTC).toString());
          commandBuilder.set("#MemoryTimeLocation.TextSpans", memoryLocationTimeText);
       }
 
@@ -381,13 +378,18 @@ public class MemoriesPage extends InteractiveCustomUIPage<MemoriesPage.PageEvent
       MemoriesInfo,
       SelectMemory;
 
+      @Nonnull
       public static final Codec<MemoriesPage.PageAction> CODEC = new EnumCodec<>(MemoriesPage.PageAction.class);
    }
 
    public static class PageEventData {
+      @Nonnull
       public static final String KEY_ACTION = "Action";
+      @Nonnull
       public static final String KEY_CATEGORY = "Category";
+      @Nonnull
       public static final String KEY_MEMORY_ID = "MemoryId";
+      @Nonnull
       public static final BuilderCodec<MemoriesPage.PageEventData> CODEC = BuilderCodec.builder(
             MemoriesPage.PageEventData.class, MemoriesPage.PageEventData::new
          )

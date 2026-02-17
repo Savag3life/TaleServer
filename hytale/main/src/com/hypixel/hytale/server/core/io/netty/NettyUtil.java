@@ -2,6 +2,8 @@ package com.hypixel.hytale.server.core.io.netty;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.logger.backend.HytaleLoggerBackend;
+import com.hypixel.hytale.protocol.NetworkChannel;
+import com.hypixel.hytale.protocol.io.netty.ProtocolUtil;
 import com.hypixel.hytale.server.core.io.PacketHandler;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
@@ -27,6 +29,8 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.quic.QuicChannel;
 import io.netty.handler.codec.quic.QuicStreamChannel;
+import io.netty.handler.codec.quic.QuicStreamPriority;
+import io.netty.handler.codec.quic.QuicStreamType;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.AttributeKey;
@@ -37,6 +41,7 @@ import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.logging.Level;
 import javax.annotation.Nonnull;
@@ -76,6 +81,33 @@ public class NettyUtil {
       }
 
       packetHandler.registered(oldPlayerConnection);
+   }
+
+   @Nonnull
+   public static CompletableFuture<Void> createStream(
+      @Nonnull QuicChannel conn,
+      @Nonnull QuicStreamType streamType,
+      @Nonnull NetworkChannel networkChannel,
+      @Nullable QuicStreamPriority priority,
+      @Nonnull PacketHandler packetHandler
+   ) {
+      CompletableFuture<Void> future = new CompletableFuture<>();
+      conn.createStream(streamType, new HytaleChannelInitializer()).addListener(result -> {
+         if (!result.isSuccess()) {
+            future.completeExceptionally(result.cause());
+         } else {
+            QuicStreamChannel channel = (QuicStreamChannel)result.getNow();
+            channel.attr(ProtocolUtil.STREAM_CHANNEL_KEY).set(networkChannel);
+            if (priority != null) {
+               channel.updatePriority(priority);
+            }
+
+            setChannelHandler(channel, packetHandler);
+            packetHandler.setChannel(networkChannel, channel);
+            future.complete(null);
+         }
+      });
+      return future;
    }
 
    @Nonnull

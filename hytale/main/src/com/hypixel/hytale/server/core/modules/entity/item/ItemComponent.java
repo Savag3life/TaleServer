@@ -25,7 +25,6 @@ import com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction
 import com.hypixel.hytale.server.core.modules.entity.BlockMigrationExtraInfo;
 import com.hypixel.hytale.server.core.modules.entity.DespawnComponent;
 import com.hypixel.hytale.server.core.modules.entity.EntityModule;
-import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation;
 import com.hypixel.hytale.server.core.modules.entity.component.Intangible;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
@@ -249,35 +248,40 @@ public class ItemComponent implements Component<EntityStore> {
       }
    }
 
-   @Nonnull
+   @Nullable
    public static Holder<EntityStore> generatePickedUpItem(
       @Nonnull Ref<EntityStore> ref,
       @Nonnull ComponentAccessor<EntityStore> componentAccessor,
       @Nonnull Ref<EntityStore> targetRef,
       @Nonnull Vector3d targetPosition
    ) {
-      Holder<EntityStore> holder = EntityStore.REGISTRY.newHolder();
-      TransformComponent itemTransformComponent = componentAccessor.getComponent(ref, TransformComponent.getComponentType());
-
-      assert itemTransformComponent != null;
-
-      ItemComponent itemItemComponent = componentAccessor.getComponent(ref, getComponentType());
-
-      assert itemItemComponent != null;
-
-      HeadRotation itemHeadRotationComponent = componentAccessor.getComponent(ref, HeadRotation.getComponentType());
-
-      assert itemHeadRotationComponent != null;
-
-      PickupItemComponent pickupItemComponent = new PickupItemComponent(targetRef, targetPosition.clone());
-      holder.addComponent(PickupItemComponent.getComponentType(), pickupItemComponent);
-      holder.addComponent(getComponentType(), itemItemComponent.clone());
-      holder.addComponent(TransformComponent.getComponentType(), itemTransformComponent.clone());
-      holder.ensureComponent(PreventItemMerging.getComponentType());
-      holder.ensureComponent(Intangible.getComponentType());
-      holder.addComponent(NetworkId.getComponentType(), new NetworkId(ref.getStore().getExternalData().takeNextNetworkId()));
-      holder.ensureComponent(EntityStore.REGISTRY.getNonSerializedComponentType());
-      return holder;
+      if (!ref.isValid()) {
+         LOGGER.at(Level.WARNING).log("Attempted to generate picked up item from invalid entity reference %s", ref.getIndex());
+         return null;
+      } else {
+         TransformComponent itemTransformComponent = componentAccessor.getComponent(ref, TransformComponent.getComponentType());
+         if (itemTransformComponent == null) {
+            LOGGER.at(Level.WARNING).log("Attempted to generate picked up item from entity %s without a TransformComponent", ref.getIndex());
+            return null;
+         } else {
+            ItemComponent itemItemComponent = componentAccessor.getComponent(ref, getComponentType());
+            if (itemItemComponent == null) {
+               LOGGER.at(Level.WARNING).log("Attempted to generate picked up item from entity %s without an ItemComponent", ref.getIndex());
+               return null;
+            } else {
+               Holder<EntityStore> holder = EntityStore.REGISTRY.newHolder();
+               PickupItemComponent pickupItemComponent = new PickupItemComponent(targetRef, targetPosition.clone());
+               holder.addComponent(PickupItemComponent.getComponentType(), pickupItemComponent);
+               holder.addComponent(getComponentType(), itemItemComponent.clone());
+               holder.addComponent(TransformComponent.getComponentType(), itemTransformComponent.clone());
+               holder.ensureComponent(PreventItemMerging.getComponentType());
+               holder.ensureComponent(Intangible.getComponentType());
+               holder.addComponent(NetworkId.getComponentType(), new NetworkId(ref.getStore().getExternalData().takeNextNetworkId()));
+               holder.ensureComponent(EntityStore.REGISTRY.getNonSerializedComponentType());
+               return holder;
+            }
+         }
+      }
    }
 
    @Nonnull

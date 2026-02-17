@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.entity.entities.player.pages.choices.Choic
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.server.OpenCustomUIInteraction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.plugin.registry.AssetRegistry;
 import java.util.logging.Level;
 import javax.annotation.Nonnull;
 
@@ -27,28 +28,27 @@ public class ShopPlugin extends JavaPlugin {
    @Override
    protected void setup() {
       instance = this;
-      this.getAssetRegistry()
-         .register(
-            ((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)HytaleAssetStore.builder(
-                              ShopAsset.class, new DefaultAssetMap()
-                           )
-                           .setPath("Shops"))
-                        .setCodec(ShopAsset.CODEC))
-                     .setKeyFunction(ShopAsset::getId))
-                  .loadsAfter(Item.class))
-               .build()
-         );
-      this.getAssetRegistry()
-         .register(
-            ((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)HytaleAssetStore.builder(
-                              BarterShopAsset.class, new DefaultAssetMap()
-                           )
-                           .setPath("BarterShops"))
-                        .setCodec(BarterShopAsset.CODEC))
-                     .setKeyFunction(BarterShopAsset::getId))
-                  .loadsAfter(Item.class))
-               .build()
-         );
+      AssetRegistry assetRegistry = this.getAssetRegistry();
+      assetRegistry.register(
+         ((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)HytaleAssetStore.builder(
+                           ShopAsset.class, new DefaultAssetMap()
+                        )
+                        .setPath("Shops"))
+                     .setCodec(ShopAsset.CODEC))
+                  .setKeyFunction(ShopAsset::getId))
+               .loadsAfter(Item.class))
+            .build()
+      );
+      assetRegistry.register(
+         ((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)((HytaleAssetStore.Builder)HytaleAssetStore.builder(
+                           BarterShopAsset.class, new DefaultAssetMap()
+                        )
+                        .setPath("BarterShops"))
+                     .setCodec(BarterShopAsset.CODEC))
+                  .setKeyFunction(BarterShopAsset::getId))
+               .loadsAfter(Item.class))
+            .build()
+      );
       this.getCodecRegistry(ChoiceElement.CODEC).register("ShopElement", ShopElement.class, ShopElement.CODEC);
       this.getCodecRegistry(ChoiceInteraction.CODEC).register("GiveItem", GiveItemInteraction.class, GiveItemInteraction.CODEC);
       this.getCodecRegistry(OpenCustomUIInteraction.PAGE_CODEC).register("Shop", ShopPageSupplier.class, ShopPageSupplier.CODEC);

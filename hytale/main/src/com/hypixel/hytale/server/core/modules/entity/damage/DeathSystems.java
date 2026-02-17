@@ -260,7 +260,7 @@ public class DeathSystems {
 
                for (short i = 0; i < combinedItemContainer.getCapacity(); i++) {
                   ItemStack itemStack = combinedItemContainer.getItemStack(i);
-                  if (!ItemStack.isEmpty(itemStack) && !itemStack.isBroken()) {
+                  if (!ItemStack.isEmpty(itemStack) && !itemStack.isBroken() && itemStack.getItem().getDurabilityLossOnDeath()) {
                      double durabilityLoss = itemStack.getMaxDurability() * durabilityLossRatio;
                      ItemStack updatedItemStack = itemStack.withIncreasedDurability(-durabilityLoss);
                      ItemStackSlotTransaction transaction = combinedItemContainer.replaceItemStackInSlot(i, itemStack, updatedItemStack);

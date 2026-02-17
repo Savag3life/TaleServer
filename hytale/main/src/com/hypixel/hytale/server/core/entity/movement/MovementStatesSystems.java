@@ -13,9 +13,8 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.HolderSystem;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.protocol.ComponentUpdate;
-import com.hypixel.hytale.protocol.ComponentUpdateType;
 import com.hypixel.hytale.protocol.MovementStates;
+import com.hypixel.hytale.protocol.MovementStatesUpdate;
 import com.hypixel.hytale.protocol.SavedMovementStates;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.data.PlayerWorldData;
@@ -168,8 +167,7 @@ public class MovementStatesSystems {
          @Nonnull Map<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> visibleTo,
          @Nonnull MovementStatesComponent movementStatesComponent
       ) {
-         ComponentUpdate update = new ComponentUpdate();
-         update.type = ComponentUpdateType.MovementStates;
+         MovementStatesUpdate update = new MovementStatesUpdate();
          update.movementStates = movementStatesComponent.getMovementStates();
 
          for (Entry<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> entry : visibleTo.entrySet()) {

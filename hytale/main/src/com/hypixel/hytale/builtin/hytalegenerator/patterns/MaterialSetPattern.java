@@ -7,7 +7,9 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class MaterialSetPattern extends Pattern {
+   @Nonnull
    private static final SpaceSize READ_SPACE_SIZE = new SpaceSize(new Vector3i(0, 0, 0), new Vector3i(1, 0, 1));
+   @Nonnull
    private final MaterialSet materialSet;
 
    public MaterialSetPattern(@Nonnull MaterialSet materialSet) {
@@ -25,6 +27,7 @@ public class MaterialSetPattern extends Pattern {
       }
    }
 
+   @Nonnull
    @Override
    public SpaceSize readSpace() {
       return READ_SPACE_SIZE.clone();

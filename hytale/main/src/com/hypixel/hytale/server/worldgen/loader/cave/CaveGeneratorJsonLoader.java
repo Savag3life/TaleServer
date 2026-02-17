@@ -2,15 +2,14 @@ package com.hypixel.hytale.server.worldgen.loader.cave;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
+import com.hypixel.hytale.procedurallib.file.AssetPath;
+import com.hypixel.hytale.procedurallib.file.FileIO;
 import com.hypixel.hytale.procedurallib.json.JsonLoader;
 import com.hypixel.hytale.procedurallib.json.SeedString;
 import com.hypixel.hytale.server.worldgen.SeedStringResource;
 import com.hypixel.hytale.server.worldgen.cave.CaveGenerator;
 import com.hypixel.hytale.server.worldgen.cave.CaveType;
 import com.hypixel.hytale.server.worldgen.loader.context.ZoneFileContext;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -28,29 +27,17 @@ public class CaveGeneratorJsonLoader extends JsonLoader<SeedStringResource, Cave
    @Nullable
    public CaveGenerator load() {
       CaveGenerator caveGenerator = null;
-      if (this.caveFolder != null && Files.exists(this.caveFolder)) {
-         Path file = this.caveFolder.resolve("Caves.json");
+      if (this.caveFolder != null) {
+         AssetPath assetPath = FileIO.resolve(this.caveFolder.resolve("Caves.json"));
+         if (!FileIO.exists(assetPath)) {
+            return null;
+         }
 
          try {
-            JsonReader reader = new JsonReader(Files.newBufferedReader(file));
-
-            JsonObject cavesJson;
-            try {
-               cavesJson = JsonParser.parseReader(reader).getAsJsonObject();
-            } catch (Throwable var8) {
-               try {
-                  reader.close();
-               } catch (Throwable var7) {
-                  var8.addSuppressed(var7);
-               }
-
-               throw var8;
-            }
-
-            reader.close();
+            JsonObject cavesJson = FileIO.load(assetPath, JsonLoader.JSON_OBJ_LOADER);
             caveGenerator = new CaveGenerator(this.loadCaveTypes(cavesJson));
-         } catch (Throwable var9) {
-            throw new Error(String.format("Error while loading caves for world generator from %s", file.toString()), var9);
+         } catch (Throwable var4) {
+            throw new Error(String.format("Error while loading caves for world generator from %s", assetPath.toString()), var4);
          }
       }
 

@@ -54,6 +54,8 @@ public class BlockPlacementSettings implements NetworkSerializable<com.hypixel.h
          placementSettings -> placementSettings.ceilingPlacementOverrideBlockId
       )
       .add()
+      .append(new KeyedCodec<>("AllowBreakReplace", Codec.BOOLEAN), (o, v) -> o.allowBreakReplace = v, o -> o.allowBreakReplace)
+      .add()
       .build();
    protected String wallPlacementOverrideBlockId;
    protected String floorPlacementOverrideBlockId;
@@ -62,6 +64,7 @@ public class BlockPlacementSettings implements NetworkSerializable<com.hypixel.h
    private boolean placeInEmptyBlocks;
    private BlockPlacementSettings.BlockPreviewVisibility previewVisibility = BlockPlacementSettings.BlockPreviewVisibility.DEFAULT;
    private BlockPlacementSettings.RotationMode rotationMode = BlockPlacementSettings.RotationMode.DEFAULT;
+   protected boolean allowBreakReplace;
 
    protected BlockPlacementSettings() {
    }
@@ -97,122 +100,126 @@ public class BlockPlacementSettings implements NetworkSerializable<com.hypixel.h
       // 015: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.placeInEmptyBlocks Z
       // 018: aload 1
       // 019: aload 0
-      // 01a: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.previewVisibility Lcom/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings$BlockPreviewVisibility;
-      // 01d: astore 2
-      // 01e: bipush 0
-      // 01f: istore 3
-      // 020: aload 2
-      // 021: iload 3
-      // 022: invokedynamic typeSwitch (Ljava/lang/Object;I)I bsm=java/lang/runtime/SwitchBootstraps.typeSwitch (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc; ]
-      // 027: tableswitch 29 -1 2 39 45 51 57
-      // 044: new java/lang/MatchException
-      // 047: dup
-      // 048: aconst_null
-      // 049: aconst_null
-      // 04a: invokespecial java/lang/MatchException.<init> (Ljava/lang/String;Ljava/lang/Throwable;)V
-      // 04d: athrow
-      // 04e: getstatic com/hypixel/hytale/protocol/BlockPreviewVisibility.Default Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
-      // 051: goto 063
-      // 054: getstatic com/hypixel/hytale/protocol/BlockPreviewVisibility.Default Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
-      // 057: goto 063
-      // 05a: getstatic com/hypixel/hytale/protocol/BlockPreviewVisibility.AlwaysHidden Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
-      // 05d: goto 063
-      // 060: getstatic com/hypixel/hytale/protocol/BlockPreviewVisibility.AlwaysVisible Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
-      // 063: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.previewVisibility Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
-      // 066: aload 1
-      // 067: aload 0
-      // 068: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.rotationMode Lcom/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings$RotationMode;
-      // 06b: astore 2
-      // 06c: bipush 0
-      // 06d: istore 3
-      // 06e: aload 2
-      // 06f: iload 3
-      // 070: invokedynamic typeSwitch (Ljava/lang/Object;I)I bsm=java/lang/runtime/SwitchBootstraps.typeSwitch (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc; ]
-      // 075: tableswitch 35 -1 3 45 51 57 63 69
-      // 098: new java/lang/MatchException
-      // 09b: dup
-      // 09c: aconst_null
-      // 09d: aconst_null
-      // 09e: invokespecial java/lang/MatchException.<init> (Ljava/lang/String;Ljava/lang/Throwable;)V
-      // 0a1: athrow
-      // 0a2: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.Default Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
-      // 0a5: goto 0bd
-      // 0a8: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.Default Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
-      // 0ab: goto 0bd
-      // 0ae: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.FacingPlayer Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
-      // 0b1: goto 0bd
-      // 0b4: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.StairFacingPlayer Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
-      // 0b7: goto 0bd
-      // 0ba: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.BlockNormal Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
-      // 0bd: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.rotationMode Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
-      // 0c0: aload 1
-      // 0c1: aload 0
-      // 0c2: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.wallPlacementOverrideBlockId Ljava/lang/String;
-      // 0c5: ifnonnull 0cc
-      // 0c8: bipush -1
-      // 0c9: goto 0d6
-      // 0cc: invokestatic com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockType.getAssetMap ()Lcom/hypixel/hytale/assetstore/map/BlockTypeAssetMap;
-      // 0cf: aload 0
-      // 0d0: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.wallPlacementOverrideBlockId Ljava/lang/String;
-      // 0d3: invokevirtual com/hypixel/hytale/assetstore/map/BlockTypeAssetMap.getIndex (Ljava/lang/Object;)I
-      // 0d6: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.wallPlacementOverrideBlockId I
-      // 0d9: aload 1
-      // 0da: getfield com/hypixel/hytale/protocol/BlockPlacementSettings.wallPlacementOverrideBlockId I
-      // 0dd: ldc -2147483648
-      // 0df: if_icmpne 0f3
-      // 0e2: new java/lang/IllegalArgumentException
-      // 0e5: dup
-      // 0e6: aload 0
-      // 0e7: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.wallPlacementOverrideBlockId Ljava/lang/String;
-      // 0ea: invokedynamic makeConcatWithConstants (Ljava/lang/String;)Ljava/lang/String; bsm=java/lang/invoke/StringConcatFactory.makeConcatWithConstants (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ "Unknown key! \u0001" ]
-      // 0ef: invokespecial java/lang/IllegalArgumentException.<init> (Ljava/lang/String;)V
-      // 0f2: athrow
-      // 0f3: aload 1
-      // 0f4: aload 0
-      // 0f5: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.floorPlacementOverrideBlockId Ljava/lang/String;
-      // 0f8: ifnonnull 0ff
-      // 0fb: bipush -1
-      // 0fc: goto 109
-      // 0ff: invokestatic com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockType.getAssetMap ()Lcom/hypixel/hytale/assetstore/map/BlockTypeAssetMap;
-      // 102: aload 0
-      // 103: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.floorPlacementOverrideBlockId Ljava/lang/String;
-      // 106: invokevirtual com/hypixel/hytale/assetstore/map/BlockTypeAssetMap.getIndex (Ljava/lang/Object;)I
-      // 109: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.floorPlacementOverrideBlockId I
-      // 10c: aload 1
-      // 10d: getfield com/hypixel/hytale/protocol/BlockPlacementSettings.floorPlacementOverrideBlockId I
-      // 110: ldc -2147483648
-      // 112: if_icmpne 126
-      // 115: new java/lang/IllegalArgumentException
-      // 118: dup
-      // 119: aload 0
-      // 11a: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.floorPlacementOverrideBlockId Ljava/lang/String;
-      // 11d: invokedynamic makeConcatWithConstants (Ljava/lang/String;)Ljava/lang/String; bsm=java/lang/invoke/StringConcatFactory.makeConcatWithConstants (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ "Unknown key! \u0001" ]
-      // 122: invokespecial java/lang/IllegalArgumentException.<init> (Ljava/lang/String;)V
-      // 125: athrow
-      // 126: aload 1
-      // 127: aload 0
-      // 128: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.ceilingPlacementOverrideBlockId Ljava/lang/String;
-      // 12b: ifnonnull 132
-      // 12e: bipush -1
-      // 12f: goto 13c
-      // 132: invokestatic com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockType.getAssetMap ()Lcom/hypixel/hytale/assetstore/map/BlockTypeAssetMap;
-      // 135: aload 0
-      // 136: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.ceilingPlacementOverrideBlockId Ljava/lang/String;
-      // 139: invokevirtual com/hypixel/hytale/assetstore/map/BlockTypeAssetMap.getIndex (Ljava/lang/Object;)I
-      // 13c: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.ceilingPlacementOverrideBlockId I
-      // 13f: aload 1
-      // 140: getfield com/hypixel/hytale/protocol/BlockPlacementSettings.ceilingPlacementOverrideBlockId I
-      // 143: ldc -2147483648
-      // 145: if_icmpne 159
-      // 148: new java/lang/IllegalArgumentException
-      // 14b: dup
-      // 14c: aload 0
-      // 14d: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.ceilingPlacementOverrideBlockId Ljava/lang/String;
-      // 150: invokedynamic makeConcatWithConstants (Ljava/lang/String;)Ljava/lang/String; bsm=java/lang/invoke/StringConcatFactory.makeConcatWithConstants (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ "Unknown key! \u0001" ]
-      // 155: invokespecial java/lang/IllegalArgumentException.<init> (Ljava/lang/String;)V
-      // 158: athrow
-      // 159: aload 1
-      // 15a: areturn
+      // 01a: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.allowBreakReplace Z
+      // 01d: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.allowBreakReplace Z
+      // 020: aload 1
+      // 021: aload 0
+      // 022: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.previewVisibility Lcom/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings$BlockPreviewVisibility;
+      // 025: astore 2
+      // 026: bipush 0
+      // 027: istore 3
+      // 028: aload 2
+      // 029: iload 3
+      // 02a: invokedynamic typeSwitch (Ljava/lang/Object;I)I bsm=java/lang/runtime/SwitchBootstraps.typeSwitch (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc; ]
+      // 02f: tableswitch 29 -1 2 39 45 51 57
+      // 04c: new java/lang/MatchException
+      // 04f: dup
+      // 050: aconst_null
+      // 051: aconst_null
+      // 052: invokespecial java/lang/MatchException.<init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+      // 055: athrow
+      // 056: getstatic com/hypixel/hytale/protocol/BlockPreviewVisibility.Default Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
+      // 059: goto 06b
+      // 05c: getstatic com/hypixel/hytale/protocol/BlockPreviewVisibility.Default Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
+      // 05f: goto 06b
+      // 062: getstatic com/hypixel/hytale/protocol/BlockPreviewVisibility.AlwaysHidden Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
+      // 065: goto 06b
+      // 068: getstatic com/hypixel/hytale/protocol/BlockPreviewVisibility.AlwaysVisible Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
+      // 06b: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.previewVisibility Lcom/hypixel/hytale/protocol/BlockPreviewVisibility;
+      // 06e: aload 1
+      // 06f: aload 0
+      // 070: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.rotationMode Lcom/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings$RotationMode;
+      // 073: astore 2
+      // 074: bipush 0
+      // 075: istore 3
+      // 076: aload 2
+      // 077: iload 3
+      // 078: invokedynamic typeSwitch (Ljava/lang/Object;I)I bsm=java/lang/runtime/SwitchBootstraps.typeSwitch (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc;, null.invoke Ljava/lang/Enum$EnumDesc; ]
+      // 07d: tableswitch 35 -1 3 45 51 57 63 69
+      // 0a0: new java/lang/MatchException
+      // 0a3: dup
+      // 0a4: aconst_null
+      // 0a5: aconst_null
+      // 0a6: invokespecial java/lang/MatchException.<init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+      // 0a9: athrow
+      // 0aa: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.Default Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
+      // 0ad: goto 0c5
+      // 0b0: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.Default Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
+      // 0b3: goto 0c5
+      // 0b6: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.FacingPlayer Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
+      // 0b9: goto 0c5
+      // 0bc: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.StairFacingPlayer Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
+      // 0bf: goto 0c5
+      // 0c2: getstatic com/hypixel/hytale/protocol/BlockPlacementRotationMode.BlockNormal Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
+      // 0c5: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.rotationMode Lcom/hypixel/hytale/protocol/BlockPlacementRotationMode;
+      // 0c8: aload 1
+      // 0c9: aload 0
+      // 0ca: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.wallPlacementOverrideBlockId Ljava/lang/String;
+      // 0cd: ifnonnull 0d4
+      // 0d0: bipush -1
+      // 0d1: goto 0de
+      // 0d4: invokestatic com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockType.getAssetMap ()Lcom/hypixel/hytale/assetstore/map/BlockTypeAssetMap;
+      // 0d7: aload 0
+      // 0d8: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.wallPlacementOverrideBlockId Ljava/lang/String;
+      // 0db: invokevirtual com/hypixel/hytale/assetstore/map/BlockTypeAssetMap.getIndex (Ljava/lang/Object;)I
+      // 0de: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.wallPlacementOverrideBlockId I
+      // 0e1: aload 1
+      // 0e2: getfield com/hypixel/hytale/protocol/BlockPlacementSettings.wallPlacementOverrideBlockId I
+      // 0e5: ldc -2147483648
+      // 0e7: if_icmpne 0fb
+      // 0ea: new java/lang/IllegalArgumentException
+      // 0ed: dup
+      // 0ee: aload 0
+      // 0ef: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.wallPlacementOverrideBlockId Ljava/lang/String;
+      // 0f2: invokedynamic makeConcatWithConstants (Ljava/lang/String;)Ljava/lang/String; bsm=java/lang/invoke/StringConcatFactory.makeConcatWithConstants (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ "Unknown key! \u0001" ]
+      // 0f7: invokespecial java/lang/IllegalArgumentException.<init> (Ljava/lang/String;)V
+      // 0fa: athrow
+      // 0fb: aload 1
+      // 0fc: aload 0
+      // 0fd: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.floorPlacementOverrideBlockId Ljava/lang/String;
+      // 100: ifnonnull 107
+      // 103: bipush -1
+      // 104: goto 111
+      // 107: invokestatic com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockType.getAssetMap ()Lcom/hypixel/hytale/assetstore/map/BlockTypeAssetMap;
+      // 10a: aload 0
+      // 10b: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.floorPlacementOverrideBlockId Ljava/lang/String;
+      // 10e: invokevirtual com/hypixel/hytale/assetstore/map/BlockTypeAssetMap.getIndex (Ljava/lang/Object;)I
+      // 111: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.floorPlacementOverrideBlockId I
+      // 114: aload 1
+      // 115: getfield com/hypixel/hytale/protocol/BlockPlacementSettings.floorPlacementOverrideBlockId I
+      // 118: ldc -2147483648
+      // 11a: if_icmpne 12e
+      // 11d: new java/lang/IllegalArgumentException
+      // 120: dup
+      // 121: aload 0
+      // 122: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.floorPlacementOverrideBlockId Ljava/lang/String;
+      // 125: invokedynamic makeConcatWithConstants (Ljava/lang/String;)Ljava/lang/String; bsm=java/lang/invoke/StringConcatFactory.makeConcatWithConstants (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ "Unknown key! \u0001" ]
+      // 12a: invokespecial java/lang/IllegalArgumentException.<init> (Ljava/lang/String;)V
+      // 12d: athrow
+      // 12e: aload 1
+      // 12f: aload 0
+      // 130: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.ceilingPlacementOverrideBlockId Ljava/lang/String;
+      // 133: ifnonnull 13a
+      // 136: bipush -1
+      // 137: goto 144
+      // 13a: invokestatic com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockType.getAssetMap ()Lcom/hypixel/hytale/assetstore/map/BlockTypeAssetMap;
+      // 13d: aload 0
+      // 13e: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.ceilingPlacementOverrideBlockId Ljava/lang/String;
+      // 141: invokevirtual com/hypixel/hytale/assetstore/map/BlockTypeAssetMap.getIndex (Ljava/lang/Object;)I
+      // 144: putfield com/hypixel/hytale/protocol/BlockPlacementSettings.ceilingPlacementOverrideBlockId I
+      // 147: aload 1
+      // 148: getfield com/hypixel/hytale/protocol/BlockPlacementSettings.ceilingPlacementOverrideBlockId I
+      // 14b: ldc -2147483648
+      // 14d: if_icmpne 161
+      // 150: new java/lang/IllegalArgumentException
+      // 153: dup
+      // 154: aload 0
+      // 155: getfield com/hypixel/hytale/server/core/asset/type/blocktype/config/BlockPlacementSettings.ceilingPlacementOverrideBlockId Ljava/lang/String;
+      // 158: invokedynamic makeConcatWithConstants (Ljava/lang/String;)Ljava/lang/String; bsm=java/lang/invoke/StringConcatFactory.makeConcatWithConstants (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; args=[ "Unknown key! \u0001" ]
+      // 15d: invokespecial java/lang/IllegalArgumentException.<init> (Ljava/lang/String;)V
+      // 160: athrow
+      // 161: aload 1
+      // 162: areturn
    }
 
    public String getWallPlacementOverrideBlockId() {

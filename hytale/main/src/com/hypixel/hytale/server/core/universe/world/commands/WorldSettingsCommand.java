@@ -54,8 +54,8 @@ public class WorldSettingsCommand extends AbstractCommandCollection {
          "type",
          ArgTypes.STRING,
          "ChunkStorage Type",
-         worldConfig -> IChunkStorageProvider.CODEC.getIdFor((Class<? extends IChunkStorageProvider>)worldConfig.getChunkStorageProvider().getClass()),
-         (worldConfig, path) -> worldConfig.setChunkStorageProvider(IChunkStorageProvider.CODEC.getCodecFor(path).getDefaultValue())
+         worldConfig -> IChunkStorageProvider.CODEC.getIdFor((Class<? extends IChunkStorageProvider<?>>)worldConfig.getChunkStorageProvider().getClass()),
+         (worldConfig, path) -> worldConfig.setChunkStorageProvider((IChunkStorageProvider<?>)IChunkStorageProvider.CODEC.getCodecFor(path).getDefaultValue())
       );
       this.generateSubCommand(
          "ticking", "server.commands.world.settings.ticking.desc", "ticking", ArgTypes.BOOLEAN, "Ticking", WorldConfig::isTicking, WorldConfig::setTicking
@@ -284,10 +284,9 @@ public class WorldSettingsCommand extends AbstractCommandCollection {
             WorldSettingsBox2DCommand.this.setter.accept(world, newValue);
             world.getWorldConfig().markChanged();
             context.sendMessage(
-               Message.translation("server.commands.world.settings.displaySet")
+               Message.translation("server.commands.world.settings.displaySetDefault")
                   .param("display", WorldSettingsBox2DCommand.this.display)
                   .param("worldName", world.getName())
-                  .param("isDefault", " default value ")
                   .param("newValue", Objects.toString(newValue))
                   .param("oldValue", Objects.toString(currentValue))
             );
@@ -320,7 +319,6 @@ public class WorldSettingsCommand extends AbstractCommandCollection {
                Message.translation("server.commands.world.settings.displaySet")
                   .param("display", WorldSettingsBox2DCommand.this.display)
                   .param("worldName", world.getName())
-                  .param("isDefault", "")
                   .param("newValue", Objects.toString(newValue))
                   .param("oldValue", Objects.toString(currentValue))
             );
@@ -386,10 +384,9 @@ public class WorldSettingsCommand extends AbstractCommandCollection {
             WorldSettingsSubCommand.this.setter.accept(world, newValue);
             world.getWorldConfig().markChanged();
             context.sendMessage(
-               Message.translation("server.commands.world.settings.displaySet")
+               Message.translation("server.commands.world.settings.displaySetDefault")
                   .param("display", WorldSettingsSubCommand.this.display)
                   .param("worldName", world.getName())
-                  .param("isDefault", " default value ")
                   .param("newValue", newValue.toString())
                   .param("oldValue", currentValue.toString())
             );
@@ -416,7 +413,6 @@ public class WorldSettingsCommand extends AbstractCommandCollection {
                Message.translation("server.commands.world.settings.displaySet")
                   .param("display", WorldSettingsSubCommand.this.display)
                   .param("worldName", world.getName())
-                  .param("isDefault", "")
                   .param("newValue", newValue.toString())
                   .param("oldValue", currentValue.toString())
             );

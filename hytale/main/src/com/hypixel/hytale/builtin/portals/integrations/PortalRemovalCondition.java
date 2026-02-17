@@ -17,12 +17,14 @@ import java.time.Instant;
 import javax.annotation.Nonnull;
 
 public class PortalRemovalCondition implements RemovalCondition {
+   @Nonnull
    public static final BuilderCodec<PortalRemovalCondition> CODEC = BuilderCodec.builder(PortalRemovalCondition.class, PortalRemovalCondition::new)
       .documentation("A condition for temporary portal worlds.")
-      .<Double>append(new KeyedCodec<>("TimeoutSeconds", Codec.DOUBLE), (o, i) -> o.setTimeLimitSeconds(i), o -> o.getTimeLimitSeconds())
+      .<Double>append(new KeyedCodec<>("TimeoutSeconds", Codec.DOUBLE), PortalRemovalCondition::setTimeLimitSeconds, o -> o.getTimeLimitSeconds())
       .documentation("How long the portal world will stay open (in seconds) after being joined.")
       .add()
       .build();
+   @Nonnull
    private final WorldEmptyCondition worldEmptyCondition = new WorldEmptyCondition(90.0);
    private TimeoutCondition timeLimitCondition;
 
@@ -42,13 +44,13 @@ public class PortalRemovalCondition implements RemovalCondition {
       this.timeLimitCondition = new TimeoutCondition(timeLimitSeconds);
    }
 
-   public double getElapsedSeconds(World world) {
+   public double getElapsedSeconds(@Nonnull World world) {
       double timeLimitSeconds = this.timeLimitCondition.getTimeoutSeconds();
       double remainingSeconds = this.getRemainingSeconds(world);
       return Math.max(0.0, timeLimitSeconds - remainingSeconds);
    }
 
-   public double getRemainingSeconds(World world) {
+   public double getRemainingSeconds(@Nonnull World world) {
       Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
       Store<EntityStore> entityStore = world.getEntityStore().getStore();
       InstanceDataResource instanceData = chunkStore.getResource(InstanceDataResource.getResourceType());
@@ -62,7 +64,7 @@ public class PortalRemovalCondition implements RemovalCondition {
       }
    }
 
-   public void setRemainingSeconds(World world, double seconds) {
+   public static void setRemainingSeconds(@Nonnull World world, double seconds) {
       seconds = Math.max(0.0, seconds);
       Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
       Store<EntityStore> entityStore = world.getEntityStore().getStore();

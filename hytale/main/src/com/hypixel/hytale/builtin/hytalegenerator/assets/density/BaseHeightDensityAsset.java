@@ -1,17 +1,16 @@
 package com.hypixel.hytale.builtin.hytalegenerator.assets.density;
 
+import com.hypixel.hytale.builtin.hytalegenerator.assets.framework.DecimalConstantsFrameworkAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.density.Density;
 import com.hypixel.hytale.builtin.hytalegenerator.density.nodes.BaseHeightDensity;
 import com.hypixel.hytale.builtin.hytalegenerator.density.nodes.ConstantValueDensity;
-import com.hypixel.hytale.builtin.hytalegenerator.framework.interfaces.functions.BiDouble2DoubleFunction;
-import com.hypixel.hytale.builtin.hytalegenerator.referencebundle.BaseHeightReference;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.logger.HytaleLogger;
 import javax.annotation.Nonnull;
 
 public class BaseHeightDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<BaseHeightDensityAsset> CODEC = BuilderCodec.builder(
          BaseHeightDensityAsset.class, BaseHeightDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -29,15 +28,12 @@ public class BaseHeightDensityAsset extends DensityAsset {
       if (this.isSkipped()) {
          return new ConstantValueDensity(0.0);
       } else {
-         BaseHeightReference heightDataLayer = argument.referenceBundle.getLayerWithName(this.baseHeightName, BaseHeightReference.class);
-         if (heightDataLayer == null) {
-            ((HytaleLogger.Api)HytaleLogger.getLogger().atConfig())
-               .log("Couldn't find height data layer with name \"" + this.baseHeightName + "\", using a zero-constant Density node.");
-            return new ConstantValueDensity(0.0);
-         } else {
-            BiDouble2DoubleFunction yFunction = heightDataLayer.getHeightFunction();
-            return new BaseHeightDensity(yFunction, this.isDistance);
+         Double baseHeight = DecimalConstantsFrameworkAsset.Entries.get(this.baseHeightName, argument.referenceBundle);
+         if (baseHeight == null) {
+            baseHeight = 0.0;
          }
+
+         return new BaseHeightDensity(baseHeight, this.isDistance);
       }
    }
 

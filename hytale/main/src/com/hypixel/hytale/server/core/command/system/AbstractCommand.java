@@ -64,6 +64,7 @@ public abstract class AbstractCommand {
    private final String name;
    @Nonnull
    private final Set<String> aliases = new HashSet<>();
+   @Nullable
    private final String description;
    @Nonnull
    private final List<RequiredArg<?>> requiredArguments = new ObjectArrayList();
@@ -732,7 +733,7 @@ public abstract class AbstractCommand {
 
       return Message.translation("server.commands.parsing.usage.header")
          .param("fullyQualifiedName", this.getFullyQualifiedName())
-         .param("description", Message.translation(this.description))
+         .param("description", this.description != null ? Message.translation(this.description) : Message.empty())
          .param("listOfRequiredArgs", requiredArgsMessage)
          .param("requiresConfirmation", requiresConfirmationMessage)
          .param("requiredArgs", requiredArgs)
@@ -882,6 +883,7 @@ public abstract class AbstractCommand {
       return this.aliases;
    }
 
+   @Nullable
    public String getDescription() {
       return this.description;
    }

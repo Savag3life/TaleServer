@@ -1,6 +1,5 @@
 package com.hypixel.hytale.builtin.hytalegenerator.newsystem.stages;
 
-import com.hypixel.hytale.builtin.hytalegenerator.biome.BiomeType;
 import com.hypixel.hytale.builtin.hytalegenerator.bounds.Bounds3i;
 import com.hypixel.hytale.builtin.hytalegenerator.framework.interfaces.functions.BiCarta;
 import com.hypixel.hytale.builtin.hytalegenerator.newsystem.bufferbundle.NBufferBundle;
@@ -8,32 +7,42 @@ import com.hypixel.hytale.builtin.hytalegenerator.newsystem.bufferbundle.buffers
 import com.hypixel.hytale.builtin.hytalegenerator.newsystem.bufferbundle.buffers.type.NBufferType;
 import com.hypixel.hytale.builtin.hytalegenerator.newsystem.bufferbundle.buffers.type.NParametrizedBufferType;
 import com.hypixel.hytale.builtin.hytalegenerator.newsystem.views.NPixelBufferView;
+import com.hypixel.hytale.builtin.hytalegenerator.threadindexer.WorkerIndexer;
+import com.hypixel.hytale.builtin.hytalegenerator.worldstructure.WorldStructure;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
 public class NBiomeStage implements NStage {
+   @Nonnull
    public static final Class<NCountedPixelBuffer> bufferClass = NCountedPixelBuffer.class;
-   public static final Class<BiomeType> biomeTypeClass = BiomeType.class;
+   @Nonnull
+   public static final Class<Integer> biomeClass = Integer.class;
+   @Nonnull
    private final NParametrizedBufferType biomeOutputBufferType;
+   @Nonnull
    private final String stageName;
-   private BiCarta<BiomeType> biomeCarta;
+   @Nonnull
+   private final WorkerIndexer.Data<WorldStructure> worldStructure_workerData;
 
-   public NBiomeStage(@Nonnull String stageName, @Nonnull NParametrizedBufferType biomeOutputBufferType, @Nonnull BiCarta<BiomeType> biomeCarta) {
+   public NBiomeStage(
+      @Nonnull String stageName, @Nonnull NParametrizedBufferType biomeOutputBufferType, @Nonnull WorkerIndexer.Data<WorldStructure> worldStructure_workerData
+   ) {
       this.stageName = stageName;
       this.biomeOutputBufferType = biomeOutputBufferType;
-      this.biomeCarta = biomeCarta;
+      this.worldStructure_workerData = worldStructure_workerData;
    }
 
    @Override
    public void run(@Nonnull NStage.Context context) {
       NBufferBundle.Access.View biomeAccess = context.bufferAccess.get(this.biomeOutputBufferType);
-      NPixelBufferView<BiomeType> biomeSpace = new NPixelBufferView<>(biomeAccess, biomeTypeClass);
+      NPixelBufferView<Integer> biomeSpace = new NPixelBufferView<>(biomeAccess, biomeClass);
+      BiCarta<Integer> biomeMap = this.worldStructure_workerData.get(context.workerId).getBiomeMap();
 
       for (int x = biomeSpace.minX(); x < biomeSpace.maxX(); x++) {
          for (int z = biomeSpace.minZ(); z < biomeSpace.maxZ(); z++) {
-            BiomeType biome = this.biomeCarta.apply(x, z, context.workerId);
-            biomeSpace.set(biome, x, 0, z);
+            Integer biomeId = biomeMap.apply(x, z, context.workerId);
+            biomeSpace.set(biomeId, x, 0, z);
          }
       }
    }

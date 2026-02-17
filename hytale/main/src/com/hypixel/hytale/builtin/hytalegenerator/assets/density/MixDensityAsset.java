@@ -8,6 +8,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 public class MixDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<MixDensityAsset> CODEC = BuilderCodec.builder(MixDensityAsset.class, MixDensityAsset::new, DensityAsset.ABSTRACT_CODEC)
       .build();
 

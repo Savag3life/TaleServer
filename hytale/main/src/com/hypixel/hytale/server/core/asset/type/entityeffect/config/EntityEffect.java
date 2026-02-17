@@ -192,7 +192,7 @@ public class EntityEffect
          entityEffect -> entityEffect.locale,
          (entityEffect, parent) -> entityEffect.locale = parent.locale
       )
-      .documentation("An optional translation key, used to display the damage cause upon death.")
+      .documentation("[Deprecated - DeathMessageKey instead] Use An optional translation key, used to display the damage cause upon death.")
       .add()
       .<String>appendInherited(
          new KeyedCodec<>("StatusEffectIcon", Codec.STRING),
@@ -225,6 +225,14 @@ public class EntityEffect
          (entityEffect, parent) -> entityEffect.damageResistanceValuesRaw = parent.damageResistanceValuesRaw
       )
       .addValidator(DamageCause.VALIDATOR_CACHE.getMapKeyValidator())
+      .add()
+      .<String>appendInherited(
+         new KeyedCodec<>("DeathMessageKey", Codec.STRING),
+         (entityEffect, s) -> entityEffect.deathMessageKey = s,
+         entityEffect -> entityEffect.deathMessageKey,
+         (entityEffect, parent) -> entityEffect.deathMessageKey = parent.deathMessageKey
+      )
+      .documentation("Localization key used on the death screen when this EntityEffect kills a player.")
       .add()
       .afterDecode(entityEffect -> {
          entityEffect.entityStats = EntityStatsModule.resolveEntityStats(entityEffect.unknownEntityStats);
@@ -287,6 +295,7 @@ public class EntityEffect
    @Nullable
    protected String locale;
    protected boolean invulnerable = false;
+   protected String deathMessageKey;
    @Nullable
    protected Map<String, StaticModifier[]> rawStatModifiers;
    @Nullable
@@ -416,6 +425,10 @@ public class EntityEffect
    @Nullable
    public Map<DamageCause, StaticModifier[]> getDamageResistanceValues() {
       return this.damageResistanceValues;
+   }
+
+   public String getDeathMessageKey() {
+      return this.deathMessageKey;
    }
 
    @Nonnull

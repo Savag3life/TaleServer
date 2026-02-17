@@ -15,6 +15,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class SetupObjectiveLine extends ObjectiveTypeSetup {
+   @Nonnull
    public static final BuilderCodec<SetupObjectiveLine> CODEC = BuilderCodec.builder(SetupObjectiveLine.class, SetupObjectiveLine::new)
       .append(
          new KeyedCodec<>("ObjectiveLineId", Codec.STRING),

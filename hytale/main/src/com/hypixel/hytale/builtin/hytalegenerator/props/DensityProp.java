@@ -18,15 +18,25 @@ import javax.annotation.Nonnull;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 public class DensityProp extends Prop {
+   @Nonnull
    private final Vector3i range;
+   @Nonnull
    private final Density density;
+   @Nonnull
    private final MaterialProvider<Material> materialProvider;
+   @Nonnull
    private final Scanner scanner;
+   @Nonnull
    private final Pattern pattern;
+   @Nonnull
    private final ContextDependency contextDependency;
+   @Nonnull
    private final BlockMask placementMask;
+   @Nonnull
    private final Material defaultMaterial;
+   @Nonnull
    private final Bounds3i readBounds_voxelGrid;
+   @Nonnull
    private final Bounds3i writeBounds_voxelGrid;
 
    public DensityProp(
@@ -54,6 +64,7 @@ public class DensityProp extends Prop {
       this.writeBounds_voxelGrid = this.contextDependency.getWriteBounds_voxelGrid();
    }
 
+   @Nonnull
    public PositionListScanResult scan(@Nonnull Vector3i position, @Nonnull VoxelSpace<Material> materialSpace, @Nonnull WorkerIndexer.Id id) {
       Scanner.Context scannerContext = new Scanner.Context(position, this.pattern, materialSpace, id);
       List<Vector3i> validPositions = this.scanner.scan(scannerContext);
@@ -70,7 +81,7 @@ public class DensityProp extends Prop {
       }
    }
 
-   private void place(Vector3i position, @Nonnull VoxelSpace<Material> materialSpace, @Nonnull WorkerIndexer.Id id) {
+   private void place(@Nonnull Vector3i position, @Nonnull VoxelSpace<Material> materialSpace, @Nonnull WorkerIndexer.Id id) {
       Vector3i min = position.clone().add(-this.range.x, -this.range.y, -this.range.z);
       Vector3i max = position.clone().add(this.range.x, this.range.y, this.range.z);
       Vector3i writeMin = Vector3i.max(min, new Vector3i(materialSpace.minX(), materialSpace.minY(), materialSpace.minZ()));
@@ -82,7 +93,6 @@ public class DensityProp extends Prop {
       densitySpace.setOrigin(-min.x, -min.y, -min.z);
       Density.Context childContext = new Density.Context();
       childContext.densityAnchor = position.toVector3d();
-      childContext.workerId = id;
       Vector3i itPosition = new Vector3i(position);
 
       for (itPosition.x = min.x; itPosition.x <= max.x; itPosition.x++) {
@@ -163,7 +173,7 @@ public class DensityProp extends Prop {
                   && itPosition.z < writeMax.z) {
                   int i = itPosition.y - bottom;
                   MaterialProvider.Context materialContext = new MaterialProvider.Context(
-                     position, 0.0, depthIntoFloor[i], depthIntoCeiling[i], spaceAboveFloor[i], spaceBelowCeiling[i], id, (functionPosition, workerId) -> {
+                     position, 0.0, depthIntoFloor[i], depthIntoCeiling[i], spaceAboveFloor[i], spaceBelowCeiling[i], functionPosition -> {
                         childContext.position = functionPosition.toVector3d();
                         return this.density.process(childContext);
                      }, childContext.distanceToBiomeEdge
@@ -186,6 +196,7 @@ public class DensityProp extends Prop {
       }
    }
 
+   @Nonnull
    @Override
    public ContextDependency getContextDependency() {
       return this.contextDependency.clone();

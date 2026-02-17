@@ -305,7 +305,7 @@ public final class PacketIO {
       if (id == null) {
          throw new ProtocolException("Unknown packet type: " + packetClass.getName());
       } else {
-         PacketRegistry.PacketInfo info = PacketRegistry.getById(id);
+         PacketRegistry.PacketInfo info = PacketRegistry.getToClientPacketById(id);
          int lengthIndex = out.writerIndex();
          out.writeIntLE(0);
          out.writeIntLE(id);
@@ -351,7 +351,7 @@ public final class PacketIO {
    @Nonnull
    public static Packet readFramedPacket(@Nonnull ByteBuf in, int payloadLength, @Nonnull PacketStatsRecorder statsRecorder) {
       int packetId = in.readIntLE();
-      PacketRegistry.PacketInfo info = PacketRegistry.getById(packetId);
+      PacketRegistry.PacketInfo info = PacketRegistry.getToServerPacketById(packetId);
       if (info == null) {
          in.skipBytes(payloadLength);
          throw new ProtocolException("Unknown packet ID: " + packetId);

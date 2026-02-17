@@ -27,20 +27,19 @@ public class CursedHeldItemCommand extends AbstractPlayerCommand {
       @Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world
    ) {
       Player playerComponent = store.getComponent(ref, Player.getComponentType());
-
-      assert playerComponent != null;
-
-      Inventory inventory = playerComponent.getInventory();
-      if (!inventory.usingToolsItem()) {
-         ItemStack inHandItemStack = inventory.getActiveHotbarItem();
-         if (inHandItemStack != null && !inHandItemStack.isEmpty()) {
-            AdventureMetadata adventureMeta = inHandItemStack.getFromMetadataOrDefault("Adventure", AdventureMetadata.CODEC);
-            adventureMeta.setCursed(!adventureMeta.isCursed());
-            ItemStack edited = inHandItemStack.withMetadata(AdventureMetadata.KEYED_CODEC, adventureMeta);
-            inventory.getHotbar().replaceItemStackInSlot(inventory.getActiveHotbarSlot(), inHandItemStack, edited);
-            playerRef.sendMessage(Message.translation("server.commands.cursethis.done").param("state", adventureMeta.isCursed()));
-         } else {
-            playerRef.sendMessage(MESSAGE_COMMANDS_CURSE_THIS_NOT_HOLDING_ITEM);
+      if (playerComponent != null) {
+         Inventory inventory = playerComponent.getInventory();
+         if (!inventory.usingToolsItem()) {
+            ItemStack inHandItemStack = inventory.getActiveHotbarItem();
+            if (inHandItemStack != null && !inHandItemStack.isEmpty()) {
+               AdventureMetadata adventureMeta = inHandItemStack.getFromMetadataOrDefault("Adventure", AdventureMetadata.CODEC);
+               adventureMeta.setCursed(!adventureMeta.isCursed());
+               ItemStack edited = inHandItemStack.withMetadata(AdventureMetadata.KEYED_CODEC, adventureMeta);
+               inventory.getHotbar().replaceItemStackInSlot(inventory.getActiveHotbarSlot(), inHandItemStack, edited);
+               playerRef.sendMessage(Message.translation("server.commands.cursethis.done").param("state", adventureMeta.isCursed()));
+            } else {
+               playerRef.sendMessage(MESSAGE_COMMANDS_CURSE_THIS_NOT_HOLDING_ITEM);
+            }
          }
       }
    }

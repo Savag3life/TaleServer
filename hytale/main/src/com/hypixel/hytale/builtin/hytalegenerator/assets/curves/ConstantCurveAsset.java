@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class ConstantCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<ConstantCurveAsset> CODEC = BuilderCodec.builder(
          ConstantCurveAsset.class, ConstantCurveAsset::new, CurveAsset.ABSTRACT_CODEC
       )

@@ -95,7 +95,7 @@ public class AssetEditorGamePacketHandler implements SubPacketHandler {
    private boolean lacksPermission(@Nonnull Player player, boolean shouldShowDenialMessage) {
       if (!player.hasPermission("hytale.editor.asset")) {
          if (shouldShowDenialMessage) {
-            player.sendMessage(Messages.USAGE_DENIED_MESSAGE);
+            player.sendMessage(Messages.USAGE_DENIED);
          }
 
          return true;

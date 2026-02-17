@@ -2,7 +2,7 @@ package com.hypixel.hytale.server.core.asset.type.blockhitbox;
 
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
 import com.hypixel.hytale.protocol.Hitbox;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateBlockHitboxes;
 import com.hypixel.hytale.server.core.asset.packet.SimpleAssetPacketGenerator;
@@ -15,7 +15,9 @@ import javax.annotation.Nonnull;
 public class BlockBoundingBoxesPacketGenerator
    extends SimpleAssetPacketGenerator<String, BlockBoundingBoxes, IndexedLookupTableAssetMap<String, BlockBoundingBoxes>> {
    @Nonnull
-   public Packet generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, BlockBoundingBoxes> assetMap, @Nonnull Map<String, BlockBoundingBoxes> assets) {
+   public ToClientPacket generateInitPacket(
+      @Nonnull IndexedLookupTableAssetMap<String, BlockBoundingBoxes> assetMap, @Nonnull Map<String, BlockBoundingBoxes> assets
+   ) {
       UpdateBlockHitboxes packet = new UpdateBlockHitboxes();
       packet.type = UpdateType.Init;
       Map<Integer, Hitbox[]> hitboxes = new Int2ObjectOpenHashMap();
@@ -36,7 +38,7 @@ public class BlockBoundingBoxesPacketGenerator
    }
 
    @Nonnull
-   public Packet generateUpdatePacket(
+   public ToClientPacket generateUpdatePacket(
       @Nonnull IndexedLookupTableAssetMap<String, BlockBoundingBoxes> assetMap, @Nonnull Map<String, BlockBoundingBoxes> loadedAssets
    ) {
       UpdateBlockHitboxes packet = new UpdateBlockHitboxes();
@@ -59,7 +61,7 @@ public class BlockBoundingBoxesPacketGenerator
    }
 
    @Nonnull
-   public Packet generateRemovePacket(@Nonnull IndexedLookupTableAssetMap<String, BlockBoundingBoxes> assetMap, @Nonnull Set<String> removed) {
+   public ToClientPacket generateRemovePacket(@Nonnull IndexedLookupTableAssetMap<String, BlockBoundingBoxes> assetMap, @Nonnull Set<String> removed) {
       UpdateBlockHitboxes packet = new UpdateBlockHitboxes();
       packet.type = UpdateType.Remove;
       Map<Integer, Hitbox[]> hitboxes = new Int2ObjectOpenHashMap();

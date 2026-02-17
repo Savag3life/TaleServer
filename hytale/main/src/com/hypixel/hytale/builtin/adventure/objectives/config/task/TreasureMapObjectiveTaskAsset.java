@@ -16,6 +16,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class TreasureMapObjectiveTaskAsset extends ObjectiveTaskAsset {
+   @Nonnull
    public static final BuilderCodec<TreasureMapObjectiveTaskAsset> CODEC = BuilderCodec.builder(
          TreasureMapObjectiveTaskAsset.class, TreasureMapObjectiveTaskAsset::new, BASE_CODEC
       )
@@ -63,6 +64,7 @@ public class TreasureMapObjectiveTaskAsset extends ObjectiveTaskAsset {
    }
 
    public static class ChestConfig {
+      @Nonnull
       public static final BuilderCodec<TreasureMapObjectiveTaskAsset.ChestConfig> CODEC = BuilderCodec.builder(
             TreasureMapObjectiveTaskAsset.ChestConfig.class, TreasureMapObjectiveTaskAsset.ChestConfig::new
          )

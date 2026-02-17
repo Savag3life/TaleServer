@@ -2,6 +2,7 @@ package com.hypixel.hytale.builtin.adventure.npcobjectives.systems;
 
 import com.hypixel.hytale.builtin.adventure.objectives.ObjectivePlugin;
 import com.hypixel.hytale.component.AddReason;
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
@@ -11,18 +12,24 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.spawning.beacons.LegacySpawnBeaconEntity;
 import java.util.UUID;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public class SpawnBeaconCheckRemovalSystem extends HolderSystem<EntityStore> {
-   @Nullable
+   @Nonnull
+   private final ComponentType<EntityStore, LegacySpawnBeaconEntity> legacySpawnBeaconEntityComponentType;
+
+   public SpawnBeaconCheckRemovalSystem(@Nonnull ComponentType<EntityStore, LegacySpawnBeaconEntity> legacySpawnBeaconEntityComponentType) {
+      this.legacySpawnBeaconEntityComponentType = legacySpawnBeaconEntityComponentType;
+   }
+
+   @Nonnull
    @Override
    public Query<EntityStore> getQuery() {
-      return LegacySpawnBeaconEntity.getComponentType();
+      return this.legacySpawnBeaconEntityComponentType;
    }
 
    @Override
    public void onEntityAdd(@Nonnull Holder<EntityStore> holder, @Nonnull AddReason reason, @Nonnull Store<EntityStore> store) {
-      LegacySpawnBeaconEntity spawnBeaconComponent = holder.getComponent(LegacySpawnBeaconEntity.getComponentType());
+      LegacySpawnBeaconEntity spawnBeaconComponent = holder.getComponent(this.legacySpawnBeaconEntityComponentType);
 
       assert spawnBeaconComponent != null;
 

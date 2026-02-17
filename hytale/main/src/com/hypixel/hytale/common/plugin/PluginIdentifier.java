@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class PluginIdentifier {
+   public static final String THIRD_PARTY_LOADER_NAME = "ThirdParty";
    @Nonnull
    private final String group;
    @Nonnull
@@ -17,6 +18,30 @@ public class PluginIdentifier {
 
    public PluginIdentifier(@Nonnull PluginManifest manifest) {
       this(manifest.getGroup(), manifest.getName());
+   }
+
+   @Nullable
+   public static PluginIdentifier identifyThirdPartyPlugin(Throwable t) {
+      Throwable current = t;
+      String prefix = "ThirdParty(";
+
+      PluginIdentifier possibleFailureCause;
+      for (possibleFailureCause = null; current != null; current = current.getCause()) {
+         StackTraceElement[] stack = current.getStackTrace();
+
+         for (StackTraceElement entry : stack) {
+            String loader = entry.getClassLoaderName();
+            if (loader != null && loader.startsWith(prefix)) {
+               int end = loader.lastIndexOf(41);
+               if (end != -1) {
+                  possibleFailureCause = fromString(loader.substring(prefix.length(), end));
+                  return possibleFailureCause;
+               }
+            }
+         }
+      }
+
+      return possibleFailureCause;
    }
 
    @Nonnull

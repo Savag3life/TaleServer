@@ -1,6 +1,8 @@
 package com.hypixel.hytale.protocol.packets.assets;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.Trail;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.io.PacketIO;
@@ -15,7 +17,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class UpdateTrails implements Packet {
+public class UpdateTrails implements Packet, ToClientPacket {
    public static final int PACKET_ID = 48;
    public static final boolean IS_COMPRESSED = true;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -31,6 +33,11 @@ public class UpdateTrails implements Packet {
    @Override
    public int getId() {
       return 48;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public UpdateTrails() {

@@ -93,14 +93,14 @@ public class BuilderInstruction extends BuilderBase<Instruction> {
          "Internal identifier tag for debugging",
          null
       );
-      this.getBoolean(data, "Enabled", this.enabled, true, BuilderDescriptorState.Stable, "Whether this step should be enabled on the NPC", null);
+      this.getBoolean(data, "Enabled", this.enabled, true, BuilderDescriptorState.Stable, "Whether this instruction should be enabled on the NPC", null);
       this.getObject(
          data,
          "Sensor",
          this.sensorBuilderObjectReferenceHelper,
          BuilderDescriptorState.Stable,
-         "Sensor for testing if step can be applied",
-         "Sensor for testing if step can be applied. If not supplied, will always match",
+         "Sensor for testing if instruction can be applied",
+         "Sensor for testing if instruction can be applied. If not supplied, will always match",
          helper
       );
       features.lock();
@@ -139,7 +139,7 @@ public class BuilderInstruction extends BuilderBase<Instruction> {
          )
       );
       this.getBoolean(
-         data, "Continue", v -> this.continueAfter = v, false, BuilderDescriptorState.WorkInProgress, "Continue after this step was executed", null
+         data, "Continue", v -> this.continueAfter = v, false, BuilderDescriptorState.WorkInProgress, "Continue after this instruction was executed", null
       );
       this.getDouble(
          data,
@@ -148,7 +148,7 @@ public class BuilderInstruction extends BuilderBase<Instruction> {
          1.0,
          DoubleSingleValidator.greater0(),
          BuilderDescriptorState.Stable,
-         "Weighted chance of picking this step in a random instruction",
+         "Weighted chance of picking this instruction in a random instruction",
          null
       );
       this.getBoolean(
@@ -157,8 +157,8 @@ public class BuilderInstruction extends BuilderBase<Instruction> {
          v -> this.treeMode = v,
          false,
          BuilderDescriptorState.Stable,
-         "Whether this step and its contents should be treated like a traditional behaviour tree.",
-         "Whether this step and its contents should be treated like a traditional behaviour tree, i.e. will continue if all child steps fail"
+         "Whether this instruction and its contents should be treated like a traditional behaviour tree.",
+         "Whether this instruction and its contents should be treated like a traditional behaviour tree, i.e. will continue if all child instructions fail"
       );
       this.getBoolean(
          data,
@@ -166,13 +166,13 @@ public class BuilderInstruction extends BuilderBase<Instruction> {
          this.invertTreeModeResult,
          false,
          BuilderDescriptorState.Stable,
-         "Whether or not to invert the result of TreeMode evaluation when passing up to parent TreeMode steps",
+         "Whether or not to invert the result of TreeMode evaluation when passing up to parent TreeMode instructions",
          null
       );
       this.decreaseDepth();
-      this.validateOneOrNonePresent("BodyMotion", this.bodyMotionBuilderObjectReferenceHelper, "Steps", this.steps);
-      this.validateOneOrNonePresent("HeadMotion", this.headMotionBuilderObjectReferenceHelper, "Steps", this.steps);
-      this.validateOneOrNonePresent("Actions", this.actionsBuilderObjectReferenceHelper, "Steps", this.steps);
+      this.validateOneOrNonePresent("BodyMotion", this.bodyMotionBuilderObjectReferenceHelper, "Instructions", this.steps);
+      this.validateOneOrNonePresent("HeadMotion", this.headMotionBuilderObjectReferenceHelper, "Instructions", this.steps);
+      this.validateOneOrNonePresent("Actions", this.actionsBuilderObjectReferenceHelper, "Instructions", this.steps);
       this.validateBooleanImplicationAnyAntecedent(ANTECEDENT, new boolean[]{this.treeMode}, true, SUBSEQUENT, new boolean[]{this.continueAfter}, false);
       return this;
    }

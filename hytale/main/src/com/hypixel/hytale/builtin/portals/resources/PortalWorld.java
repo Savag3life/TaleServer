@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class PortalWorld implements Resource<EntityStore> {
@@ -29,13 +30,16 @@ public class PortalWorld implements Resource<EntityStore> {
    private Set<UUID> diedInWorld;
    private Set<UUID> seesUi;
    private Transform spawnPoint;
+   @Nullable
    private Ref<EntityStore> voidEventRef;
 
    public static ResourceType<EntityStore, PortalWorld> getResourceType() {
       return PortalsPlugin.getInstance().getPortalResourceType();
    }
 
-   public void init(PortalType portalType, int timeLimitSeconds, PortalRemovalCondition removalCondition, PortalGameplayConfig gameplayConfig) {
+   public void init(
+      @Nonnull PortalType portalType, int timeLimitSeconds, @Nonnull PortalRemovalCondition removalCondition, @Nonnull PortalGameplayConfig gameplayConfig
+   ) {
       this.portalTypeId = portalType.getId();
       this.timeLimitSeconds = timeLimitSeconds;
       this.worldRemovalCondition = removalCondition;
@@ -44,6 +48,7 @@ public class PortalWorld implements Resource<EntityStore> {
       this.seesUi = Collections.newSetFromMap(new ConcurrentHashMap<>());
    }
 
+   @Nullable
    public PortalType getPortalType() {
       return this.portalTypeId == null ? null : PortalType.getAssetMap().getAsset(this.portalTypeId);
    }
@@ -56,16 +61,16 @@ public class PortalWorld implements Resource<EntityStore> {
       return this.timeLimitSeconds;
    }
 
-   public double getElapsedSeconds(World world) {
+   public double getElapsedSeconds(@Nonnull World world) {
       return this.worldRemovalCondition.getElapsedSeconds(world);
    }
 
-   public double getRemainingSeconds(World world) {
+   public double getRemainingSeconds(@Nonnull World world) {
       return this.worldRemovalCondition.getRemainingSeconds(world);
    }
 
-   public void setRemainingSeconds(World world, double seconds) {
-      this.worldRemovalCondition.setRemainingSeconds(world, seconds);
+   public static void setRemainingSeconds(@Nonnull World world, double seconds) {
+      PortalRemovalCondition.setRemainingSeconds(world, seconds);
    }
 
    public Set<UUID> getDiedInWorld() {
@@ -77,11 +82,17 @@ public class PortalWorld implements Resource<EntityStore> {
    }
 
    public PortalGameplayConfig getGameplayConfig() {
-      GameplayConfig gameplayConfig = this.getPortalType().getGameplayConfig();
-      PortalGameplayConfig portalGameplayConfig = gameplayConfig == null ? null : gameplayConfig.getPluginConfig().get(PortalGameplayConfig.class);
-      return portalGameplayConfig != null ? portalGameplayConfig : this.storedGameplayConfig;
+      PortalType portalType = this.getPortalType();
+      if (portalType == null) {
+         return this.storedGameplayConfig;
+      } else {
+         GameplayConfig gameplayConfig = this.getPortalType().getGameplayConfig();
+         PortalGameplayConfig portalGameplayConfig = gameplayConfig == null ? null : gameplayConfig.getPluginConfig().get(PortalGameplayConfig.class);
+         return portalGameplayConfig != null ? portalGameplayConfig : this.storedGameplayConfig;
+      }
    }
 
+   @Nullable
    public VoidEventConfig getVoidEventConfig() {
       return this.getGameplayConfig().getVoidEvent();
    }
@@ -108,35 +119,44 @@ public class PortalWorld implements Resource<EntityStore> {
       return this.getVoidEventRef() != null;
    }
 
-   public void setVoidEventRef(Ref<EntityStore> voidEventRef) {
+   public void setVoidEventRef(@Nullable Ref<EntityStore> voidEventRef) {
       this.voidEventRef = voidEventRef;
    }
 
-   public UpdatePortal createFullPacket(World world) {
-      boolean hasBreach = this.getPortalType().isVoidInvasionEnabled();
+   @Nonnull
+   public UpdatePortal createFullPacket(@Nonnull World world) {
+      PortalType portalType = this.getPortalType();
+      boolean hasBreach = portalType.isVoidInvasionEnabled();
       int explorationSeconds;
       int breachSeconds;
       if (hasBreach) {
-         breachSeconds = this.getGameplayConfig().getVoidEvent().getDurationSeconds();
+         VoidEventConfig voidEvent = this.getGameplayConfig().getVoidEvent();
+         breachSeconds = voidEvent.getDurationSeconds();
          explorationSeconds = this.timeLimitSeconds - breachSeconds;
       } else {
          explorationSeconds = this.timeLimitSeconds;
          breachSeconds = 0;
       }
 
-      PortalDef portalDef = new PortalDef(this.getPortalType().getDescription().getDisplayNameKey(), explorationSeconds, breachSeconds);
+      PortalDef portalDef = new PortalDef(portalType.getDescription().getDisplayNameKey(), explorationSeconds, breachSeconds);
       return new UpdatePortal(this.createStateForPacket(world), portalDef);
    }
 
-   public UpdatePortal createUpdatePacket(World world) {
+   @Nonnull
+   public UpdatePortal createUpdatePacket(@Nonnull World world) {
       return new UpdatePortal(this.createStateForPacket(world), null);
    }
 
-   private PortalState createStateForPacket(World world) {
+   @Nonnull
+   private PortalState createStateForPacket(@Nonnull World world) {
       double remainingSeconds = this.worldRemovalCondition.getRemainingSeconds(world);
-      int breachSeconds = this.getGameplayConfig().getVoidEvent().getDurationSeconds();
-      if (this.getPortalType().isVoidInvasionEnabled() && remainingSeconds > breachSeconds) {
-         remainingSeconds -= breachSeconds;
+      VoidEventConfig voidEvent = this.getVoidEventConfig();
+      PortalType portalType = this.getPortalType();
+      if (voidEvent != null && portalType != null) {
+         int breachSeconds = voidEvent.getDurationSeconds();
+         if (portalType.isVoidInvasionEnabled() && remainingSeconds > breachSeconds) {
+            remainingSeconds -= breachSeconds;
+         }
       }
 
       return new PortalState((int)Math.ceil(remainingSeconds), this.isVoidEventActive());

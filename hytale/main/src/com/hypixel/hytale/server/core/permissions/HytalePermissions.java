@@ -22,6 +22,7 @@ public class HytalePermissions {
    public static final String WORLD_MAP_COORDINATE_TELEPORT = "hytale.world_map.teleport.coordinate";
    public static final String WORLD_MAP_MARKER_TELEPORT = "hytale.world_map.teleport.marker";
    public static final String UPDATE_NOTIFY = "hytale.system.update.notify";
+   public static final String MODS_OUTDATED_NOTIFY = "hytale.mods.outdated.notify";
 
    @Nonnull
    public static String fromCommand(@Nonnull String name) {

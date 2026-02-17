@@ -654,6 +654,19 @@ public final class ArgTypes {
          }
       }
    };
+   public static final ArgumentType<Pair<Integer, String>> LAYER_ENTRY_TYPE = new MultiArgumentType<Pair<Integer, String>>(
+      "Layer Entry Type", "A thickness for a corresponding block pattern", "1 Rock_Stone", "3 50%Rock_Basalt;50%Rock_Stone"
+   ) {
+      private final WrappedArgumentType<Integer> thickness = this.withParameter("thickness", "How thick the layer should be", ArgTypes.INTEGER);
+      private final WrappedArgumentType<String> blockPattern = this.withParameter(
+         "blockPattern", "The block pattern to use for the layer. If using with percentages, separate values with a ';'", ArgTypes.STRING
+      );
+
+      @Nonnull
+      public Pair<Integer, String> parse(@Nonnull MultiArgumentContext context, ParseResult parseResult) {
+         return Pair.of(context.get(this.thickness), context.get(this.blockPattern));
+      }
+   };
    public static final ArgumentType<Pair<Integer, String>> WEIGHTED_BLOCK_TYPE = new MultiArgumentType<Pair<Integer, String>>(
       "Weighted Block Type", "A weight corresponding to a blocktype", "5 Empty", "20 Rock_Stone", "2 Rock_Shale"
    ) {

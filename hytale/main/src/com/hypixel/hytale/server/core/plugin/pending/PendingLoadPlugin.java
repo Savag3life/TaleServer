@@ -48,8 +48,8 @@ public abstract class PendingLoadPlugin {
 
    public abstract PendingLoadPlugin createSubPendingLoadPlugin(PluginManifest var1);
 
-   @Nullable
-   public abstract PluginBase load();
+   @Nonnull
+   public abstract PluginBase load() throws Exception;
 
    @Nonnull
    public List<PendingLoadPlugin> createSubPendingLoadPlugins() {
@@ -114,7 +114,7 @@ public abstract class PendingLoadPlugin {
       HashSet<PluginIdentifier> classpathPlugins = new HashSet<>();
 
       for (Entry<PluginIdentifier, PendingLoadPlugin> entry : pending.entrySet()) {
-         if (entry.getValue().isInServerClassPath()) {
+         if (entry.getValue().isInServerClassPath() && "Hytale".equals(entry.getKey().getGroup())) {
             classpathPlugins.add(entry.getKey());
          }
       }

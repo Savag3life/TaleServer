@@ -1,5 +1,6 @@
 package com.hypixel.hytale.server.core.modules;
 
+import com.hypixel.hytale.assetstore.event.LoadedAssetsEvent;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
@@ -19,6 +20,7 @@ import com.hypixel.hytale.component.dependency.SystemDependency;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.asset.type.gameplay.GameplayConfig;
 import com.hypixel.hytale.server.core.modules.migrations.ChunkColumnMigrationSystem;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -35,6 +37,7 @@ import com.hypixel.hytale.server.core.universe.world.chunk.section.blockposition
 import com.hypixel.hytale.server.core.universe.world.chunk.systems.ChunkSystems;
 import com.hypixel.hytale.server.core.universe.world.meta.BlockState;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.Set;
 import java.util.logging.Level;
@@ -94,6 +97,7 @@ public class LegacyModule extends JavaPlugin {
          .registerComponent(LegacyModule.LegacyBlockStateChunk.class, "BlockStateChunk", LegacyModule.LegacyBlockStateChunk.CODEC, true);
       this.getChunkStoreRegistry()
          .registerSystem(new LegacyModule.MigrateLegacyBlockStateChunkSystem(legacyBlockStateComponentType, this.blockComponentChunkComponentType));
+      this.getEventRegistry().register(LoadedAssetsEvent.class, GameplayConfig.class, event -> WorldMapManager.sendSettingsToAllWorlds());
    }
 
    public ComponentType<ChunkStore, WorldChunk> getWorldChunkComponentType() {

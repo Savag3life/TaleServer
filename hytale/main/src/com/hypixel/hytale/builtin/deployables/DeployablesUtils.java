@@ -47,6 +47,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class DeployablesUtils {
+   @Nonnull
    private static final String DEPLOYABLE_MAX_STAT_MODIFIER = "DEPLOYABLE_MAX";
 
    @Nonnull
@@ -122,16 +123,18 @@ public class DeployablesUtils {
             int statIndex = EntityStatType.getAssetMap().getIndex(statEntry.getKey());
             EntityStatValue stat = entityStatMapComponent.get(statIndex);
             if (stat != null) {
-               EntityStatType asset = EntityStatType.getAssetMap().getAsset(statIndex);
-               StaticModifier modifier = new StaticModifier(
-                  Modifier.ModifierTarget.MAX, StaticModifier.CalculationType.ADDITIVE, statConfig.getMax() - asset.getMax()
-               );
-               entityStatMapComponent.putModifier(statIndex, "DEPLOYABLE_MAX", modifier);
-               float initialValue = statConfig.getInitial();
-               if (initialValue == Float.MAX_VALUE) {
-                  entityStatMapComponent.maximizeStatValue(statIndex);
-               } else {
-                  entityStatMapComponent.setStatValue(statIndex, initialValue);
+               EntityStatType statType = EntityStatType.getAssetMap().getAsset(statIndex);
+               if (statType != null) {
+                  StaticModifier modifier = new StaticModifier(
+                     Modifier.ModifierTarget.MAX, StaticModifier.CalculationType.ADDITIVE, statConfig.getMax() - statType.getMax()
+                  );
+                  entityStatMapComponent.putModifier(statIndex, "DEPLOYABLE_MAX", modifier);
+                  float initialValue = statConfig.getInitial();
+                  if (initialValue == Float.MAX_VALUE) {
+                     entityStatMapComponent.maximizeStatValue(statIndex);
+                  } else {
+                     entityStatMapComponent.setStatValue(statIndex, initialValue);
+                  }
                }
             }
          }

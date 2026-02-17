@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
 public class IdleTimeoutCondition implements RemovalCondition {
+   @Nonnull
    public static final BuilderCodec<IdleTimeoutCondition> CODEC = BuilderCodec.builder(IdleTimeoutCondition.class, IdleTimeoutCondition::new)
       .documentation("A condition that triggers after the world has be idle (without players) for a set time.")
       .<Double>append(new KeyedCodec<>("TimeoutSeconds", Codec.DOUBLE), (o, i) -> o.timeoutSeconds = i, o -> o.timeoutSeconds)

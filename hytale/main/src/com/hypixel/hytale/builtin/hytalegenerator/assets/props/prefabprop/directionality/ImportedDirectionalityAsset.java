@@ -8,6 +8,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import javax.annotation.Nonnull;
 
 public class ImportedDirectionalityAsset extends DirectionalityAsset {
+   @Nonnull
    public static final BuilderCodec<ImportedDirectionalityAsset> CODEC = BuilderCodec.builder(
          ImportedDirectionalityAsset.class, ImportedDirectionalityAsset::new, DirectionalityAsset.ABSTRACT_CODEC
       )

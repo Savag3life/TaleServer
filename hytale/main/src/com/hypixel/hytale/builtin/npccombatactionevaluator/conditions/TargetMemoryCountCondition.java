@@ -14,10 +14,12 @@ import com.hypixel.hytale.server.npc.decisionmaker.core.conditions.base.ScaledCu
 import javax.annotation.Nonnull;
 
 public class TargetMemoryCountCondition extends ScaledCurveCondition {
+   @Nonnull
    public static final EnumCodec<TargetMemoryCountCondition.TargetType> TARGET_TYPE_CODEC = new EnumCodec<>(TargetMemoryCountCondition.TargetType.class)
       .documentKey(TargetMemoryCountCondition.TargetType.All, "All known targets.")
       .documentKey(TargetMemoryCountCondition.TargetType.Friendly, "Known friendly targets.")
       .documentKey(TargetMemoryCountCondition.TargetType.Hostile, "Known hostile targets.");
+   @Nonnull
    public static final BuilderCodec<TargetMemoryCountCondition> CODEC = BuilderCodec.builder(
          TargetMemoryCountCondition.class, TargetMemoryCountCondition::new, ScaledCurveCondition.ABSTRACT_CODEC
       )
@@ -31,6 +33,7 @@ public class TargetMemoryCountCondition extends ScaledCurveCondition {
       .documentation("The type of targets to count.")
       .add()
       .build();
+   @Nonnull
    protected static final ComponentType<EntityStore, TargetMemory> TARGET_MEMORY_COMPONENT_TYPE = TargetMemory.getComponentType();
    protected TargetMemoryCountCondition.TargetType targetType = TargetMemoryCountCondition.TargetType.Hostile;
 
@@ -42,12 +45,14 @@ public class TargetMemoryCountCondition extends ScaledCurveCondition {
       CommandBuffer<EntityStore> commandBuffer,
       EvaluationContext context
    ) {
-      TargetMemory memory = archetypeChunk.getComponent(selfIndex, TARGET_MEMORY_COMPONENT_TYPE);
+      TargetMemory targetMemoryComponent = archetypeChunk.getComponent(selfIndex, TARGET_MEMORY_COMPONENT_TYPE);
+
+      assert targetMemoryComponent != null;
 
       return switch (this.targetType) {
-         case Hostile -> memory.getKnownHostiles().size();
-         case Friendly -> memory.getKnownFriendlies().size();
-         case All -> memory.getKnownFriendlies().size() + memory.getKnownHostiles().size();
+         case Hostile -> targetMemoryComponent.getKnownHostiles().size();
+         case Friendly -> targetMemoryComponent.getKnownFriendlies().size();
+         case All -> targetMemoryComponent.getKnownFriendlies().size() + targetMemoryComponent.getKnownHostiles().size();
       };
    }
 

@@ -16,8 +16,9 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
-public class MigrationChunkStorageProvider implements IChunkStorageProvider {
+public class MigrationChunkStorageProvider implements IChunkStorageProvider<MigrationChunkStorageProvider.MigrationData> {
    public static final String ID = "Migration";
    @Nonnull
    public static final BuilderCodec<MigrationChunkStorageProvider> CODEC = BuilderCodec.builder(
@@ -26,7 +27,7 @@ public class MigrationChunkStorageProvider implements IChunkStorageProvider {
       .documentation(
          "A provider that combines multiple storage providers in a chain to assist with migrating worlds between storage formats.\n\nCan also be used to set storage to load chunks but block saving them if combined with the **Empty** storage provider"
       )
-      .<IChunkStorageProvider[]>append(
+      .<IChunkStorageProvider<?>[]>append(
          new KeyedCodec<>("Loaders", new ArrayCodec<>(IChunkStorageProvider.CODEC, IChunkStorageProvider[]::new)),
          (migration, o) -> migration.from = o,
          migration -> migration.from
@@ -35,12 +36,12 @@ public class MigrationChunkStorageProvider implements IChunkStorageProvider {
          "A list of storage providers to use as chunk loaders.\n\nEach loader will be tried in order to load a chunk, returning the chunk if found otherwise trying the next loaded until found or none are left."
       )
       .add()
-      .<IChunkStorageProvider>append(new KeyedCodec<>("Saver", IChunkStorageProvider.CODEC), (migration, o) -> migration.to = o, migration -> migration.to)
+      .<IChunkStorageProvider<?>>append(new KeyedCodec<>("Saver", IChunkStorageProvider.CODEC), (migration, o) -> migration.to = o, migration -> migration.to)
       .documentation("The storage provider to use to save chunks.")
       .add()
       .build();
-   private IChunkStorageProvider[] from;
-   private IChunkStorageProvider to;
+   private IChunkStorageProvider<?>[] from;
+   private IChunkStorageProvider<?> to;
 
    public MigrationChunkStorageProvider() {
    }
@@ -50,22 +51,40 @@ public class MigrationChunkStorageProvider implements IChunkStorageProvider {
       this.to = to;
    }
 
+   public MigrationChunkStorageProvider.MigrationData initialize(@NonNullDecl Store<ChunkStore> store) throws IOException {
+      MigrationChunkStorageProvider.MigrationData data = new MigrationChunkStorageProvider.MigrationData();
+      data.loaderData = new Object[this.from.length];
+
+      for (int i = 0; i < this.from.length; i++) {
+         data.loaderData[i] = this.from[i].initialize(store);
+      }
+
+      data.saverData = this.to.initialize(store);
+      return data;
+   }
+
+   public void close(@NonNullDecl MigrationChunkStorageProvider.MigrationData migrationData, @NonNullDecl Store<ChunkStore> store) throws IOException {
+      for (int i = 0; i < this.from.length; i++) {
+         ((IChunkStorageProvider<Object>)this.from[i]).close(migrationData.loaderData[i], store);
+      }
+
+      ((IChunkStorageProvider<Object>)this.to).close(migrationData.saverData, store);
+   }
+
    @Nonnull
-   @Override
-   public IChunkLoader getLoader(@Nonnull Store<ChunkStore> store) throws IOException {
+   public IChunkLoader getLoader(@Nonnull MigrationChunkStorageProvider.MigrationData migrationData, @Nonnull Store<ChunkStore> store) throws IOException {
       IChunkLoader[] loaders = new IChunkLoader[this.from.length];
 
       for (int i = 0; i < this.from.length; i++) {
-         loaders[i] = this.from[i].getLoader(store);
+         loaders[i] = ((IChunkStorageProvider<Object>)this.from[i]).getLoader(migrationData.loaderData[i], store);
       }
 
       return new MigrationChunkStorageProvider.MigrationChunkLoader(loaders);
    }
 
    @Nonnull
-   @Override
-   public IChunkSaver getSaver(@Nonnull Store<ChunkStore> store) throws IOException {
-      return this.to.getSaver(store);
+   public IChunkSaver getSaver(@Nonnull MigrationChunkStorageProvider.MigrationData migrationData, @Nonnull Store<ChunkStore> store) throws IOException {
+      return ((IChunkStorageProvider<Object>)this.to).getSaver(migrationData.saverData, store);
    }
 
    @Nonnull
@@ -137,5 +156,10 @@ public class MigrationChunkStorageProvider implements IChunkStorageProvider {
 
          return indexes;
       }
+   }
+
+   public static class MigrationData {
+      private Object[] loaderData;
+      private Object saverData;
    }
 }

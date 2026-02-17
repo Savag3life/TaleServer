@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class ConstantMaterialProviderAsset extends MaterialProviderAsset {
+   @Nonnull
    public static final BuilderCodec<ConstantMaterialProviderAsset> CODEC = BuilderCodec.builder(
          ConstantMaterialProviderAsset.class, ConstantMaterialProviderAsset::new, MaterialProviderAsset.ABSTRACT_CODEC
       )

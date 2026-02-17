@@ -4,8 +4,8 @@ import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.protocol.BlockParticleEvent;
 import com.hypixel.hytale.protocol.BlockPosition;
-import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.Position;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.packets.world.SpawnBlockParticleSystem;
 import com.hypixel.hytale.protocol.packets.world.UpdateBlockDamage;
 import com.hypixel.hytale.server.core.modules.entity.player.ChunkTracker;
@@ -33,7 +33,7 @@ public class WorldNotificationHandler {
 
    public void updateState(int x, int y, int z, BlockState state, BlockState oldState, @Nullable Predicate<PlayerRef> skip) {
       if (y >= 0 && y < 320) {
-         Consumer<List<Packet>> removeOldState;
+         Consumer<List<ToClientPacket>> removeOldState;
          Predicate<PlayerRef> canPlayerSeeOld;
          if (oldState instanceof SendableBlockState sendableBlockState && state != oldState) {
             removeOldState = sendableBlockState::unloadFrom;
@@ -44,7 +44,7 @@ public class WorldNotificationHandler {
          }
 
          Predicate<PlayerRef> canPlayerSee;
-         Consumer<List<Packet>> updateBlockState;
+         Consumer<List<ToClientPacket>> updateBlockState;
          if (state instanceof SendableBlockState sendableBlockState) {
             updateBlockState = sendableBlockState::sendTo;
             canPlayerSee = sendableBlockState::canPlayerSee;
@@ -55,7 +55,7 @@ public class WorldNotificationHandler {
 
          if (removeOldState != null || updateBlockState != null) {
             long indexChunk = ChunkUtil.indexChunkFromBlock(x, z);
-            List<Packet> packets = new ObjectArrayList();
+            List<ToClientPacket> packets = new ObjectArrayList();
 
             for (PlayerRef playerRef : this.world.getPlayerRefs()) {
                ChunkTracker chunkTracker = playerRef.getChunkTracker();
@@ -68,7 +68,7 @@ public class WorldNotificationHandler {
                      updateBlockState.accept(packets);
                   }
 
-                  for (Packet packet : packets) {
+                  for (ToClientPacket packet : packets) {
                      playerRef.getPacketHandler().write(packet);
                   }
 
@@ -103,12 +103,12 @@ public class WorldNotificationHandler {
       this.sendPacketIfChunkLoaded(this.getBlockDamagePacket(x, y, z, health, healthDelta), x, z, filter);
    }
 
-   public void sendPacketIfChunkLoaded(@Nonnull Packet packet, int x, int z) {
+   public void sendPacketIfChunkLoaded(@Nonnull ToClientPacket packet, int x, int z) {
       long indexChunk = ChunkUtil.indexChunkFromBlock(x, z);
       this.sendPacketIfChunkLoaded(packet, indexChunk);
    }
 
-   public void sendPacketIfChunkLoaded(@Nonnull Packet packet, long indexChunk) {
+   public void sendPacketIfChunkLoaded(@Nonnull ToClientPacket packet, long indexChunk) {
       for (PlayerRef playerRef : this.world.getPlayerRefs()) {
          if (playerRef.getChunkTracker().isLoaded(indexChunk)) {
             playerRef.getPacketHandler().write(packet);
@@ -116,12 +116,12 @@ public class WorldNotificationHandler {
       }
    }
 
-   public void sendPacketIfChunkLoaded(@Nonnull Packet packet, int x, int z, @Nullable Predicate<PlayerRef> filter) {
+   public void sendPacketIfChunkLoaded(@Nonnull ToClientPacket packet, int x, int z, @Nullable Predicate<PlayerRef> filter) {
       long indexChunk = ChunkUtil.indexChunkFromBlock(x, z);
       this.sendPacketIfChunkLoaded(packet, indexChunk, filter);
    }
 
-   public void sendPacketIfChunkLoaded(@Nonnull Packet packet, long indexChunk, @Nullable Predicate<PlayerRef> filter) {
+   public void sendPacketIfChunkLoaded(@Nonnull ToClientPacket packet, long indexChunk, @Nullable Predicate<PlayerRef> filter) {
       for (PlayerRef playerRef : this.world.getPlayerRefs()) {
          if ((filter == null || filter.test(playerRef)) && playerRef.getChunkTracker().isLoaded(indexChunk)) {
             playerRef.getPacketHandler().write(packet);
@@ -129,12 +129,12 @@ public class WorldNotificationHandler {
       }
    }
 
-   private void sendPacketIfChunkLoaded(@Nonnull PlayerRef player, @Nonnull Packet packet, int x, int z) {
+   private void sendPacketIfChunkLoaded(@Nonnull PlayerRef player, @Nonnull ToClientPacket packet, int x, int z) {
       long indexChunk = ChunkUtil.indexChunkFromBlock(x, z);
       this.sendPacketIfChunkLoaded(player, packet, indexChunk);
    }
 
-   private void sendPacketIfChunkLoaded(@Nonnull PlayerRef playerRef, @Nonnull Packet packet, long indexChunk) {
+   private void sendPacketIfChunkLoaded(@Nonnull PlayerRef playerRef, @Nonnull ToClientPacket packet, long indexChunk) {
       if (playerRef.getChunkTracker().isLoaded(indexChunk)) {
          playerRef.getPacketHandler().write(packet);
       }

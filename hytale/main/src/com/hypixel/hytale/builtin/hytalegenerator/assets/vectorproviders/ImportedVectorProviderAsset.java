@@ -10,6 +10,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class ImportedVectorProviderAsset extends VectorProviderAsset {
+   @Nonnull
    public static final BuilderCodec<ImportedVectorProviderAsset> CODEC = BuilderCodec.builder(
          ImportedVectorProviderAsset.class, ImportedVectorProviderAsset::new, VectorProviderAsset.ABSTRACT_CODEC
       )
@@ -27,12 +28,14 @@ public class ImportedVectorProviderAsset extends VectorProviderAsset {
          if (exported == null) {
             LoggerUtil.getLogger().warning("Couldn't find VectorProvider asset exported with name: '" + this.importedNodeName + "'. Using empty Node instead.");
             return new ConstantVectorProvider(new Vector3d());
-         } else if (exported.singleInstance) {
-            if (exported.builtInstance == null) {
-               exported.builtInstance = exported.asset.build(argument);
+         } else if (exported.isSingleInstance) {
+            VectorProvider builtInstance = exported.threadInstances.get(argument.workerId);
+            if (builtInstance == null) {
+               builtInstance = exported.asset.build(argument);
+               exported.threadInstances.put(argument.workerId, builtInstance);
             }
 
-            return exported.builtInstance;
+            return builtInstance;
          } else {
             return exported.asset.build(argument);
          }
@@ -43,7 +46,7 @@ public class ImportedVectorProviderAsset extends VectorProviderAsset {
    public void cleanUp() {
       VectorProviderAsset.Exported exported = getExportedAsset(this.importedNodeName);
       if (exported != null) {
-         exported.builtInstance = null;
+         exported.threadInstances.clear();
       }
    }
 }

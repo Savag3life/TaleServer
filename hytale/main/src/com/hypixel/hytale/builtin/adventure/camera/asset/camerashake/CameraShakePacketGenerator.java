@@ -2,7 +2,7 @@ package com.hypixel.hytale.builtin.adventure.camera.asset.camerashake;
 
 import com.hypixel.hytale.assetstore.map.IndexedAssetMap;
 import com.hypixel.hytale.protocol.CachedPacket;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateCameraShake;
 import com.hypixel.hytale.server.core.asset.packet.SimpleAssetPacketGenerator;
@@ -14,17 +14,17 @@ import javax.annotation.Nonnull;
 
 public class CameraShakePacketGenerator extends SimpleAssetPacketGenerator<String, CameraShake, IndexedAssetMap<String, CameraShake>> {
    @Nonnull
-   public Packet generateInitPacket(@Nonnull IndexedAssetMap<String, CameraShake> assetMap, @Nonnull Map<String, CameraShake> assets) {
+   public ToClientPacket generateInitPacket(@Nonnull IndexedAssetMap<String, CameraShake> assetMap, @Nonnull Map<String, CameraShake> assets) {
       return toCachedPacket(UpdateType.Init, assetMap, assets);
    }
 
    @Nonnull
-   protected Packet generateUpdatePacket(@Nonnull IndexedAssetMap<String, CameraShake> assetMap, @Nonnull Map<String, CameraShake> loadedAssets) {
+   protected ToClientPacket generateUpdatePacket(@Nonnull IndexedAssetMap<String, CameraShake> assetMap, @Nonnull Map<String, CameraShake> loadedAssets) {
       return toCachedPacket(UpdateType.AddOrUpdate, assetMap, loadedAssets);
    }
 
    @Nonnull
-   protected Packet generateRemovePacket(@Nonnull IndexedAssetMap<String, CameraShake> assetMap, @Nonnull Set<String> removed) {
+   protected ToClientPacket generateRemovePacket(@Nonnull IndexedAssetMap<String, CameraShake> assetMap, @Nonnull Set<String> removed) {
       Int2ObjectOpenHashMap<com.hypixel.hytale.protocol.CameraShake> profiles = new Int2ObjectOpenHashMap();
 
       for (String key : removed) {
@@ -39,7 +39,9 @@ public class CameraShakePacketGenerator extends SimpleAssetPacketGenerator<Strin
    }
 
    @Nonnull
-   protected static Packet toCachedPacket(UpdateType type, @Nonnull IndexedAssetMap<String, CameraShake> assetMap, @Nonnull Map<String, CameraShake> assets) {
+   protected static ToClientPacket toCachedPacket(
+      @Nonnull UpdateType type, @Nonnull IndexedAssetMap<String, CameraShake> assetMap, @Nonnull Map<String, CameraShake> assets
+   ) {
       Int2ObjectOpenHashMap<com.hypixel.hytale.protocol.CameraShake> profiles = new Int2ObjectOpenHashMap();
 
       for (Entry<String, CameraShake> entry : assets.entrySet()) {

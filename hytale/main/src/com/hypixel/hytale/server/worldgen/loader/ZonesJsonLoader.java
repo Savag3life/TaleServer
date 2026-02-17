@@ -1,8 +1,8 @@
 package com.hypixel.hytale.server.worldgen.loader;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
+import com.google.gson.JsonObject;
+import com.hypixel.hytale.procedurallib.file.FileIO;
+import com.hypixel.hytale.procedurallib.json.JsonLoader;
 import com.hypixel.hytale.procedurallib.json.Loader;
 import com.hypixel.hytale.procedurallib.json.SeedString;
 import com.hypixel.hytale.server.worldgen.SeedStringResource;
@@ -11,7 +11,6 @@ import com.hypixel.hytale.server.worldgen.loader.context.FileLoadingContext;
 import com.hypixel.hytale.server.worldgen.loader.context.ZoneFileContext;
 import com.hypixel.hytale.server.worldgen.loader.zone.ZoneJsonLoader;
 import com.hypixel.hytale.server.worldgen.zone.Zone;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map.Entry;
 import javax.annotation.Nonnull;
@@ -34,25 +33,11 @@ public class ZonesJsonLoader extends Loader<SeedStringResource, Zone[]> {
          ZoneFileContext zoneContext = zoneEntry.getValue();
 
          try {
-            JsonReader reader = new JsonReader(Files.newBufferedReader(zoneContext.getPath().resolve("Zone.json")));
-
-            try {
-               JsonElement zoneJson = JsonParser.parseReader(reader);
-               Zone zone = new ZoneJsonLoader(this.seed, this.dataFolder, zoneJson, zoneContext).load();
-               zones[index++] = zone;
-            } catch (Throwable var11) {
-               try {
-                  reader.close();
-               } catch (Throwable var10) {
-                  var11.addSuppressed(var10);
-               }
-
-               throw var11;
-            }
-
-            reader.close();
-         } catch (Throwable var12) {
-            throw new Error(String.format("Error while loading zone \"%s\" for world generator from file.", zoneContext.getPath().toString()), var12);
+            JsonObject zoneJson = FileIO.load(zoneContext.getPath().resolve("Zone.json"), JsonLoader.JSON_OBJ_LOADER);
+            Zone zone = new ZoneJsonLoader(this.seed, this.dataFolder, zoneJson, zoneContext).load();
+            zones[index++] = zone;
+         } catch (Throwable var9) {
+            throw new Error(String.format("Error while loading zone \"%s\" for world generator from file.", zoneContext.getPath().toString()), var9);
          }
       }
 

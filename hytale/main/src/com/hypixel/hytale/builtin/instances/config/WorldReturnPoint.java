@@ -9,6 +9,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 public class WorldReturnPoint {
+   @Nonnull
    public static final BuilderCodec<WorldReturnPoint> CODEC = BuilderCodec.builder(WorldReturnPoint.class, WorldReturnPoint::new)
       .documentation("A world/location pair that is used as a place to return players to.")
       .<UUID>append(new KeyedCodec<>("World", Codec.UUID_BINARY), (o, i) -> o.world = i, o -> o.world)

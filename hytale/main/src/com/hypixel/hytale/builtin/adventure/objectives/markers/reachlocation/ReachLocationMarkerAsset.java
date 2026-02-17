@@ -14,6 +14,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class ReachLocationMarkerAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, ReachLocationMarkerAsset>> {
+   @Nonnull
    public static final AssetBuilderCodec<String, ReachLocationMarkerAsset> CODEC = AssetBuilderCodec.builder(
          ReachLocationMarkerAsset.class,
          ReachLocationMarkerAsset::new,
@@ -39,6 +40,7 @@ public class ReachLocationMarkerAsset implements JsonAssetWithMap<String, Defaul
       .addValidator(Validators.nonEmptyString())
       .add()
       .build();
+   @Nonnull
    public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(ReachLocationMarkerAsset::getAssetStore));
    private static AssetStore<String, ReachLocationMarkerAsset, DefaultAssetMap<String, ReachLocationMarkerAsset>> ASSET_STORE;
    protected AssetExtraInfo.Data data;

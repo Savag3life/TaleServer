@@ -22,7 +22,7 @@ import javax.annotation.Nonnull;
 
 public class BrushConfigListCommand extends AbstractPlayerCommand {
    public BrushConfigListCommand() {
-      super("list", "List the brush config operations that are currently set");
+      super("list", "server.commands.scriptedbrushes.list.desc");
    }
 
    @Override

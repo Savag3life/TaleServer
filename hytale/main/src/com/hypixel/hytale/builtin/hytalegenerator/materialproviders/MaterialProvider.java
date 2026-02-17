@@ -1,7 +1,6 @@
 package com.hypixel.hytale.builtin.hytalegenerator.materialproviders;
 
 import com.hypixel.hytale.builtin.hytalegenerator.newsystem.TerrainDensityProvider;
-import com.hypixel.hytale.builtin.hytalegenerator.threadindexer.WorkerIndexer;
 import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -23,8 +22,6 @@ public abstract class MaterialProvider<V> {
       public int depthIntoCeiling;
       public int spaceAboveFloor;
       public int spaceBelowCeiling;
-      @Nonnull
-      public WorkerIndexer.Id workerId;
       @Nullable
       public TerrainDensityProvider terrainDensityProvider;
       public double distanceToBiomeEdge;
@@ -36,7 +33,6 @@ public abstract class MaterialProvider<V> {
          int depthIntoCeiling,
          int spaceAboveFloor,
          int spaceBelowCeiling,
-         @Nonnull WorkerIndexer.Id workerId,
          @Nullable TerrainDensityProvider terrainDensityProvider,
          double distanceToBiomeEdge
       ) {
@@ -46,7 +42,6 @@ public abstract class MaterialProvider<V> {
          this.depthIntoCeiling = depthIntoCeiling;
          this.spaceAboveFloor = spaceAboveFloor;
          this.spaceBelowCeiling = spaceBelowCeiling;
-         this.workerId = workerId;
          this.terrainDensityProvider = terrainDensityProvider;
          this.distanceToBiomeEdge = distanceToBiomeEdge;
       }
@@ -58,7 +53,6 @@ public abstract class MaterialProvider<V> {
          this.depthIntoCeiling = other.depthIntoCeiling;
          this.spaceAboveFloor = other.spaceAboveFloor;
          this.spaceBelowCeiling = other.spaceBelowCeiling;
-         this.workerId = other.workerId;
          this.terrainDensityProvider = other.terrainDensityProvider;
          this.distanceToBiomeEdge = other.distanceToBiomeEdge;
       }

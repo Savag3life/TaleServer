@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 
 public class MessageTranslationTestCommand extends CommandBase {
    public MessageTranslationTestCommand() {
-      super("messagetest", "Test sending messages with nested translated parameter messages");
+      super("messagetest", "server.commands.messagetest.desc");
       this.addAliases("msgtest");
    }
 

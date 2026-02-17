@@ -14,6 +14,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 
 public class SplitChanceBlockGrowthProcedure extends BasicChanceBlockGrowthProcedure {
+   @Nonnull
    public static final BuilderCodec<SplitChanceBlockGrowthProcedure> CODEC = BuilderCodec.builder(
          SplitChanceBlockGrowthProcedure.class, SplitChanceBlockGrowthProcedure::new, TickProcedure.BASE_CODEC
       )

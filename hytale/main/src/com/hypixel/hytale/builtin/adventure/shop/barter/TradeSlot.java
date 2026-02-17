@@ -6,7 +6,9 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 
 public abstract class TradeSlot {
+   @Nonnull
    public static final CodecMapCodec<TradeSlot> CODEC = new CodecMapCodec<>("Type");
+   @Nonnull
    public static final TradeSlot[] EMPTY_ARRAY = new TradeSlot[0];
 
    protected TradeSlot() {

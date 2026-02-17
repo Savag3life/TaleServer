@@ -38,6 +38,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class BlockSpawnerPlugin extends JavaPlugin {
+   @Nonnull
    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
    private ComponentType<ChunkStore, BlockSpawner> blockSpawnerComponentType;
    private static BlockSpawnerPlugin INSTANCE;
@@ -70,14 +71,14 @@ public class BlockSpawnerPlugin extends JavaPlugin {
       this.getEventRegistry().registerGlobal(PrefabBufferValidator.ValidateBlockEvent.class, BlockSpawnerPlugin::validatePrefabBlock);
    }
 
-   private static void validatePrefabBlock(PrefabBufferValidator.ValidateBlockEvent validateBlockEvent) {
+   private static void validatePrefabBlock(@Nonnull PrefabBufferValidator.ValidateBlockEvent validateBlockEvent) {
       Holder<ChunkStore> holder = validateBlockEvent.holder();
       if (holder != null) {
-         BlockSpawner spawner = holder.getComponent(BlockSpawner.getComponentType());
-         if (spawner != null) {
+         BlockSpawner blockSpawnerComponent = holder.getComponent(BlockSpawner.getComponentType());
+         if (blockSpawnerComponent != null) {
             BlockType blockType = BlockType.getAssetMap().getAsset(validateBlockEvent.blockId());
             if (blockType != null) {
-               if (spawner.getBlockSpawnerId() == null) {
+               if (blockSpawnerComponent.getBlockSpawnerId() == null) {
                   validateBlockEvent.reason()
                      .append("\t Block ")
                      .append(blockType.getId())
@@ -90,7 +91,7 @@ public class BlockSpawnerPlugin extends JavaPlugin {
                      .append(" has no defined block spawner id")
                      .append('\n');
                } else {
-                  BlockSpawnerTable blockSpawner = BlockSpawnerTable.getAssetMap().getAsset(spawner.getBlockSpawnerId());
+                  BlockSpawnerTable blockSpawner = BlockSpawnerTable.getAssetMap().getAsset(blockSpawnerComponent.getBlockSpawnerId());
                   if (blockSpawner == null) {
                      validateBlockEvent.reason()
                         .append("\t Block ")
@@ -102,7 +103,7 @@ public class BlockSpawnerPlugin extends JavaPlugin {
                         .append(", ")
                         .append(validateBlockEvent.z())
                         .append(" has an invalid spawner id ")
-                        .append(spawner.getBlockSpawnerId())
+                        .append(blockSpawnerComponent.getBlockSpawnerId())
                         .append('\n');
                   }
                }
@@ -116,8 +117,11 @@ public class BlockSpawnerPlugin extends JavaPlugin {
    }
 
    private static class BlockSpawnerSystem extends RefSystem<ChunkStore> {
+      @Nonnull
       private static final ComponentType<ChunkStore, BlockSpawner> COMPONENT_TYPE = BlockSpawner.getComponentType();
+      @Nonnull
       private static final ComponentType<ChunkStore, BlockModule.BlockStateInfo> BLOCK_INFO_COMPONENT_TYPE = BlockModule.BlockStateInfo.getComponentType();
+      @Nonnull
       private static final Query<ChunkStore> QUERY = Query.and(COMPONENT_TYPE, BLOCK_INFO_COMPONENT_TYPE);
 
       public BlockSpawnerSystem() {
@@ -134,72 +138,74 @@ public class BlockSpawnerPlugin extends JavaPlugin {
       ) {
          WorldConfig worldConfig = store.getExternalData().getWorld().getWorldConfig();
          if (worldConfig.getGameMode() != GameMode.Creative) {
-            BlockSpawner state = commandBuffer.getComponent(ref, COMPONENT_TYPE);
+            BlockSpawner blockSpawnerComponent = commandBuffer.getComponent(ref, COMPONENT_TYPE);
 
-            assert state != null;
+            assert blockSpawnerComponent != null;
 
-            BlockModule.BlockStateInfo info = commandBuffer.getComponent(ref, BLOCK_INFO_COMPONENT_TYPE);
+            BlockModule.BlockStateInfo blockStateInfoComponent = commandBuffer.getComponent(ref, BLOCK_INFO_COMPONENT_TYPE);
 
-            assert info != null;
+            assert blockStateInfoComponent != null;
 
-            String blockSpawnerId = state.getBlockSpawnerId();
+            String blockSpawnerId = blockSpawnerComponent.getBlockSpawnerId();
             if (blockSpawnerId != null) {
                BlockSpawnerTable table = BlockSpawnerTable.getAssetMap().getAsset(blockSpawnerId);
                if (table == null) {
                   BlockSpawnerPlugin.LOGGER.at(Level.WARNING).log("Failed to find BlockSpawner Asset by name: %s", blockSpawnerId);
                } else {
-                  Ref<ChunkStore> chunk = info.getChunkRef();
-                  if (chunk != null) {
-                     WorldChunk wc = commandBuffer.getComponent(chunk, WorldChunk.getComponentType());
-                     int x = ChunkUtil.worldCoordFromLocalCoord(wc.getX(), ChunkUtil.xFromBlockInColumn(info.getIndex()));
-                     int y = ChunkUtil.yFromBlockInColumn(info.getIndex());
-                     int z = ChunkUtil.worldCoordFromLocalCoord(wc.getZ(), ChunkUtil.zFromBlockInColumn(info.getIndex()));
-                     long seed = worldConfig.getSeed();
-                     double randomRnd = HashUtil.random(x, y, z, seed + -1699164769L);
-                     BlockSpawnerEntry entry = table.getEntries().get(randomRnd);
-                     if (entry != null) {
-                        String blockKey = entry.getBlockName();
+                  Ref<ChunkStore> chunkRef = blockStateInfoComponent.getChunkRef();
+                  if (chunkRef.isValid()) {
+                     WorldChunk worldChunkComponent = commandBuffer.getComponent(chunkRef, WorldChunk.getComponentType());
+                     if (worldChunkComponent != null) {
+                        int x = ChunkUtil.worldCoordFromLocalCoord(worldChunkComponent.getX(), ChunkUtil.xFromBlockInColumn(blockStateInfoComponent.getIndex()));
+                        int y = ChunkUtil.yFromBlockInColumn(blockStateInfoComponent.getIndex());
+                        int z = ChunkUtil.worldCoordFromLocalCoord(worldChunkComponent.getZ(), ChunkUtil.zFromBlockInColumn(blockStateInfoComponent.getIndex()));
+                        long seed = worldConfig.getSeed();
+                        double randomRnd = HashUtil.random(x, y, z, seed + -1699164769L);
+                        BlockSpawnerEntry entry = table.getEntries().get(randomRnd);
+                        if (entry != null) {
+                           String blockKey = entry.getBlockName();
 
-                        RotationTuple rotation = switch (entry.getRotationMode()) {
-                           case NONE -> RotationTuple.NONE;
-                           case RANDOM -> {
-                              String key = entry.getBlockName();
-                              VariantRotation variantRotation = BlockType.getAssetMap().getAsset(key).getVariantRotation();
-                              if (variantRotation == VariantRotation.None) {
-                                 yield RotationTuple.NONE;
-                              } else {
-                                 int randomHash = (int)HashUtil.rehash(x, y, z, seed + -1699164769L);
-                                 Rotation rotationYaw = Rotation.NORMAL[(randomHash & 65535) % Rotation.NORMAL.length];
-                                 yield BlockRotationUtil.getRotated(RotationTuple.NONE, Axis.Y, rotationYaw, variantRotation);
+                           RotationTuple rotation = switch (entry.getRotationMode()) {
+                              case NONE -> RotationTuple.NONE;
+                              case RANDOM -> {
+                                 String key = entry.getBlockName();
+                                 VariantRotation variantRotation = BlockType.getAssetMap().getAsset(key).getVariantRotation();
+                                 if (variantRotation == VariantRotation.None) {
+                                    yield RotationTuple.NONE;
+                                 } else {
+                                    int randomHash = (int)HashUtil.rehash(x, y, z, seed + -1699164769L);
+                                    Rotation rotationYaw = Rotation.NORMAL[(randomHash & 65535) % Rotation.NORMAL.length];
+                                    yield BlockRotationUtil.getRotated(RotationTuple.NONE, Axis.Y, rotationYaw, variantRotation);
+                                 }
                               }
-                           }
-                           case INHERIT -> {
-                              String key = entry.getBlockName();
-                              VariantRotation variantRotation = BlockType.getAssetMap().getAsset(key).getVariantRotation();
-                              if (variantRotation == VariantRotation.None) {
-                                 yield RotationTuple.NONE;
-                              } else {
-                                 RotationTuple spawnerRotation = RotationTuple.get(wc.getRotationIndex(x, y, z));
-                                 Rotation spawnerYaw = spawnerRotation.yaw();
-                                 yield BlockRotationUtil.getRotated(RotationTuple.NONE, Axis.Y, spawnerYaw, variantRotation);
+                              case INHERIT -> {
+                                 String key = entry.getBlockName();
+                                 VariantRotation variantRotation = BlockType.getAssetMap().getAsset(key).getVariantRotation();
+                                 if (variantRotation == VariantRotation.None) {
+                                    yield RotationTuple.NONE;
+                                 } else {
+                                    RotationTuple spawnerRotation = RotationTuple.get(worldChunkComponent.getRotationIndex(x, y, z));
+                                    Rotation spawnerYaw = spawnerRotation.yaw();
+                                    yield BlockRotationUtil.getRotated(RotationTuple.NONE, Axis.Y, spawnerYaw, variantRotation);
+                                 }
                               }
-                           }
-                        };
-                        Holder<ChunkStore> holder = entry.getBlockComponents();
-                        commandBuffer.removeEntity(ref, RemoveReason.REMOVE);
-                        commandBuffer.run(_store -> {
-                           int flags = 4;
-                           if (holder != null) {
-                              flags |= 2;
-                           }
+                           };
+                           Holder<ChunkStore> holder = entry.getBlockComponents();
+                           commandBuffer.removeEntity(ref, RemoveReason.REMOVE);
+                           commandBuffer.run(_store -> {
+                              int flags = 4;
+                              if (holder != null) {
+                                 flags |= 2;
+                              }
 
-                           int blockId = BlockType.getAssetMap().getIndex(blockKey);
-                           BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
-                           wc.setBlock(x, y, z, blockId, blockType, rotation.index(), 0, flags);
-                           if (holder != null) {
-                              wc.setState(x, y, z, holder.clone());
-                           }
-                        });
+                              int blockId = BlockType.getAssetMap().getIndex(blockKey);
+                              BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
+                              worldChunkComponent.setBlock(x, y, z, blockId, blockType, rotation.index(), 0, flags);
+                              if (holder != null) {
+                                 worldChunkComponent.setState(x, y, z, holder.clone());
+                              }
+                           });
+                        }
                      }
                   }
                }

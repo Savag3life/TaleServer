@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class MultiplierCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<MultiplierCurveAsset> CODEC = BuilderCodec.builder(
          MultiplierCurveAsset.class, MultiplierCurveAsset::new, CurveAsset.ABSTRACT_CODEC
       )

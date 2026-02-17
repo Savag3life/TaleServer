@@ -1,7 +1,7 @@
 package com.hypixel.hytale.server.core.asset.type.trail;
 
 import com.hypixel.hytale.assetstore.map.DefaultAssetMap;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateTrails;
 import com.hypixel.hytale.server.core.asset.packet.DefaultAssetPacketGenerator;
@@ -15,7 +15,7 @@ import javax.annotation.Nonnull;
 public class TrailPacketGenerator extends DefaultAssetPacketGenerator<String, Trail> {
    @Nonnull
    @Override
-   public Packet generateInitPacket(DefaultAssetMap<String, Trail> assetMap, @Nonnull Map<String, Trail> assets) {
+   public ToClientPacket generateInitPacket(DefaultAssetMap<String, Trail> assetMap, @Nonnull Map<String, Trail> assets) {
       UpdateTrails packet = new UpdateTrails();
       packet.type = UpdateType.Init;
       packet.trails = new Object2ObjectOpenHashMap();
@@ -29,7 +29,7 @@ public class TrailPacketGenerator extends DefaultAssetPacketGenerator<String, Tr
 
    @Nonnull
    @Override
-   public Packet generateUpdatePacket(@Nonnull Map<String, Trail> loadedAssets) {
+   public ToClientPacket generateUpdatePacket(@Nonnull Map<String, Trail> loadedAssets) {
       UpdateTrails packet = new UpdateTrails();
       packet.type = UpdateType.AddOrUpdate;
       packet.trails = new Object2ObjectOpenHashMap();
@@ -43,7 +43,7 @@ public class TrailPacketGenerator extends DefaultAssetPacketGenerator<String, Tr
 
    @Nonnull
    @Override
-   public Packet generateRemovePacket(@Nonnull Set<String> removed) {
+   public ToClientPacket generateRemovePacket(@Nonnull Set<String> removed) {
       UpdateTrails packet = new UpdateTrails();
       packet.type = UpdateType.Remove;
       packet.trails = new Object2ObjectOpenHashMap();

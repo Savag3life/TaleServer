@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class QueueMaterialProviderAsset extends MaterialProviderAsset {
+   @Nonnull
    public static final BuilderCodec<QueueMaterialProviderAsset> CODEC = BuilderCodec.builder(
          QueueMaterialProviderAsset.class, QueueMaterialProviderAsset::new, MaterialProviderAsset.ABSTRACT_CODEC
       )

@@ -31,17 +31,20 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class CollisionModule extends JavaPlugin {
+   @Nonnull
    public static final PluginManifest MANIFEST = PluginManifest.corePlugin(CollisionModule.class).build();
    public static final int VALIDATE_INVALID = -1;
    public static final int VALIDATE_OK = 0;
    public static final int VALIDATE_ON_GROUND = 1;
    public static final int VALIDATE_TOUCH_CEIL = 2;
    private static CollisionModule instance;
-   private ResourceType<EntityStore, SpatialResource<Ref<EntityStore>, EntityStore>> tangiableEntitySpatialComponent;
+   private ResourceType<EntityStore, SpatialResource<Ref<EntityStore>, EntityStore>> tangibleEntitySpatialResourceType;
    private double extentMax;
    private double minimumThickness;
+   @Nonnull
    private final Config<CollisionModuleConfig> config = this.withConfig("CollisionModule", CollisionModuleConfig.CODEC);
 
    public static CollisionModule get() {
@@ -53,6 +56,7 @@ public class CollisionModule extends JavaPlugin {
       instance = this;
    }
 
+   @Nonnull
    public CollisionModuleConfig getConfig() {
       return this.config.get();
    }
@@ -61,11 +65,11 @@ public class CollisionModule extends JavaPlugin {
    protected void setup() {
       this.getCommandRegistry().registerCommand(new HitboxCommand());
       this.getEventRegistry().register(LoadedAssetsEvent.class, BlockBoundingBoxes.class, this::onLoadedAssetsEvent);
-      this.tangiableEntitySpatialComponent = this.getEntityStoreRegistry().registerSpatialResource(() -> new KDTree<>(Ref::isValid));
+      this.tangibleEntitySpatialResourceType = this.getEntityStoreRegistry().registerSpatialResource(() -> new KDTree<>(Ref::isValid));
    }
 
-   public ResourceType<EntityStore, SpatialResource<Ref<EntityStore>, EntityStore>> getTangiableEntitySpatialComponent() {
-      return this.tangiableEntitySpatialComponent;
+   public ResourceType<EntityStore, SpatialResource<Ref<EntityStore>, EntityStore>> getTangibleEntitySpatialResourceType() {
+      return this.tangibleEntitySpatialResourceType;
    }
 
    private void onLoadedAssetsEvent(@Nonnull LoadedAssetsEvent<String, BlockBoundingBoxes, IndexedLookupTableAssetMap<String, BlockBoundingBoxes>> event) {
@@ -209,18 +213,17 @@ public class CollisionModule extends JavaPlugin {
                }
 
                TransformComponent entityTransformComponent = componentAccessor.getComponent(ref, TransformComponent.getComponentType());
-
-               assert entityTransformComponent != null;
-
-               BoundingBox entityBoundingBoxComponent = componentAccessor.getComponent(ref, BoundingBox.getComponentType());
-
-               assert entityBoundingBoxComponent != null;
-
-               Vector3d position = entityTransformComponent.getPosition();
-               Box boundingBox = entityBoundingBoxComponent.getBoundingBox();
-               if (boundingBox != null && CollisionMath.intersectVectorAABB(pos, v, position.getX(), position.getY(), position.getZ(), boundingBox, minMax)) {
-                  coll.assign(pos).addScaled(v, minMax.x);
-                  result.allocCharacterCollision().assign(coll, minMax.x, entity.getReference(), entity instanceof Player);
+               if (entityTransformComponent != null) {
+                  BoundingBox entityBoundingBoxComponent = componentAccessor.getComponent(ref, BoundingBox.getComponentType());
+                  if (entityBoundingBoxComponent != null) {
+                     Vector3d position = entityTransformComponent.getPosition();
+                     Box boundingBox = entityBoundingBoxComponent.getBoundingBox();
+                     if (boundingBox != null
+                        && CollisionMath.intersectVectorAABB(pos, v, position.getX(), position.getY(), position.getZ(), boundingBox, minMax)) {
+                        coll.assign(pos).addScaled(v, minMax.x);
+                        result.allocCharacterCollision().assign(coll, minMax.x, entity.getReference(), entity instanceof Player);
+                     }
+                  }
                }
             }
          }
@@ -452,7 +455,7 @@ public class CollisionModule extends JavaPlugin {
       @Nonnull Box collider,
       @Nonnull Vector3d pos,
       int invalidBlockMaterials,
-      T t,
+      @Nullable T t,
       @Nonnull CollisionFilter<BoxBlockIntersectionEvaluator, T> predicate,
       @Nonnull CollisionResult result
    ) {
@@ -471,8 +474,8 @@ public class CollisionModule extends JavaPlugin {
       @Nonnull World world,
       @Nonnull Box collider,
       @Nonnull Vector3d pos,
-      T t,
-      @Nonnull CollisionFilter<BoxBlockIntersectionEvaluator, T> predicate,
+      @Nullable T t,
+      @Nullable CollisionFilter<BoxBlockIntersectionEvaluator, T> predicate,
       boolean disableDamageBlocks,
       @Nonnull CollisionResult result
    ) {
@@ -576,11 +579,11 @@ public class CollisionModule extends JavaPlugin {
       return result.validate;
    }
 
-   private static void addImmediateCollision(@Nonnull Vector3d pos, @Nonnull CollisionResult result, @Nonnull CollisionConfig coll, int i) {
+   private static void addImmediateCollision(@Nonnull Vector3d pos, @Nonnull CollisionResult result, @Nonnull CollisionConfig config, int i) {
       BlockCollisionData data = result.newCollision();
       data.setStart(pos, 0.0);
       data.setEnd(1.0, result.getBoxBlockIntersection().getCollisionNormal());
-      data.setBlockData(coll);
+      data.setBlockData(config);
       data.setDetailBoxIndex(i);
       data.setTouchingOverlapping(false, true);
    }
@@ -590,7 +593,7 @@ public class CollisionModule extends JavaPlugin {
    }
 
    private static void logOverlap(
-      @Nonnull Vector3d pos, @Nonnull Box collider, @Nonnull CollisionConfig coll, @Nonnull Box hitBox, int x, int y, int z, int index, int intersectType
+      @Nonnull Vector3d pos, @Nonnull Box collider, @Nonnull CollisionConfig config, @Nonnull Box hitBox, int x, int y, int z, int index, int intersectType
    ) {
       get()
          .getLogger()
@@ -602,13 +605,13 @@ public class CollisionModule extends JavaPlugin {
             (intersectType & 32) != 0 ? "Z" : "",
             index,
             Vector3d.formatShortString(pos),
-            x + coll.getBoundingBoxOffsetX(),
-            y + coll.getBoundingBoxOffsetY(),
-            z + coll.getBoundingBoxOffsetZ(),
-            coll.blockId,
-            coll.blockMaterial != null ? coll.blockMaterial.name() : "none",
+            x + config.getBoundingBoxOffsetX(),
+            y + config.getBoundingBoxOffsetY(),
+            z + config.getBoundingBoxOffsetZ(),
+            config.blockId,
+            config.blockMaterial != null ? config.blockMaterial.name() : "none",
             new Object[]{
-               coll.blockType != null ? coll.blockType.getId() : "none",
+               config.blockType != null ? config.blockType.getId() : "none",
                collider,
                Vector3d.formatShortString(hitBox.min),
                Vector3d.formatShortString(hitBox.max)

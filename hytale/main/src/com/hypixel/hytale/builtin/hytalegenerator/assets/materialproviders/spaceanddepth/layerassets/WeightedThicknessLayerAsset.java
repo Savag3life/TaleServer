@@ -18,6 +18,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class WeightedThicknessLayerAsset extends LayerAsset {
+   @Nonnull
    public static final BuilderCodec<WeightedThicknessLayerAsset> CODEC = BuilderCodec.builder(
          WeightedThicknessLayerAsset.class, WeightedThicknessLayerAsset::new, LayerAsset.ABSTRACT_CODEC
       )
@@ -59,6 +60,7 @@ public class WeightedThicknessLayerAsset extends LayerAsset {
    }
 
    public static class WeightedThicknessAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, WeightedThicknessLayerAsset.WeightedThicknessAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, WeightedThicknessLayerAsset.WeightedThicknessAsset> CODEC = AssetBuilderCodec.builder(
             WeightedThicknessLayerAsset.WeightedThicknessAsset.class,
             WeightedThicknessLayerAsset.WeightedThicknessAsset::new,

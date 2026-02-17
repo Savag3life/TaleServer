@@ -102,6 +102,7 @@ public class SpaceAndDepthMaterialProvider<V> extends MaterialProvider<V> {
       DEPTH_INTO_FLOOR,
       DEPTH_INTO_CEILING;
 
+      @Nonnull
       public static final Codec<SpaceAndDepthMaterialProvider.LayerContextType> CODEC = new EnumCodec<>(
          SpaceAndDepthMaterialProvider.LayerContextType.class, EnumCodec.EnumStyle.LEGACY
       );

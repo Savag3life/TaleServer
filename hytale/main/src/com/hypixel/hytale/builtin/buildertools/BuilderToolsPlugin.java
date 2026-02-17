@@ -21,6 +21,7 @@ import com.hypixel.hytale.builtin.buildertools.commands.FlipCommand;
 import com.hypixel.hytale.builtin.buildertools.commands.GlobalMaskCommand;
 import com.hypixel.hytale.builtin.buildertools.commands.HollowCommand;
 import com.hypixel.hytale.builtin.buildertools.commands.HotbarSwitchCommand;
+import com.hypixel.hytale.builtin.buildertools.commands.LayerCommand;
 import com.hypixel.hytale.builtin.buildertools.commands.MoveCommand;
 import com.hypixel.hytale.builtin.buildertools.commands.PasteCommand;
 import com.hypixel.hytale.builtin.buildertools.commands.Pos1Command;
@@ -128,6 +129,7 @@ import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.common.util.CompletableFutureUtil;
 import com.hypixel.hytale.common.util.PathUtil;
+import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentAccessor;
@@ -147,13 +149,11 @@ import com.hypixel.hytale.math.block.BlockCubeUtil;
 import com.hypixel.hytale.math.block.BlockSphereUtil;
 import com.hypixel.hytale.math.block.BlockUtil;
 import com.hypixel.hytale.math.iterator.LineIterator;
-import com.hypixel.hytale.math.matrix.Matrix4d;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.math.vector.Vector4d;
 import com.hypixel.hytale.math.vector.VectorBoxUtil;
 import com.hypixel.hytale.metrics.MetricProvider;
 import com.hypixel.hytale.metrics.MetricResults;
@@ -195,13 +195,17 @@ import com.hypixel.hytale.server.core.command.system.CommandManager;
 import com.hypixel.hytale.server.core.command.system.CommandRegistry;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
+import com.hypixel.hytale.server.core.entity.entities.BlockEntity;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.io.ServerManager;
+import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.tracker.EntityTrackerSystems;
+import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.server.OpenCustomUIInteraction;
@@ -223,7 +227,6 @@ import com.hypixel.hytale.server.core.prefab.selection.standard.FeedbackConsumer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor;
 import com.hypixel.hytale.server.core.universe.world.accessor.ChunkAccessor;
 import com.hypixel.hytale.server.core.universe.world.accessor.LocalCachedChunkAccessor;
 import com.hypixel.hytale.server.core.universe.world.accessor.OverridableChunkAccessor;
@@ -246,6 +249,7 @@ import com.hypixel.hytale.server.core.util.TargetUtil;
 import com.hypixel.hytale.server.core.util.TempAssetIdUtil;
 import com.hypixel.hytale.sneakythrow.consumer.ThrowableConsumer;
 import com.hypixel.hytale.sneakythrow.consumer.ThrowableTriConsumer;
+import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMaps;
@@ -280,6 +284,7 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.joml.Quaterniond;
 
 public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider, MetricProvider {
    public static final String EDITOR_BLOCK = "Editor_Block";
@@ -445,6 +450,7 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
       commandRegistry.registerCommand(new SetToolHistorySizeCommand());
       commandRegistry.registerCommand(new ObjImportCommand());
       commandRegistry.registerCommand(new ImageImportCommand());
+      commandRegistry.registerCommand(new LayerCommand());
       OpenCustomUIInteraction.registerBlockCustomPage(
          this,
          PrefabSpawnerState.PrefabSpawnerSettingsPage.class,
@@ -887,7 +893,8 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
       EXTRUDE,
       UPDATE_SELECTION,
       WALLS,
-      HOLLOW;
+      HOLLOW,
+      LAYER;
    }
 
    public static class ActionEntry {
@@ -910,13 +917,45 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
       @Nonnull
       public BuilderToolsPlugin.ActionEntry restore(Ref<EntityStore> ref, Player player, World world, ComponentAccessor<EntityStore> componentAccessor) {
          List<SelectionSnapshot<?>> collector = Collections.emptyList();
+         List<Ref<EntityStore>> recreatedEntityRefs = null;
+         if (this.action == BuilderToolsPlugin.Action.ROTATE) {
+            PrototypePlayerBuilderToolSettings protoSettings = ToolOperation.getOrCreatePrototypeSettings(player.getUuid());
+            List<Ref<EntityStore>> currentRefs = protoSettings.getLastTransformEntityRefs();
+            if (currentRefs != null) {
+               Store<EntityStore> entityStore = world.getEntityStore().getStore();
+
+               for (Ref<EntityStore> currentRef : currentRefs) {
+                  if (currentRef.isValid()) {
+                     collector = (List<SelectionSnapshot<?>>)(collector.isEmpty() ? new ObjectArrayList() : collector);
+                     collector.add(new EntityRemoveSnapshot(currentRef));
+                     entityStore.removeEntity(currentRef, RemoveReason.UNLOAD);
+                  }
+               }
+
+               protoSettings.setLastTransformEntityRefs(null);
+            }
+         }
 
          for (SelectionSnapshot<?> snapshot : this.snapshots) {
-            SelectionSnapshot<?> nextSnapshot = snapshot.restore(ref, player, world, componentAccessor);
-            if (nextSnapshot != null) {
-               collector = (List<SelectionSnapshot<?>>)(collector.isEmpty() ? new ObjectArrayList() : collector);
-               collector.add(nextSnapshot);
+            if (this.action != BuilderToolsPlugin.Action.ROTATE || !(snapshot instanceof EntityAddSnapshot)) {
+               SelectionSnapshot<?> nextSnapshot = snapshot.restore(ref, player, world, componentAccessor);
+               if (nextSnapshot != null) {
+                  collector = (List<SelectionSnapshot<?>>)(collector.isEmpty() ? new ObjectArrayList() : collector);
+                  collector.add(nextSnapshot);
+                  if (nextSnapshot instanceof EntityAddSnapshot entityAddSnapshot) {
+                     if (recreatedEntityRefs == null) {
+                        recreatedEntityRefs = new ArrayList<>();
+                     }
+
+                     recreatedEntityRefs.add(entityAddSnapshot.getEntityRef());
+                  }
+               }
             }
+         }
+
+         if (this.action == BuilderToolsPlugin.Action.ROTATE && recreatedEntityRefs != null && !recreatedEntityRefs.isEmpty()) {
+            PrototypePlayerBuilderToolSettings prototypeSettings = ToolOperation.getOrCreatePrototypeSettings(player.getUuid());
+            prototypeSettings.setLastTransformEntityRefs(recreatedEntityRefs);
          }
 
          return new BuilderToolsPlugin.ActionEntry(this.action, collector);
@@ -1924,88 +1963,94 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
          this.pushHistory(BuilderToolsPlugin.Action.EXTRUDE, new BlockSelectionSnapshot(before));
          BlockSelection after = new BlockSelection(totalBlocks, 0);
          after.copyPropertiesFrom(before);
-         this.extendFaceFindBlocks(
-            accessor, BlockType.getAssetMap(), before, after, x + normalX, y + normalY, z + normalZ, normalX, normalY, normalZ, extrudeDepth, blockId, min, max
-         );
-         Vector3i offset = new Vector3i(0, 0, 0);
-
-         for (int i = 0; i < extrudeDepth; i++) {
-            offset.x = normalX * i;
-            offset.y = normalY * i;
-            offset.z = normalZ * i;
-            after.placeNoReturn("Set", this.player, BuilderToolsPlugin.FEEDBACK_CONSUMER, world, offset, null, componentAccessor);
+         if (x >= min.getX() && x <= max.getX()) {
+            if (y >= min.getY() && y <= max.getY()) {
+               if (z >= min.getZ() && z <= max.getZ()) {
+                  int testBlock = accessor.getBlock(x - normalX, y - normalY, z - normalZ);
+                  BlockType testBlockType = BlockType.getAssetMap().getAsset(testBlock);
+                  if (testBlockType != null && (testBlockType.getDrawType() == DrawType.Cube || testBlockType.getDrawType() == DrawType.CubeWithModel)) {
+                     int xMod = Math.abs(normalX) == 1 ? 0 : 1;
+                     int yMod = Math.abs(normalY) == 1 ? 0 : 1;
+                     int zMod = Math.abs(normalZ) == 1 ? 0 : 1;
+                     Vector3i surfaceMin = new Vector3i(x - radiusAllowed * xMod, y - radiusAllowed * yMod, z - radiusAllowed * zMod);
+                     Vector3i surfaceMax = new Vector3i(x + radiusAllowed * xMod, y + radiusAllowed * yMod, z + radiusAllowed * zMod);
+                     this.extendFaceFindBlocks(accessor, before, after, normalX, normalY, normalZ, extrudeDepth, blockId, min, max, surfaceMin, surfaceMax);
+                     after.placeNoReturn("Set", this.player, BuilderToolsPlugin.FEEDBACK_CONSUMER, world, componentAccessor);
+                     BuilderToolsPlugin.invalidateWorldMapForSelection(after, world);
+                     long end = System.nanoTime();
+                     long diff = end - start;
+                     BuilderToolsPlugin.get()
+                        .getLogger()
+                        .at(Level.FINE)
+                        .log("Took: %dns (%dms) to execute set of %d blocks", diff, TimeUnit.NANOSECONDS.toMillis(diff), after.getBlockCount());
+                     this.sendUpdate();
+                     this.sendArea();
+                  }
+               }
+            }
          }
-
-         BuilderToolsPlugin.invalidateWorldMapForSelection(after, world);
-         long end = System.nanoTime();
-         long diff = end - start;
-         BuilderToolsPlugin.get()
-            .getLogger()
-            .at(Level.FINE)
-            .log("Took: %dns (%dms) to execute set of %d blocks", diff, TimeUnit.NANOSECONDS.toMillis(diff), after.getBlockCount());
-         this.sendUpdate();
-         this.sendArea();
       }
 
       private void extendFaceFindBlocks(
-         @Nonnull ChunkAccessor accessor,
-         @Nonnull BlockTypeAssetMap<String, BlockType> assetMap,
+         @Nonnull LocalCachedChunkAccessor accessor,
          @Nonnull BlockSelection before,
          @Nonnull BlockSelection after,
-         int x,
-         int y,
-         int z,
          int normalX,
          int normalY,
          int normalZ,
          int extrudeDepth,
          int blockId,
          @Nonnull Vector3i min,
-         @Nonnull Vector3i max
+         @Nonnull Vector3i max,
+         @Nonnull Vector3i surfaceMin,
+         @Nonnull Vector3i surfaceMax
       ) {
-         if (x >= min.getX() && x <= max.getX()) {
-            if (y >= min.getY() && y <= max.getY()) {
-               if (z >= min.getZ() && z <= max.getZ()) {
-                  int block = accessor.getBlock(x, y, z);
-                  int testBlock = accessor.getBlock(x - normalX, y - normalY, z - normalZ);
-                  BlockType testBlockType = assetMap.getAsset(testBlock);
-                  if (testBlockType != null && (testBlockType.getDrawType() == DrawType.Cube || testBlockType.getDrawType() == DrawType.CubeWithModel)) {
-                     if (!before.hasBlockAtWorldPos(x, y, z)) {
-                        BlockAccessor blocks = accessor.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(x, z));
-                        if (blocks != null) {
-                           before.addBlockAtWorldPos(
-                              x,
-                              y,
-                              z,
-                              block,
-                              blocks.getRotationIndex(x, y, z),
-                              blocks.getFiller(x, y, z),
-                              blocks.getSupportValue(x, y, z),
-                              blocks.getBlockComponentHolder(x, y, z)
-                           );
-                           after.addBlockAtWorldPos(x, y, z, blockId, 0, 0, 0);
+         int xMin = surfaceMin.getX();
+         int yMin = surfaceMin.getY();
+         int zMin = surfaceMin.getZ();
+         int xMax = surfaceMax.getX();
+         int yMax = surfaceMax.getY();
+         int zMax = surfaceMax.getZ();
 
-                           for (Vector3i side : Vector3i.BLOCK_SIDES) {
-                              if ((normalX == 0 || side.getX() == 0) && (normalY == 0 || side.getY() == 0) && (normalZ == 0 || side.getZ() == 0)) {
-                                 this.extendFaceFindBlocks(
-                                    accessor,
-                                    assetMap,
-                                    before,
-                                    after,
-                                    x + side.getX(),
-                                    y + side.getY(),
-                                    z + side.getZ(),
-                                    normalX,
-                                    normalY,
-                                    normalZ,
-                                    extrudeDepth,
-                                    blockId,
-                                    min,
-                                    max
-                                 );
-                              }
-                           }
-                        }
+         for (int x = xMin; x <= xMax; x++) {
+            for (int z = zMin; z <= zMax; z++) {
+               WorldChunk chunk = accessor.getChunk(ChunkUtil.indexChunkFromBlock(x, z));
+
+               for (int y = yMax; y >= yMin; y--) {
+                  int currentBlock = chunk.getBlock(x, y, z);
+                  int currentFluid = chunk.getFluidId(x, y, z);
+                  if (currentBlock > 0) {
+                     int xRes = x + normalX;
+                     int yRes = y + normalY;
+                     int zRes = z + normalZ;
+                     currentBlock = chunk.getBlock(xRes, yRes, zRes);
+                     before.addBlockAtWorldPos(
+                        xRes,
+                        yRes,
+                        zRes,
+                        currentBlock,
+                        chunk.getRotationIndex(xRes, yRes, zRes),
+                        chunk.getFiller(xRes, yRes, zRes),
+                        chunk.getSupportValue(xRes, yRes, zRes),
+                        chunk.getBlockComponentHolder(xRes, yRes, zRes)
+                     );
+                     after.addBlockAtWorldPos(xRes, yRes, zRes, blockId, 0, 0, 0);
+
+                     for (int i = 0; i < extrudeDepth; i++) {
+                        int extrudedBlockX = xRes + normalX * i;
+                        int extrudedBlockY = yRes + normalY * i;
+                        int extrudedBlockZ = zRes + normalZ * i;
+                        before.addBlockAtWorldPos(
+                           extrudedBlockX,
+                           extrudedBlockY,
+                           extrudedBlockZ,
+                           currentBlock,
+                           chunk.getRotationIndex(extrudedBlockX, extrudedBlockY, extrudedBlockZ),
+                           chunk.getFiller(extrudedBlockX, extrudedBlockY, extrudedBlockZ),
+                           chunk.getSupportValue(extrudedBlockX, extrudedBlockY, extrudedBlockZ),
+                           chunk.getBlockComponentHolder(extrudedBlockX, extrudedBlockY, extrudedBlockZ)
+                        );
+                        after.addBlockAtWorldPos(extrudedBlockX, extrudedBlockY, extrudedBlockZ, blockId, 0, 0, 0);
                      }
                   }
                }
@@ -2164,7 +2209,7 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
          int settings,
          @Nonnull ComponentAccessor<EntityStore> componentAccessor
       ) throws PrefabCopyException {
-         return this.copyOrCut(ref, xMin, yMin, zMin, xMax, yMax, zMax, settings, null, componentAccessor);
+         return this.copyOrCut(ref, xMin, yMin, zMin, xMax, yMax, zMax, settings, null, null, componentAccessor);
       }
 
       public int copyOrCut(
@@ -2177,6 +2222,22 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
          int zMax,
          int settings,
          @Nullable Vector3i playerAnchor,
+         @Nonnull ComponentAccessor<EntityStore> componentAccessor
+      ) throws PrefabCopyException {
+         return this.copyOrCut(ref, xMin, yMin, zMin, xMax, yMax, zMax, settings, playerAnchor, null, componentAccessor);
+      }
+
+      public int copyOrCut(
+         @Nonnull Ref<EntityStore> ref,
+         int xMin,
+         int yMin,
+         int zMin,
+         int xMax,
+         int yMax,
+         int zMax,
+         int settings,
+         @Nullable Vector3i playerAnchor,
+         @Nullable Set<Ref<EntityStore>> skipEntityRemoveSnapshotFor,
          @Nonnull ComponentAccessor<EntityStore> componentAccessor
       ) throws PrefabCopyException {
          World world = componentAccessor.getExternalData().getWorld();
@@ -2315,8 +2376,11 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
                            Holder<EntityStore> holder = store.copyEntity(e);
                            this.selection.addEntityFromWorld(holder);
                            if (cut) {
-                              snapshots.add(new EntityRemoveSnapshot(e));
-                              entitiesToRemove.add(e);
+                              boolean shouldSkip = skipEntityRemoveSnapshotFor != null && skipEntityRemoveSnapshotFor.contains(e);
+                              if (!shouldSkip) {
+                                 snapshots.add(new EntityRemoveSnapshot(e));
+                                 entitiesToRemove.add(e);
+                              }
                            }
                         });
                         if (cut && entitiesToRemove != null) {
@@ -2432,36 +2496,48 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
          return size;
       }
 
-      public static RotationTuple transformRotation(RotationTuple prevRot, Matrix4d transformationMatrix) {
+      public static RotationTuple transformRotation(RotationTuple prevRot, Quaterniond rotation) {
          Vector3f forwardVec = new Vector3f(1.0F, 0.0F, 0.0F);
          Vector3f upVec = new Vector3f(0.0F, 1.0F, 0.0F);
          forwardVec = Rotation.rotate(forwardVec, prevRot.yaw(), prevRot.pitch(), prevRot.roll());
          upVec = Rotation.rotate(upVec, prevRot.yaw(), prevRot.pitch(), prevRot.roll());
-         Vector3f newForward = transformationMatrix.multiplyDirection(forwardVec.toVector3d()).toVector3f();
-         Vector3f newUp = transformationMatrix.multiplyDirection(upVec.toVector3d()).toVector3f();
+         org.joml.Vector3d fwd = rotation.transform(new org.joml.Vector3d(forwardVec.x, forwardVec.y, forwardVec.z));
+         org.joml.Vector3d up = rotation.transform(new org.joml.Vector3d(upVec.x, upVec.y, upVec.z));
+         Vector3f newForward = new Vector3f((float)fwd.x, (float)fwd.y, (float)fwd.z);
+         Vector3f newUp = new Vector3f((float)up.x, (float)up.y, (float)up.z);
          float bestScore = Float.MIN_VALUE;
          RotationTuple bestRot = prevRot;
 
-         for (RotationTuple rotation : RotationTuple.VALUES) {
-            Vector3f rotForward = Rotation.rotate(new Vector3f(1.0F, 0.0F, 0.0F), rotation.yaw(), rotation.pitch(), rotation.roll());
-            Vector3f rotUp = Rotation.rotate(new Vector3f(0.0F, 1.0F, 0.0F), rotation.yaw(), rotation.pitch(), rotation.roll());
+         for (RotationTuple rot : RotationTuple.VALUES) {
+            Vector3f rotForward = Rotation.rotate(new Vector3f(1.0F, 0.0F, 0.0F), rot.yaw(), rot.pitch(), rot.roll());
+            Vector3f rotUp = Rotation.rotate(new Vector3f(0.0F, 1.0F, 0.0F), rot.yaw(), rot.pitch(), rot.roll());
             float score = rotForward.dot(newForward) + rotUp.dot(newUp);
             if (score > bestScore) {
                bestScore = score;
-               bestRot = rotation;
+               bestRot = rot;
             }
          }
 
          return bestRot;
       }
 
+      private void transformEntityRotation(Vector3f rotation, Quaterniond deltaQuat) {
+         Quaterniond originalQuat = new Quaterniond().rotationYXZ(rotation.y, rotation.x, rotation.z);
+         Quaterniond resultQuat = deltaQuat.mul(originalQuat, new Quaterniond());
+         org.joml.Vector3d eulerAngles = resultQuat.getEulerAnglesYXZ(new org.joml.Vector3d());
+         rotation.assign((float)eulerAngles.x, (float)eulerAngles.y, (float)eulerAngles.z);
+      }
+
       public void transformThenPasteClipboard(
          @Nonnull BlockChange[] blockChanges,
          @Nullable PrototypePlayerBuilderToolSettings.FluidChange[] fluidChanges,
-         @Nonnull Matrix4d transformationMatrix,
+         @Nullable PrototypePlayerBuilderToolSettings.EntityChange[] entityChanges,
+         @Nonnull Quaterniond rotation,
+         @Nonnull Vector3i translationOffset,
          @Nonnull Vector3f rotationOrigin,
          @Nonnull Vector3i initialPastePoint,
          boolean keepEmptyBlocks,
+         @Nonnull PrototypePlayerBuilderToolSettings prototypeSettings,
          ComponentAccessor<EntityStore> componentAccessor
       ) {
          World world = componentAccessor.getExternalData().getWorld();
@@ -2476,35 +2552,33 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
             }
          }
 
-         Vector4d translationEndResult = new Vector4d(0.0, 0.0, 0.0, 1.0);
-         transformationMatrix.multiply(translationEndResult);
-         translationEndResult.x = translationEndResult.x + rotationOrigin.x;
-         translationEndResult.y = translationEndResult.y + rotationOrigin.y;
-         translationEndResult.z = translationEndResult.z + rotationOrigin.z;
+         int centerX = translationOffset.x + (int)rotationOrigin.x;
+         int centerY = translationOffset.y + (int)rotationOrigin.y;
+         int centerZ = translationOffset.z + (int)rotationOrigin.z;
          BlockSelection before = new BlockSelection();
-         before.setPosition((int)translationEndResult.x, (int)translationEndResult.y, (int)translationEndResult.z);
+         before.setPosition(centerX, centerY, centerZ);
          BlockSelection after = new BlockSelection(before);
-         LocalCachedChunkAccessor accessor = LocalCachedChunkAccessor.atWorldCoords(world, (int)translationEndResult.x, (int)translationEndResult.z, 50);
+         LocalCachedChunkAccessor accessor = LocalCachedChunkAccessor.atWorldCoords(world, centerX, centerZ, 50);
          int minX = Integer.MAX_VALUE;
          int minY = Integer.MAX_VALUE;
          int minZ = Integer.MAX_VALUE;
          int maxX = Integer.MIN_VALUE;
          int maxY = Integer.MIN_VALUE;
          int maxZ = Integer.MIN_VALUE;
-         Vector4d mutable4d = new Vector4d(0.0, 0.0, 0.0, 1.0);
+         org.joml.Vector3d mutableVec = new org.joml.Vector3d();
 
          for (BlockChange blockChangex : blockChanges) {
-            mutable4d.assign(
+            mutableVec.set(
                blockChangex.x - rotationOrigin.x + initialPastePoint.x + 0.5,
                blockChangex.y - rotationOrigin.y + initialPastePoint.y + 0.5 + yOffsetOutOfGround,
-               blockChangex.z - rotationOrigin.z + initialPastePoint.z + 0.5,
-               1.0
+               blockChangex.z - rotationOrigin.z + initialPastePoint.z + 0.5
             );
-            transformationMatrix.multiply(mutable4d);
+            rotation.transform(mutableVec);
+            mutableVec.add(translationOffset.x, translationOffset.y, translationOffset.z);
             Vector3i rotatedLocation = new Vector3i(
-               (int)Math.floor(mutable4d.x + 0.1 + rotationOrigin.x - 0.5),
-               (int)Math.floor(mutable4d.y + 0.1 + rotationOrigin.y - 0.5),
-               (int)Math.floor(mutable4d.z + 0.1 + rotationOrigin.z - 0.5)
+               (int)Math.floor(mutableVec.x + 0.1 + rotationOrigin.x - 0.5),
+               (int)Math.floor(mutableVec.y + 0.1 + rotationOrigin.y - 0.5),
+               (int)Math.floor(mutableVec.z + 0.1 + rotationOrigin.z - 0.5)
             );
             minX = Math.min(minX, rotatedLocation.x);
             minY = Math.min(minY, rotatedLocation.y);
@@ -2516,12 +2590,12 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
             Holder<ChunkStore> holder = currentChunk.getBlockComponentHolder(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z);
             int blockIdInRotatedLocation = currentChunk.getBlock(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z);
             int filler = currentChunk.getFiller(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z);
-            int rotation = currentChunk.getRotationIndex(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z);
-            before.addBlockAtWorldPos(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z, blockIdInRotatedLocation, rotation, filler, 0, holder);
+            int blockRotation = currentChunk.getRotationIndex(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z);
+            before.addBlockAtWorldPos(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z, blockIdInRotatedLocation, blockRotation, filler, 0, holder);
             int originalFluidId = currentChunk.getFluidId(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z);
             byte originalFluidLevel = currentChunk.getFluidLevel(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z);
             before.addFluidAtWorldPos(rotatedLocation.x, rotatedLocation.y, rotatedLocation.z, originalFluidId, originalFluidLevel);
-            int newRotation = transformRotation(RotationTuple.get(blockChangex.rotation), transformationMatrix).index();
+            int newRotation = transformRotation(RotationTuple.get(blockChangex.rotation), rotation).index();
             int blockIdToPlace = blockChangex.block;
             if (blockChangex.block == 0 && keepEmptyBlocks) {
                blockIdToPlace = editorBlockPrefabAir;
@@ -2556,19 +2630,72 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
          int finalYOffsetOutOfGround = yOffsetOutOfGround;
          if (fluidChanges != null) {
             for (PrototypePlayerBuilderToolSettings.FluidChange fluidChange : fluidChanges) {
-               mutable4d.assign(
+               mutableVec.set(
                   fluidChange.x() - rotationOrigin.x + initialPastePoint.x + 0.5,
                   fluidChange.y() - rotationOrigin.y + initialPastePoint.y + 0.5 + finalYOffsetOutOfGround,
-                  fluidChange.z() - rotationOrigin.z + initialPastePoint.z + 0.5,
-                  1.0
+                  fluidChange.z() - rotationOrigin.z + initialPastePoint.z + 0.5
                );
-               transformationMatrix.multiply(mutable4d);
+               rotation.transform(mutableVec);
+               mutableVec.add(translationOffset.x, translationOffset.y, translationOffset.z);
                Vector3i rotatedLocationx = new Vector3i(
-                  (int)Math.floor(mutable4d.x + 0.1 + rotationOrigin.x - 0.5),
-                  (int)Math.floor(mutable4d.y + 0.1 + rotationOrigin.y - 0.5),
-                  (int)Math.floor(mutable4d.z + 0.1 + rotationOrigin.z - 0.5)
+                  (int)Math.floor(mutableVec.x + 0.1 + rotationOrigin.x - 0.5),
+                  (int)Math.floor(mutableVec.y + 0.1 + rotationOrigin.y - 0.5),
+                  (int)Math.floor(mutableVec.z + 0.1 + rotationOrigin.z - 0.5)
                );
                after.addFluidAtWorldPos(rotatedLocationx.x, rotatedLocationx.y, rotatedLocationx.z, fluidChange.fluidId(), fluidChange.fluidLevel());
+            }
+         }
+
+         List<Ref<EntityStore>> previousEntityRefs = prototypeSettings.getLastTransformEntityRefs();
+         List<EntityRemoveSnapshot> previousEntitySnapshots = new ArrayList<>();
+         if (previousEntityRefs != null) {
+            Store<EntityStore> entityStore = world.getEntityStore().getStore();
+
+            for (Ref<EntityStore> ref : previousEntityRefs) {
+               if (ref.isValid()) {
+                  previousEntitySnapshots.add(new EntityRemoveSnapshot(ref));
+                  entityStore.removeEntity(ref, RemoveReason.UNLOAD);
+               }
+            }
+         }
+
+         List<Ref<EntityStore>> addedEntityRefs = new ArrayList<>();
+         if (entityChanges != null && entityChanges.length > 0) {
+            org.joml.Vector3d mutableEntityPos = new org.joml.Vector3d();
+
+            for (PrototypePlayerBuilderToolSettings.EntityChange entityChange : entityChanges) {
+               boolean isBlockEntity = entityChange.entityHolder().getComponent(BlockEntity.getComponentType()) != null;
+               double blockCenterOffset = isBlockEntity ? 0.5 : 0.0;
+               mutableEntityPos.set(
+                  entityChange.x() - rotationOrigin.x,
+                  entityChange.y() + blockCenterOffset - rotationOrigin.y + finalYOffsetOutOfGround,
+                  entityChange.z() - rotationOrigin.z
+               );
+               rotation.transform(mutableEntityPos);
+               mutableEntityPos.add(translationOffset.x, translationOffset.y, translationOffset.z);
+               double newX = mutableEntityPos.x + rotationOrigin.x;
+               double newY = mutableEntityPos.y + rotationOrigin.y - blockCenterOffset;
+               double newZ = mutableEntityPos.z + rotationOrigin.z;
+               Holder<EntityStore> clonedHolder = entityChange.entityHolder().clone();
+               TransformComponent transformComponent = clonedHolder.getComponent(TransformComponent.getComponentType());
+               if (transformComponent != null && transformComponent.getPosition() != null) {
+                  transformComponent.getPosition().assign(newX, newY, newZ);
+                  Vector3f entityRotation = transformComponent.getRotation();
+                  if (entityRotation != null) {
+                     this.transformEntityRotation(entityRotation, rotation);
+                  }
+               }
+
+               HeadRotation headRotation = clonedHolder.getComponent(HeadRotation.getComponentType());
+               if (headRotation != null && headRotation.getRotation() != null) {
+                  this.transformEntityRotation(headRotation.getRotation(), rotation);
+               }
+
+               clonedHolder.putComponent(UUIDComponent.getComponentType(), new UUIDComponent(UUID.randomUUID()));
+               clonedHolder.removeComponent(EntityTrackerSystems.Visible.getComponentType());
+               clonedHolder.removeComponent(NetworkId.getComponentType());
+               Ref<EntityStore> entityRef = componentAccessor.addEntity(clonedHolder, AddReason.LOAD);
+               addedEntityRefs.add(entityRef);
             }
          }
 
@@ -2576,7 +2703,19 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
             before.setSelectionArea(new Vector3i(minX, minY, minZ), new Vector3i(maxX, maxY, maxZ));
          }
 
-         this.pushHistory(BuilderToolsPlugin.Action.ROTATE, new BlockSelectionSnapshot(before));
+         prototypeSettings.setLastTransformEntityRefs(new ArrayList<>(addedEntityRefs));
+         List<SelectionSnapshot<?>> snapshots = new ObjectArrayList(addedEntityRefs.size() + previousEntitySnapshots.size() + 1);
+
+         for (Ref<EntityStore> entityRef : addedEntityRefs) {
+            snapshots.add(new EntityAddSnapshot(entityRef));
+         }
+
+         for (EntityRemoveSnapshot snapshot : previousEntitySnapshots) {
+            snapshots.add(snapshot);
+         }
+
+         snapshots.add(new BlockSelectionSnapshot(before));
+         this.pushHistory(BuilderToolsPlugin.Action.ROTATE, snapshots);
          after.placeNoReturn("Transform 1/1", this.player, BuilderToolsPlugin.FEEDBACK_CONSUMER, world, componentAccessor);
          BuilderToolsPlugin.invalidateWorldMapForSelection(after, world);
          long end = System.nanoTime();
@@ -2589,25 +2728,133 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
          this.sendArea();
       }
 
-      public void transformSelectionPoints(@Nonnull Matrix4d transformationMatrix, @Nonnull Vector3f rotationOrigin) {
-         Vector3i newMin = this.transformBlockLocation(this.selection.getSelectionMin(), transformationMatrix, rotationOrigin);
-         Vector3i newMax = this.transformBlockLocation(this.selection.getSelectionMax(), transformationMatrix, rotationOrigin);
+      public void transformSelectionPoints(@Nonnull Quaterniond rotation, @Nonnull Vector3i translationOffset, @Nonnull Vector3f rotationOrigin) {
+         Vector3i newMin = this.transformBlockLocation(this.selection.getSelectionMin(), rotation, translationOffset, rotationOrigin);
+         Vector3i newMax = this.transformBlockLocation(this.selection.getSelectionMax(), rotation, translationOffset, rotationOrigin);
          this.selection.setSelectionArea(Vector3i.min(newMin, newMax), Vector3i.max(newMin, newMax));
          this.sendUpdate();
          this.sendArea();
       }
 
       @Nonnull
-      public Vector3i transformBlockLocation(@Nonnull Vector3i blockLocation, @Nonnull Matrix4d transformationMatrix, @Nonnull Vector3f rotationOrigin) {
-         Vector4d relativeOffset = new Vector4d(
-            blockLocation.x - rotationOrigin.x + 0.5, blockLocation.y - rotationOrigin.y + 0.5, blockLocation.z - rotationOrigin.z + 0.5, 1.0
+      public Vector3i transformBlockLocation(
+         @Nonnull Vector3i blockLocation, @Nonnull Quaterniond rotation, @Nonnull Vector3i translationOffset, @Nonnull Vector3f rotationOrigin
+      ) {
+         org.joml.Vector3d relative = new org.joml.Vector3d(
+            blockLocation.x - rotationOrigin.x + 0.5, blockLocation.y - rotationOrigin.y + 0.5, blockLocation.z - rotationOrigin.z + 0.5
          );
-         transformationMatrix.multiply(relativeOffset);
+         rotation.transform(relative);
+         relative.add(translationOffset.x, translationOffset.y, translationOffset.z);
          return new Vector3i(
-            (int)Math.floor(relativeOffset.x + rotationOrigin.x - 0.5 + 0.1),
-            (int)Math.floor(relativeOffset.y + rotationOrigin.y - 0.5 + 0.1),
-            (int)Math.floor(relativeOffset.z + rotationOrigin.z - 0.5 + 0.1)
+            (int)Math.floor(relative.x + rotationOrigin.x - 0.5 + 0.1),
+            (int)Math.floor(relative.y + rotationOrigin.y - 0.5 + 0.1),
+            (int)Math.floor(relative.z + rotationOrigin.z - 0.5 + 0.1)
          );
+      }
+
+      public void layer(
+         int x,
+         int y,
+         int z,
+         @Nonnull List<Pair<Integer, String>> layers,
+         int depth,
+         Vector3i direction,
+         WorldChunk chunk,
+         BlockSelection before,
+         BlockSelection after
+      ) {
+         int xModifier = direction.x == 1 ? -1 : (direction.x == -1 ? 1 : 0);
+         int yModifier = direction.y == 1 ? -1 : (direction.y == -1 ? 1 : 0);
+         int zModifier = direction.z == 1 ? -1 : (direction.z == -1 ? 1 : 0);
+
+         for (int i = 0; i < depth; i++) {
+            if (chunk.getBlock(x + i * xModifier + xModifier, y + i * yModifier + yModifier, z + i * zModifier + zModifier) <= 0
+               && this.attemptSetLayer(x, y, z, i, layers, chunk, before, after)) {
+               return;
+            }
+         }
+      }
+
+      public void layer(@Nonnull List<Pair<Integer, String>> layers, Vector3i direction, ComponentAccessor<EntityStore> componentAccessor) {
+         if (this.selection == null) {
+            this.sendFeedback(Message.translation("server.builderTools.noSelection"), componentAccessor);
+         } else if (!this.selection.hasSelectionBounds()) {
+            this.sendFeedback(Message.translation("server.builderTools.noSelectionBounds"), componentAccessor);
+         } else {
+            int maxDepth = 0;
+
+            for (Pair<Integer, String> layer : layers) {
+               maxDepth += layer.left();
+            }
+
+            long start = System.nanoTime();
+            Vector3i min = Vector3i.min(this.selection.getSelectionMin(), this.selection.getSelectionMax());
+            Vector3i max = Vector3i.max(this.selection.getSelectionMin(), this.selection.getSelectionMax());
+            int xMin = min.getX();
+            int xMax = max.getX();
+            int yMin = min.getY();
+            int yMax = max.getY();
+            int zMin = min.getZ();
+            int zMax = max.getZ();
+            BlockSelection before = new BlockSelection();
+            int width = xMax - xMin;
+            int depth = zMax - zMin;
+            int halfWidth = width / 2;
+            int halfDepth = depth / 2;
+            before.setPosition(xMin + halfWidth, yMin, zMin + halfDepth);
+            before.setSelectionArea(min, max);
+            this.pushHistory(BuilderToolsPlugin.Action.LAYER, new BlockSelectionSnapshot(before));
+            BlockSelection after = new BlockSelection(before);
+            World world = componentAccessor.getExternalData().getWorld();
+            LocalCachedChunkAccessor accessor = LocalCachedChunkAccessor.atWorldCoords(world, xMin + halfWidth, zMin + halfDepth, Math.max(width, depth));
+
+            for (int x = xMin; x <= xMax; x++) {
+               for (int z = zMin; z <= zMax; z++) {
+                  WorldChunk chunk = accessor.getChunk(ChunkUtil.indexChunkFromBlock(x, z));
+
+                  for (int y = yMax; y >= yMin; y--) {
+                     int currentBlock = chunk.getBlock(x, y, z);
+                     int currentFluid = chunk.getFluidId(x, y, z);
+                     if (currentBlock > 0 && (this.globalMask == null || !this.globalMask.isExcluded(accessor, x, y, z, min, max, currentBlock, currentFluid))) {
+                        this.layer(x, y, z, layers, maxDepth, direction, chunk, before, after);
+                     }
+                  }
+               }
+            }
+
+            after.placeNoReturn("Finished layer", this.player, BuilderToolsPlugin.FEEDBACK_CONSUMER, world, componentAccessor);
+            BuilderToolsPlugin.invalidateWorldMapForSelection(after, world);
+            long end = System.nanoTime();
+            long diff = end - start;
+            BuilderToolsPlugin.get().getLogger().at(Level.FINE).log("Took: %dns (%dms) to execute layer", diff, TimeUnit.NANOSECONDS.toMillis(diff));
+            this.sendUpdate();
+            this.sendArea();
+         }
+      }
+
+      private boolean attemptSetLayer(
+         int x, int y, int z, int depth, List<Pair<Integer, String>> layers, WorldChunk chunk, BlockSelection before, BlockSelection after
+      ) {
+         int currentDepth = 0;
+
+         for (Pair<Integer, String> layer : layers) {
+            currentDepth += layer.left();
+            if (depth < currentDepth) {
+               int currentBlock = chunk.getBlock(x, y, z);
+               int currentBlockFiller = chunk.getFiller(x, y, z);
+               Holder<ChunkStore> holder = chunk.getBlockComponentHolder(x, y, z);
+               int rotation = chunk.getRotationIndex(x, y, z);
+               int supportValue = chunk.getSupportValue(x, y, z);
+               BlockPattern pattern = BlockPattern.parse((String)layer.right());
+               int materialId = pattern.nextBlock(this.random);
+               Holder<ChunkStore> newHolder = BuilderToolsPlugin.createBlockComponent(chunk, x, y, z, materialId, currentBlock, holder, true);
+               before.addBlockAtWorldPos(x, y, z, currentBlock, rotation, currentBlockFiller, supportValue, holder);
+               after.addBlockAtWorldPos(x, y, z, materialId, rotation, 0, 0, newHolder);
+               return true;
+            }
+         }
+
+         return false;
       }
 
       public int paste(@Nonnull Ref<EntityStore> ref, int x, int y, int z, @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
@@ -3719,10 +3966,8 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
          }
 
          if (reason != null) {
-            Message reasonMessage = Message.translation(reason);
             this.sendFeedback(
-               Message.translation("server.builderTools.selectedWithReason")
-                  .param("reason", reasonMessage)
+               Message.translation(reason)
                   .param("x1", pos1.getX())
                   .param("y1", pos1.getY())
                   .param("z1", pos1.getZ())
@@ -4115,6 +4360,17 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
       public void save(
          @Nonnull Ref<EntityStore> ref, @Nonnull String name, boolean relativize, boolean overwrite, ComponentAccessor<EntityStore> componentAccessor
       ) {
+         this.save(ref, name, relativize, overwrite, false, componentAccessor);
+      }
+
+      public void save(
+         @Nonnull Ref<EntityStore> ref,
+         @Nonnull String name,
+         boolean relativize,
+         boolean overwrite,
+         boolean clearSupport,
+         ComponentAccessor<EntityStore> componentAccessor
+      ) {
          if (this.selection == null) {
             this.sendErrorFeedback(ref, Message.translation("server.builderTools.noSelection"), componentAccessor);
          } else {
@@ -4130,15 +4386,19 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
             } else {
                try {
                   BlockSelection postClone = relativize ? this.selection.relativize() : this.selection.cloneSelection();
+                  if (clearSupport) {
+                     postClone.clearAllSupportValues();
+                  }
+
                   prefabStore.saveServerPrefab(name, postClone, overwrite);
                   this.sendUpdate();
                   this.sendFeedback(Message.translation("server.builderTools.savedSelectionToPrefab").param("name", name), componentAccessor);
-               } catch (PrefabSaveException var14) {
-                  switch (var14.getType()) {
+               } catch (PrefabSaveException var15) {
+                  switch (var15.getType()) {
                      case ERROR:
-                        ((HytaleLogger.Api)BuilderToolsPlugin.get().getLogger().at(Level.WARNING).withCause(var14)).log("Exception saving prefab %s", name);
+                        ((HytaleLogger.Api)BuilderToolsPlugin.get().getLogger().at(Level.WARNING).withCause(var15)).log("Exception saving prefab %s", name);
                         this.sendFeedback(
-                           Message.translation("server.builderTools.errorSavingPrefab").param("name", name).param("message", var14.getCause().getMessage()),
+                           Message.translation("server.builderTools.errorSavingPrefab").param("name", name).param("message", var15.getCause().getMessage()),
                            componentAccessor
                         );
                         break;
@@ -4167,7 +4427,7 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
          boolean includeEmpty,
          @Nonnull ComponentAccessor<EntityStore> componentAccessor
       ) {
-         this.saveFromSelection(ref, name, relativize, overwrite, includeEntities, includeEmpty, null, componentAccessor);
+         this.saveFromSelection(ref, name, relativize, overwrite, includeEntities, includeEmpty, null, false, componentAccessor);
       }
 
       public void saveFromSelection(
@@ -4178,6 +4438,7 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
          boolean includeEntities,
          boolean includeEmpty,
          @Nullable Vector3i playerAnchor,
+         boolean clearSupport,
          @Nonnull ComponentAccessor<EntityStore> componentAccessor
       ) {
          if (this.selection != null && (!this.selection.getSelectionMin().equals(Vector3i.ZERO) || !this.selection.getSelectionMax().equals(Vector3i.ZERO))) {
@@ -4275,14 +4536,18 @@ public class BuilderToolsPlugin extends JavaPlugin implements SelectionProvider,
 
                try {
                   BlockSelection postClone = relativize ? tempSelection.relativize() : tempSelection.cloneSelection();
+                  if (clearSupport) {
+                     postClone.clearAllSupportValues();
+                  }
+
                   prefabStore.saveServerPrefab(name, postClone, overwrite);
                   this.sendFeedback(Message.translation("server.builderTools.savedSelectionToPrefab").param("name", name), componentAccessor);
-               } catch (PrefabSaveException var47) {
-                  switch (var47.getType()) {
+               } catch (PrefabSaveException var48) {
+                  switch (var48.getType()) {
                      case ERROR:
-                        ((HytaleLogger.Api)BuilderToolsPlugin.get().getLogger().at(Level.WARNING).withCause(var47)).log("Exception saving prefab %s", name);
+                        ((HytaleLogger.Api)BuilderToolsPlugin.get().getLogger().at(Level.WARNING).withCause(var48)).log("Exception saving prefab %s", name);
                         this.sendFeedback(
-                           Message.translation("server.builderTools.errorSavingPrefab").param("name", name).param("message", var47.getCause().getMessage()),
+                           Message.translation("server.builderTools.errorSavingPrefab").param("name", name).param("message", var48.getCause().getMessage()),
                            componentAccessor
                         );
                         break;

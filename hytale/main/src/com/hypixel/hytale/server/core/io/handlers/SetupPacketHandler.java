@@ -7,7 +7,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.protocol.Asset;
 import com.hypixel.hytale.protocol.HostAddress;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.netty.ProtocolUtil;
 import com.hypixel.hytale.protocol.packets.auth.ClientReferral;
 import com.hypixel.hytale.protocol.packets.connection.Disconnect;
@@ -91,7 +91,7 @@ public class SetupPacketHandler extends GenericConnectionPacketHandler {
    @Override
    public String getIdentifier() {
       return "{Setup("
-         + NettyUtil.formatRemoteAddress(this.channel)
+         + NettyUtil.formatRemoteAddress(this.getChannel())
          + "), "
          + this.username
          + ", "
@@ -132,7 +132,7 @@ public class SetupPacketHandler extends GenericConnectionPacketHandler {
             if (otherPlayer != null) {
                HytaleLogger.getLogger().at(Level.INFO).log("Found match of player %s on %s", this.uuid, otherPlayer.getUsername());
                Channel otherPlayerChannel = otherPlayer.getPacketHandler().getChannel();
-               if (!NettyUtil.isFromSameOrigin(otherPlayerChannel, this.channel)) {
+               if (!NettyUtil.isFromSameOrigin(otherPlayerChannel, this.getChannel())) {
                   this.disconnect("You are already logged in on that account!");
                   otherPlayer.sendMessage(Message.translation("server.io.setuppackethandler.otherLoginAttempt"));
                   return;
@@ -154,7 +154,7 @@ public class SetupPacketHandler extends GenericConnectionPacketHandler {
                }
             }
 
-            PacketHandler.logConnectionTimings(this.channel, "Load Player Config", Level.FINE);
+            PacketHandler.logConnectionTimings(this.getChannel(), "Load Player Config", Level.FINE);
             WorldSettings worldSettings = new WorldSettings();
             worldSettings.worldHeight = 320;
             Asset[] requiredAssets = CommonAssetModule.get().getRequiredAssets();
@@ -169,7 +169,7 @@ public class SetupPacketHandler extends GenericConnectionPacketHandler {
    }
 
    @Override
-   public void accept(@Nonnull Packet packet) {
+   public void accept(@Nonnull ToServerPacket packet) {
       switch (packet.getId()) {
          case 1:
             this.handle((Disconnect)packet);
@@ -215,9 +215,14 @@ public class SetupPacketHandler extends GenericConnectionPacketHandler {
       HytaleLogger.getLogger()
          .at(Level.INFO)
          .log(
-            "%s - %s at %s left with reason: %s - %s", this.uuid, this.username, NettyUtil.formatRemoteAddress(this.channel), packet.type.name(), packet.reason
+            "%s - %s at %s left with reason: %s - %s",
+            this.uuid,
+            this.username,
+            NettyUtil.formatRemoteAddress(this.getChannel()),
+            packet.type.name(),
+            packet.reason
          );
-      ProtocolUtil.closeApplicationConnection(this.channel);
+      ProtocolUtil.closeApplicationConnection(this.getChannel());
       if (packet.type == DisconnectType.Crash
          && Constants.SINGLEPLAYER
          && (Universe.get().getPlayerCount() == 0 || SingleplayerModule.isOwner(this.auth, this.uuid))) {
@@ -230,25 +235,25 @@ public class SetupPacketHandler extends GenericConnectionPacketHandler {
          throw new IllegalArgumentException("Received duplicate RequestAssets!");
       } else {
          this.receivedRequest = true;
-         PacketHandler.logConnectionTimings(this.channel, "Request Assets", Level.FINE);
+         PacketHandler.logConnectionTimings(this.getChannel(), "Request Assets", Level.FINE);
          CompletableFuture<Void> future = CompletableFutureUtil._catch(
             HytaleServer.get()
                .getEventBus()
                .<Void, SendCommonAssetsEvent>dispatchForAsync(SendCommonAssetsEvent.class)
                .dispatch(new SendCommonAssetsEvent(this, packet.assets))
                .thenAccept(event -> {
-                  if (this.channel.isActive()) {
-                     PacketHandler.logConnectionTimings(this.channel, "Send Common Assets", Level.FINE);
+                  if (this.getChannel().isActive()) {
+                     PacketHandler.logConnectionTimings(this.getChannel(), "Send Common Assets", Level.FINE);
                      this.assets.sent(event.getRequestedAssets());
                      AssetRegistryLoader.sendAssets(this);
                      I18nModule.get().sendTranslations(this, this.language);
-                     PacketHandler.logConnectionTimings(this.channel, "Send Config Assets", Level.FINE);
-                     this.write(new WorldLoadProgress("Loading world...", 0, 0));
+                     PacketHandler.logConnectionTimings(this.getChannel(), "Send Config Assets", Level.FINE);
+                     this.write(new WorldLoadProgress(Message.translation("client.general.worldLoad.loadingWorld").getFormattedMessage(), 0, 0));
                      this.write(new WorldLoadFinished());
                   }
                })
                .exceptionally(throwable -> {
-                  if (!this.channel.isActive()) {
+                  if (!this.getChannel().isActive()) {
                      return null;
                   } else {
                      this.disconnect("An exception occurred while trying to login!");
@@ -269,8 +274,8 @@ public class SetupPacketHandler extends GenericConnectionPacketHandler {
       if (!this.receivedRequest) {
          throw new IllegalArgumentException("Hasn't received RequestAssets yet!");
       } else {
-         PacketHandler.logConnectionTimings(this.channel, "Player Options", Level.FINE);
-         if (this.channel.isActive()) {
+         PacketHandler.logConnectionTimings(this.getChannel(), "Player Options", Level.FINE);
+         if (this.getChannel().isActive()) {
             if (packet.skin != null) {
                try {
                   CosmeticsModule.get().validateSkin(packet.skin);
@@ -284,15 +289,17 @@ public class SetupPacketHandler extends GenericConnectionPacketHandler {
 
             CompletableFuture<Void> future = CompletableFutureUtil._catch(
                Universe.get()
-                  .addPlayer(this.channel, this.language, this.protocolVersion, this.uuid, this.username, this.auth, this.clientViewRadiusChunks, packet.skin)
+                  .addPlayer(
+                     this.getChannel(), this.language, this.protocolVersion, this.uuid, this.username, this.auth, this.clientViewRadiusChunks, packet.skin
+                  )
                   .thenAccept(player -> {
-                     if (this.channel.isActive()) {
-                        PacketHandler.logConnectionTimings(this.channel, "Add To Universe", Level.FINE);
+                     if (this.getChannel().isActive()) {
+                        PacketHandler.logConnectionTimings(this.getChannel(), "Add To Universe", Level.FINE);
                         this.clearTimeout();
                      }
                   })
                   .exceptionally(throwable -> {
-                     if (!this.channel.isActive()) {
+                     if (!this.getChannel().isActive()) {
                         return null;
                      } else {
                         this.disconnect("An exception occurred when adding to the universe!");

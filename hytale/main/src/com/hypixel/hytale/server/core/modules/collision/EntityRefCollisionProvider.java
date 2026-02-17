@@ -127,9 +127,11 @@ public class EntityRefCollisionProvider {
       this.position = pos;
       this.direction = dir;
       this.boundingBox = boundingBox;
-      SpatialResource<Ref<EntityStore>, EntityStore> spatial = commandBuffer.getResource(CollisionModule.get().getTangiableEntitySpatialComponent());
+      SpatialResource<Ref<EntityStore>, EntityStore> tangibleEntitySpatialResourceType = commandBuffer.getResource(
+         CollisionModule.get().getTangibleEntitySpatialResourceType()
+      );
       this.tmpResults.clear();
-      spatial.getSpatialStructure().collect(pos, radius, this.tmpResults);
+      tangibleEntitySpatialResourceType.getSpatialStructure().collect(pos, radius, this.tmpResults);
 
       for (Ref<EntityStore> result : this.tmpResults) {
          consumer.accept(this, result, commandBuffer);
@@ -144,36 +146,38 @@ public class EntityRefCollisionProvider {
 
    protected boolean isColliding(@Nonnull Ref<EntityStore> ref, @Nonnull Vector2d minMax, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
       BoundingBox boundingBoxComponent = commandBuffer.getComponent(ref, BoundingBox.getComponentType());
-
-      assert boundingBoxComponent != null;
-
-      TransformComponent transformComponent = commandBuffer.getComponent(ref, TransformComponent.getComponentType());
-
-      assert transformComponent != null;
-
-      Box entityBoundingBox = boundingBoxComponent.getBoundingBox();
-      if (boundingBoxComponent.getDetailBoxes() != null && !boundingBoxComponent.getDetailBoxes().isEmpty()) {
-         for (Entry<String, DetailBox[]> e : boundingBoxComponent.getDetailBoxes().entrySet()) {
-            for (DetailBox v : e.getValue()) {
-               this.tmpVector.assign(v.getOffset());
-               this.tmpVector.rotateY(transformComponent.getRotation().getYaw());
-               this.tmpVector.add(transformComponent.getPosition());
-               if (CollisionMath.intersectSweptAABBs(this.position, this.direction, this.boundingBox, this.tmpVector, v.getBox(), minMax, this.tempBox)
-                  && minMax.x <= 1.0) {
-                  this.hitDetail = e.getKey();
-                  return true;
-               }
-            }
-         }
-
-         this.hitDetail = null;
+      if (boundingBoxComponent == null) {
          return false;
       } else {
-         this.hitDetail = null;
-         return CollisionMath.intersectSweptAABBs(
-               this.position, this.direction, this.boundingBox, transformComponent.getPosition(), entityBoundingBox, minMax, this.tempBox
-            )
-            && minMax.x <= 1.0;
+         TransformComponent transformComponent = commandBuffer.getComponent(ref, TransformComponent.getComponentType());
+         if (transformComponent == null) {
+            return false;
+         } else {
+            Box entityBoundingBox = boundingBoxComponent.getBoundingBox();
+            if (boundingBoxComponent.getDetailBoxes() != null && !boundingBoxComponent.getDetailBoxes().isEmpty()) {
+               for (Entry<String, DetailBox[]> e : boundingBoxComponent.getDetailBoxes().entrySet()) {
+                  for (DetailBox v : e.getValue()) {
+                     this.tmpVector.assign(v.getOffset());
+                     this.tmpVector.rotateY(transformComponent.getRotation().getYaw());
+                     this.tmpVector.add(transformComponent.getPosition());
+                     if (CollisionMath.intersectSweptAABBs(this.position, this.direction, this.boundingBox, this.tmpVector, v.getBox(), minMax, this.tempBox)
+                        && minMax.x <= 1.0) {
+                        this.hitDetail = e.getKey();
+                        return true;
+                     }
+                  }
+               }
+
+               this.hitDetail = null;
+               return false;
+            } else {
+               this.hitDetail = null;
+               return CollisionMath.intersectSweptAABBs(
+                     this.position, this.direction, this.boundingBox, transformComponent.getPosition(), entityBoundingBox, minMax, this.tempBox
+                  )
+                  && minMax.x <= 1.0;
+            }
+         }
       }
    }
 

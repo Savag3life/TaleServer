@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 public class ObjectiveHistoryComponent implements Component<EntityStore> {
+   @Nonnull
    public static final BuilderCodec<ObjectiveHistoryComponent> CODEC = BuilderCodec.builder(ObjectiveHistoryComponent.class, ObjectiveHistoryComponent::new)
       .append(
          new KeyedCodec<>("ObjectiveHistory", new MapCodec<>(ObjectiveHistoryData.CODEC, Object2ObjectOpenHashMap::new, false)),

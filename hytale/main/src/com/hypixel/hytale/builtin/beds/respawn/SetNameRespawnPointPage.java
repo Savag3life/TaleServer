@@ -19,10 +19,14 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public class SetNameRespawnPointPage extends RespawnPointPage {
+   @Nonnull
    private final Vector3i respawnBlockPosition;
+   @Nonnull
    private final RespawnBlock respawnBlock;
 
-   public SetNameRespawnPointPage(@Nonnull PlayerRef playerRef, InteractionType interactionType, Vector3i respawnBlockPosition, RespawnBlock respawnBlock) {
+   public SetNameRespawnPointPage(
+      @Nonnull PlayerRef playerRef, @Nonnull InteractionType interactionType, @Nonnull Vector3i respawnBlockPosition, @Nonnull RespawnBlock respawnBlock
+   ) {
       super(playerRef, interactionType);
       this.respawnBlockPosition = respawnBlockPosition;
       this.respawnBlock = respawnBlock;
@@ -34,33 +38,33 @@ public class SetNameRespawnPointPage extends RespawnPointPage {
    ) {
       commandBuilder.append("Pages/NameRespawnPointPage.ui");
       Player playerComponent = store.getComponent(ref, Player.getComponentType());
-
-      assert playerComponent != null;
-
-      PlayerRef playerRefComponent = store.getComponent(ref, PlayerRef.getComponentType());
-
-      assert playerRefComponent != null;
-
-      World world = store.getExternalData().getWorld();
-      PlayerRespawnPointData[] respawnPoints = playerComponent.getPlayerConfigData().getPerWorldData(world.getName()).getRespawnPoints();
-      String respawnPointName = null;
-      if (respawnPoints != null) {
-         for (PlayerRespawnPointData respawnPoint : respawnPoints) {
-            if (respawnPoint.getBlockPosition().equals(this.respawnBlockPosition)) {
-               respawnPointName = respawnPoint.getName();
-               break;
+      if (playerComponent != null) {
+         PlayerRef playerRefComponent = store.getComponent(ref, PlayerRef.getComponentType());
+         if (playerRefComponent != null) {
+            World world = store.getExternalData().getWorld();
+            PlayerRespawnPointData[] respawnPoints = playerComponent.getPlayerConfigData().getPerWorldData(world.getName()).getRespawnPoints();
+            String respawnPointName = null;
+            if (respawnPoints != null) {
+               for (PlayerRespawnPointData respawnPoint : respawnPoints) {
+                  if (respawnPoint.getBlockPosition().equals(this.respawnBlockPosition)) {
+                     respawnPointName = respawnPoint.getName();
+                     break;
+                  }
+               }
             }
+
+            if (respawnPointName == null) {
+               commandBuilder.set(
+                  "#NameInput.Value", Message.translation("server.customUI.defaultRespawnPointName").param("name", playerRefComponent.getUsername())
+               );
+            } else {
+               commandBuilder.set("#NameInput.Value", respawnPointName);
+            }
+
+            eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#SetButton", EventData.of("@RespawnPointName", "#NameInput.Value"));
+            eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#CancelButton", EventData.of("Action", "Cancel"));
          }
       }
-
-      if (respawnPointName == null) {
-         commandBuilder.set("#NameInput.Value", Message.translation("server.customUI.defaultRespawnPointName").param("name", playerRefComponent.getUsername()));
-      } else {
-         commandBuilder.set("#NameInput.Value", respawnPointName);
-      }
-
-      eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#SetButton", EventData.of("@RespawnPointName", "#NameInput.Value"));
-      eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#CancelButton", EventData.of("Action", "Cancel"));
    }
 
    public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull RespawnPointPage.RespawnPointEventData data) {
@@ -69,7 +73,9 @@ public class SetNameRespawnPointPage extends RespawnPointPage {
          this.setRespawnPointForPlayer(ref, store, this.respawnBlockPosition, this.respawnBlock, respawnPointName);
       } else if ("Cancel".equals(data.getAction())) {
          Player playerComponent = store.getComponent(ref, Player.getComponentType());
-         playerComponent.getPageManager().setPage(ref, store, Page.None);
+         if (playerComponent != null) {
+            playerComponent.getPageManager().setPage(ref, store, Page.None);
+         }
       }
    }
 }

@@ -1,6 +1,5 @@
 package com.hypixel.hytale.common.util.java;
 
-import com.hypixel.hytale.common.semver.Semver;
 import com.hypixel.hytale.function.supplier.CachedSupplier;
 import com.hypixel.hytale.function.supplier.SupplierUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -86,9 +85,9 @@ public class ManifestUtil {
          return "dev";
       }
    });
-   private static final CachedSupplier<Semver> VERSION = SupplierUtil.cache(() -> {
+   private static final CachedSupplier<String> VERSION = SupplierUtil.cache(() -> {
       String version = IMPLEMENTATION_VERSION.get();
-      return "NoJar".equals(version) ? null : Semver.fromString(version);
+      return "NoJar".equals(version) ? null : version;
    });
 
    public static boolean isJar() {
@@ -106,7 +105,7 @@ public class ManifestUtil {
    }
 
    @Nullable
-   public static Semver getVersion() {
+   public static String getVersion() {
       return VERSION.get();
    }
 

@@ -381,6 +381,14 @@ public class Item implements JsonAssetWithMap<String, DefaultAssetMap<String, It
          (item, parent) -> item.durabilityLossOnHit = parent.durabilityLossOnHit
       )
       .add()
+      .<Boolean>appendInherited(
+         new KeyedCodec<>("DurabilityLossOnDeath", Codec.BOOLEAN),
+         (item, s) -> item.durabilityLossOnDeath = s,
+         item -> item.durabilityLossOnDeath,
+         (item, parent) -> item.durabilityLossOnDeath = parent.durabilityLossOnDeath
+      )
+      .documentation("Whether this item should loose durability on death, if so configured in DeathConfig.")
+      .add()
       .<String>appendInherited(
          new KeyedCodec<>("BlockType", new ContainedAssetCodec<>(BlockType.class, BlockType.CODEC, ContainedAssetCodec.Mode.INHERIT_ID_AND_PARENT)),
          (item, s) -> item.hasBlockType = true,
@@ -542,6 +550,7 @@ public class Item implements JsonAssetWithMap<String, DefaultAssetMap<String, It
    protected boolean clipsGeometry;
    protected boolean renderDeployablePreview;
    protected boolean dropOnDeath;
+   protected boolean durabilityLossOnDeath = true;
    private transient SoftReference<ItemBase> cachedPacket;
 
    public static AssetStore<String, Item, DefaultAssetMap<String, Item>> getAssetStore() {
@@ -988,6 +997,10 @@ public class Item implements JsonAssetWithMap<String, DefaultAssetMap<String, It
 
    public double getDurabilityLossOnHit() {
       return this.durabilityLossOnHit;
+   }
+
+   public boolean getDurabilityLossOnDeath() {
+      return this.durabilityLossOnDeath;
    }
 
    public int[] getDisplayEntityStatsHUD() {

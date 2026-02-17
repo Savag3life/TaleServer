@@ -204,18 +204,31 @@ public class ConfigureInstanceBlockPage extends InteractiveCustomUIPage<Configur
    }
 
    public static class PageData {
+      @Nonnull
       public static final String INSTANCE = "@Instance";
+      @Nonnull
       public static final String INSTANCE_KEY = "@InstanceKey";
+      @Nonnull
       public static final String POSITION_OFFSET = "@PositionOffset";
+      @Nonnull
       public static final String POSITION_OFFSET_X = "@PositionOffsetX";
+      @Nonnull
       public static final String POSITION_OFFSET_Y = "@PositionOffsetY";
+      @Nonnull
       public static final String POSITION_OFFSET_Z = "@PositionOffsetZ";
+      @Nonnull
       public static final String ROTATION = "@Rotation";
+      @Nonnull
       public static final String ROTATION_PITCH = "@RotationPitch";
+      @Nonnull
       public static final String ROTATION_YAW = "@RotationYaw";
+      @Nonnull
       public static final String ROTATION_ROLL = "@RotationRoll";
+      @Nonnull
       public static final String PERSONAL_RETURN_POINT = "@PersonalReturnPoint";
+      @Nonnull
       public static final String CLOSE_ON_BLOCK_REMOVE = "@CloseOnBlockRemove";
+      @Nonnull
       public static final String REMOVE_BLOCK_AFTER = "@RemoveBlockAfter";
       public static final BuilderCodec<ConfigureInstanceBlockPage.PageData> CODEC = BuilderCodec.builder(
             ConfigureInstanceBlockPage.PageData.class, ConfigureInstanceBlockPage.PageData::new

@@ -4,8 +4,10 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
+import javax.annotation.Nonnull;
 
 public class ForgottenTempleConfig {
+   @Nonnull
    public static final BuilderCodec<ForgottenTempleConfig> CODEC = BuilderCodec.builder(ForgottenTempleConfig.class, ForgottenTempleConfig::new)
       .append(new KeyedCodec<>("MinYRespawn", Codec.DOUBLE), (config, o) -> config.minYRespawn = o, config -> config.minYRespawn)
       .documentation("The Y at which players are teleported back to spawn.")

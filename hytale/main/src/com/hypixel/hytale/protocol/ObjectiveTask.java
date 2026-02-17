@@ -1,9 +1,6 @@
 package com.hypixel.hytale.protocol;
 
-import com.hypixel.hytale.protocol.io.PacketIO;
-import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
-import com.hypixel.hytale.protocol.io.VarInt;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
@@ -14,16 +11,16 @@ public class ObjectiveTask {
    public static final int FIXED_BLOCK_SIZE = 9;
    public static final int VARIABLE_FIELD_COUNT = 1;
    public static final int VARIABLE_BLOCK_START = 9;
-   public static final int MAX_SIZE = 16384014;
+   public static final int MAX_SIZE = 1677721600;
    @Nullable
-   public String taskDescriptionKey;
+   public FormattedMessage taskDescriptionKey;
    public int currentCompletion;
    public int completionNeeded;
 
    public ObjectiveTask() {
    }
 
-   public ObjectiveTask(@Nullable String taskDescriptionKey, int currentCompletion, int completionNeeded) {
+   public ObjectiveTask(@Nullable FormattedMessage taskDescriptionKey, int currentCompletion, int completionNeeded) {
       this.taskDescriptionKey = taskDescriptionKey;
       this.currentCompletion = currentCompletion;
       this.completionNeeded = completionNeeded;
@@ -43,18 +40,8 @@ public class ObjectiveTask {
       obj.completionNeeded = buf.getIntLE(offset + 5);
       int pos = offset + 9;
       if ((nullBits & 1) != 0) {
-         int taskDescriptionKeyLen = VarInt.peek(buf, pos);
-         if (taskDescriptionKeyLen < 0) {
-            throw ProtocolException.negativeLength("TaskDescriptionKey", taskDescriptionKeyLen);
-         }
-
-         if (taskDescriptionKeyLen > 4096000) {
-            throw ProtocolException.stringTooLong("TaskDescriptionKey", taskDescriptionKeyLen, 4096000);
-         }
-
-         int taskDescriptionKeyVarLen = VarInt.length(buf, pos);
-         obj.taskDescriptionKey = PacketIO.readVarString(buf, pos, PacketIO.UTF8);
-         pos += taskDescriptionKeyVarLen + taskDescriptionKeyLen;
+         obj.taskDescriptionKey = FormattedMessage.deserialize(buf, pos);
+         pos += FormattedMessage.computeBytesConsumed(buf, pos);
       }
 
       return obj;
@@ -64,8 +51,7 @@ public class ObjectiveTask {
       byte nullBits = buf.getByte(offset);
       int pos = offset + 9;
       if ((nullBits & 1) != 0) {
-         int sl = VarInt.peek(buf, pos);
-         pos += VarInt.length(buf, pos) + sl;
+         pos += FormattedMessage.computeBytesConsumed(buf, pos);
       }
 
       return pos - offset;
@@ -81,14 +67,14 @@ public class ObjectiveTask {
       buf.writeIntLE(this.currentCompletion);
       buf.writeIntLE(this.completionNeeded);
       if (this.taskDescriptionKey != null) {
-         PacketIO.writeVarString(buf, this.taskDescriptionKey, 4096000);
+         this.taskDescriptionKey.serialize(buf);
       }
    }
 
    public int computeSize() {
       int size = 9;
       if (this.taskDescriptionKey != null) {
-         size += PacketIO.stringSize(this.taskDescriptionKey);
+         size += this.taskDescriptionKey.computeSize();
       }
 
       return size;
@@ -101,20 +87,12 @@ public class ObjectiveTask {
          byte nullBits = buffer.getByte(offset);
          int pos = offset + 9;
          if ((nullBits & 1) != 0) {
-            int taskDescriptionKeyLen = VarInt.peek(buffer, pos);
-            if (taskDescriptionKeyLen < 0) {
-               return ValidationResult.error("Invalid string length for TaskDescriptionKey");
+            ValidationResult taskDescriptionKeyResult = FormattedMessage.validateStructure(buffer, pos);
+            if (!taskDescriptionKeyResult.isValid()) {
+               return ValidationResult.error("Invalid TaskDescriptionKey: " + taskDescriptionKeyResult.error());
             }
 
-            if (taskDescriptionKeyLen > 4096000) {
-               return ValidationResult.error("TaskDescriptionKey exceeds max length 4096000");
-            }
-
-            pos += VarInt.length(buffer, pos);
-            pos += taskDescriptionKeyLen;
-            if (pos > buffer.writerIndex()) {
-               return ValidationResult.error("Buffer overflow reading TaskDescriptionKey");
-            }
+            pos += FormattedMessage.computeBytesConsumed(buffer, pos);
          }
 
          return ValidationResult.OK;
@@ -123,7 +101,7 @@ public class ObjectiveTask {
 
    public ObjectiveTask clone() {
       ObjectiveTask copy = new ObjectiveTask();
-      copy.taskDescriptionKey = this.taskDescriptionKey;
+      copy.taskDescriptionKey = this.taskDescriptionKey != null ? this.taskDescriptionKey.clone() : null;
       copy.currentCompletion = this.currentCompletion;
       copy.completionNeeded = this.completionNeeded;
       return copy;

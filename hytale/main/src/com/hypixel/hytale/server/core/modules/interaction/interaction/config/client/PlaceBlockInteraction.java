@@ -12,6 +12,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockPosition;
 import com.hypixel.hytale.protocol.BlockRotation;
 import com.hypixel.hytale.protocol.GameMode;
+import com.hypixel.hytale.protocol.InteractionState;
 import com.hypixel.hytale.protocol.InteractionSyncData;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.protocol.Rotation;
@@ -40,7 +41,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class PlaceBlockInteraction extends SimpleInteraction {
-   public static final int MAX_ADVENTURE_PLACEMENT_RANGE_SQUARED = 36;
+   public static final int TEMP_MAX_ADVENTURE_PLACEMENT_RANGE_SQUARED = 49;
    @Nonnull
    public static final BuilderCodec<PlaceBlockInteraction> CODEC = BuilderCodec.builder(
          PlaceBlockInteraction.class, PlaceBlockInteraction::new, SimpleInteraction.CODEC
@@ -105,16 +106,19 @@ public class PlaceBlockInteraction extends SimpleInteraction {
             long chunkIndex = ChunkUtil.indexChunkFromBlock(blockPosition.x, blockPosition.z);
             Ref<ChunkStore> chunkReference = chunkStore.getExternalData().getChunkReference(chunkIndex);
             if (chunkReference == null || !chunkReference.isValid()) {
+               context.getState().state = InteractionState.Failed;
                return;
             }
 
             ItemStack heldItemStack = context.getHeldItem();
             if (heldItemStack == null) {
+               context.getState().state = InteractionState.Failed;
                return;
             }
 
             ItemContainer heldItemContainer = context.getHeldItemContainer();
             if (heldItemContainer == null) {
+               context.getState().state = InteractionState.Failed;
                return;
             }
 
@@ -123,7 +127,8 @@ public class PlaceBlockInteraction extends SimpleInteraction {
             if (transformComponent != null && playerComponent != null && playerComponent.getGameMode() != GameMode.Creative) {
                Vector3d position = transformComponent.getPosition();
                Vector3d blockCenter = new Vector3d(blockPosition.x + 0.5, blockPosition.y + 0.5, blockPosition.z + 0.5);
-               if (position.distanceSquaredTo(blockCenter) > 36.0) {
+               if (position.distanceSquaredTo(blockCenter) > 49.0) {
+                  context.getState().state = InteractionState.Failed;
                   return;
                }
             }
@@ -149,6 +154,7 @@ public class PlaceBlockInteraction extends SimpleInteraction {
             }
 
             if (blockPosition.y < 0 || blockPosition.y >= 320) {
+               context.getState().state = InteractionState.Failed;
                return;
             }
 
@@ -174,9 +180,9 @@ public class PlaceBlockInteraction extends SimpleInteraction {
 
             BlockChunk blockChunk = chunkStore.getComponent(chunkReference, BlockChunk.getComponentType());
             BlockSection section = blockChunk.getSectionAtBlockY(blockPosition.y);
+            RotationTuple resultRotation = section.getRotation(blockPosition.x, blockPosition.y, blockPosition.z);
             context.getState().blockPosition = blockPosition;
             context.getState().placedBlockId = section.get(blockPosition.x, blockPosition.y, blockPosition.z);
-            RotationTuple resultRotation = section.getRotation(blockPosition.x, blockPosition.y, blockPosition.z);
             context.getState().blockRotation = new BlockRotation(
                resultRotation.yaw().toPacket(), resultRotation.pitch().toPacket(), resultRotation.roll().toPacket()
             );

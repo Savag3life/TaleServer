@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class MaxCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<MaxCurveAsset> CODEC = BuilderCodec.builder(MaxCurveAsset.class, MaxCurveAsset::new, CurveAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Curves", new ArrayCodec<>(CurveAsset.CODEC, CurveAsset[]::new), true), (t, k) -> t.curveAssets = k, k -> k.curveAssets)
       .add()

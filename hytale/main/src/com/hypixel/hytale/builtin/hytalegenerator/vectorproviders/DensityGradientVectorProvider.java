@@ -8,28 +8,35 @@ public class DensityGradientVectorProvider extends VectorProvider {
    @Nonnull
    private final Density density;
    private final double sampleDistance;
+   @Nonnull
+   private final Density.Context rChildContext;
+   @Nonnull
+   private final Vector3d rPosition;
 
    public DensityGradientVectorProvider(@Nonnull Density density, double sampleDistance) {
       assert sampleDistance >= 0.0;
 
       this.density = density;
       this.sampleDistance = Math.max(0.0, sampleDistance);
+      this.rChildContext = new Density.Context();
+      this.rPosition = new Vector3d();
    }
 
-   @Nonnull
    @Override
-   public Vector3d process(@Nonnull VectorProvider.Context context) {
-      double valueAtOrigin = this.density.process(new Density.Context(context));
+   public void process(@Nonnull VectorProvider.Context context, @Nonnull Vector3d vector_out) {
+      this.rPosition.assign(context.position);
+      this.rChildContext.assign(context);
+      this.rChildContext.position = this.rPosition;
+      double valueAtOrigin = this.density.process(this.rChildContext);
       double maxX = context.position.x + this.sampleDistance;
       double maxY = context.position.y + this.sampleDistance;
       double maxZ = context.position.z + this.sampleDistance;
-      Density.Context childContext = new Density.Context(context);
-      childContext.position = new Vector3d(maxX, context.position.y, context.position.z);
-      double deltaX = this.density.process(childContext) - valueAtOrigin;
-      childContext.position = new Vector3d(context.position.x, maxY, context.position.z);
-      double deltaY = this.density.process(childContext) - valueAtOrigin;
-      childContext.position = new Vector3d(context.position.x, context.position.y, maxZ);
-      double deltaZ = this.density.process(childContext) - valueAtOrigin;
-      return new Vector3d(deltaX, deltaY, deltaZ);
+      this.rChildContext.position.assign(maxX, context.position.y, context.position.z);
+      double deltaX = this.density.process(this.rChildContext) - valueAtOrigin;
+      this.rChildContext.position.assign(context.position.x, maxY, context.position.z);
+      double deltaY = this.density.process(this.rChildContext) - valueAtOrigin;
+      this.rChildContext.position.assign(context.position.x, context.position.y, maxZ);
+      double deltaZ = this.density.process(this.rChildContext) - valueAtOrigin;
+      vector_out.assign(deltaX, deltaY, deltaZ);
    }
 }

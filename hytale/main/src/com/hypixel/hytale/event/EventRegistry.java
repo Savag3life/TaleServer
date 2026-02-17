@@ -8,13 +8,14 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class EventRegistry extends Registry<EventRegistration<?, ?>> implements IEventRegistry {
    @Nonnull
    private final IEventRegistry parent;
 
    public EventRegistry(
-      @Nonnull List<BooleanConsumer> registrations, @Nonnull BooleanSupplier precondition, String preconditionMessage, @Nonnull IEventRegistry parent
+      @Nonnull List<BooleanConsumer> registrations, @Nonnull BooleanSupplier precondition, @Nullable String preconditionMessage, @Nonnull IEventRegistry parent
    ) {
       super(registrations, precondition, preconditionMessage, EventRegistration::new);
       this.parent = parent;

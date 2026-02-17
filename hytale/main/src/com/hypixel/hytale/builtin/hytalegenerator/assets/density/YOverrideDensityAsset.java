@@ -9,13 +9,14 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class YOverrideDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<YOverrideDensityAsset> CODEC = BuilderCodec.builder(
          YOverrideDensityAsset.class, YOverrideDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
       .append(new KeyedCodec<>("Value", Codec.DOUBLE, true), (t, k) -> t.value = k, t -> t.value)
       .add()
       .build();
-   private double value = 0.0;
+   private double value;
 
    @Nonnull
    @Override

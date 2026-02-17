@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class ReputationCompletionAsset extends ObjectiveCompletionAsset {
+   @Nonnull
    public static final BuilderCodec<ReputationCompletionAsset> CODEC = BuilderCodec.builder(
          ReputationCompletionAsset.class, ReputationCompletionAsset::new, ObjectiveCompletionAsset.BASE_CODEC
       )

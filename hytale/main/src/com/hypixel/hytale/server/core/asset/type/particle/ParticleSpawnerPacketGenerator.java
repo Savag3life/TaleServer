@@ -1,7 +1,7 @@
 package com.hypixel.hytale.server.core.asset.type.particle;
 
 import com.hypixel.hytale.assetstore.map.DefaultAssetMap;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateParticleSpawners;
 import com.hypixel.hytale.server.core.asset.packet.DefaultAssetPacketGenerator;
@@ -15,7 +15,7 @@ import javax.annotation.Nonnull;
 public class ParticleSpawnerPacketGenerator extends DefaultAssetPacketGenerator<String, ParticleSpawner> {
    @Nonnull
    @Override
-   public Packet generateInitPacket(DefaultAssetMap<String, ParticleSpawner> assetMap, @Nonnull Map<String, ParticleSpawner> assets) {
+   public ToClientPacket generateInitPacket(DefaultAssetMap<String, ParticleSpawner> assetMap, @Nonnull Map<String, ParticleSpawner> assets) {
       UpdateParticleSpawners packet = new UpdateParticleSpawners();
       packet.type = UpdateType.Init;
       packet.particleSpawners = new Object2ObjectOpenHashMap();
@@ -29,7 +29,7 @@ public class ParticleSpawnerPacketGenerator extends DefaultAssetPacketGenerator<
 
    @Nonnull
    @Override
-   public Packet generateUpdatePacket(@Nonnull Map<String, ParticleSpawner> loadedAssets) {
+   public ToClientPacket generateUpdatePacket(@Nonnull Map<String, ParticleSpawner> loadedAssets) {
       UpdateParticleSpawners packet = new UpdateParticleSpawners();
       packet.type = UpdateType.AddOrUpdate;
       packet.particleSpawners = new Object2ObjectOpenHashMap();
@@ -43,7 +43,7 @@ public class ParticleSpawnerPacketGenerator extends DefaultAssetPacketGenerator<
 
    @Nonnull
    @Override
-   public Packet generateRemovePacket(@Nonnull Set<String> removed) {
+   public ToClientPacket generateRemovePacket(@Nonnull Set<String> removed) {
       UpdateParticleSpawners packet = new UpdateParticleSpawners();
       packet.type = UpdateType.Remove;
       packet.removedParticleSpawners = removed.toArray(String[]::new);

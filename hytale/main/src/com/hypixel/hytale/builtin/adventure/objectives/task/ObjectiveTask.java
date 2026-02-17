@@ -4,6 +4,7 @@ import com.hypixel.hytale.builtin.adventure.objectives.Objective;
 import com.hypixel.hytale.builtin.adventure.objectives.ObjectivePlugin;
 import com.hypixel.hytale.builtin.adventure.objectives.config.task.ObjectiveTaskAsset;
 import com.hypixel.hytale.builtin.adventure.objectives.config.taskcondition.TaskConditionAsset;
+import com.hypixel.hytale.builtin.adventure.objectives.markers.ObjectiveTaskMarker;
 import com.hypixel.hytale.builtin.adventure.objectives.transaction.TransactionRecord;
 import com.hypixel.hytale.builtin.adventure.objectives.transaction.TransactionUtil;
 import com.hypixel.hytale.builtin.adventure.objectives.transaction.WorldTransactionRecord;
@@ -19,19 +20,14 @@ import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.packets.assets.UpdateObjectiveTask;
-import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.codec.ProtocolCodecs;
-import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.io.NetworkSerializer;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.util.PositionUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -40,7 +36,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public abstract class ObjectiveTask implements NetworkSerializer<Objective, com.hypixel.hytale.protocol.ObjectiveTask> {
+   @Nonnull
    public static final CodecMapCodec<ObjectiveTask> CODEC = new CodecMapCodec<>("Type");
+   @Nonnull
    public static final BuilderCodec<ObjectiveTask> BASE_CODEC = BuilderCodec.abstractBuilder(ObjectiveTask.class)
       .append(
          new KeyedCodec<>("Task", ObjectiveTaskAsset.CODEC),
@@ -64,15 +62,16 @@ public abstract class ObjectiveTask implements NetworkSerializer<Objective, com.
          new KeyedCodec<>("TaskIndex", Codec.INTEGER), (objectiveTask, integer) -> objectiveTask.taskIndex = integer, objectiveTask -> objectiveTask.taskIndex
       )
       .add()
-      .append(new KeyedCodec<>("Markers", ProtocolCodecs.MARKER_ARRAY), (objectiveTask, markers) -> {
-         objectiveTask.markers.clear();
-         Collections.addAll(objectiveTask.markers, markers);
-      }, objectiveTask -> objectiveTask.markers.toArray(MapMarker[]::new))
-      .add()
       .append(
          new KeyedCodec<>("TaskSetIndex", Codec.INTEGER),
          (objectiveTask, integer) -> objectiveTask.taskSetIndex = integer,
          objectiveTask -> objectiveTask.taskSetIndex
+      )
+      .add()
+      .append(
+         new KeyedCodec<>("Markers", ObjectiveTaskMarker.ARRAY_CODEC),
+         (objectiveTask, markers) -> objectiveTask.markers = new ObjectArrayList(Arrays.asList(markers)),
+         objectiveTask -> objectiveTask.markers.toArray(ObjectiveTaskMarker[]::new)
       )
       .add()
       .build();
@@ -86,7 +85,7 @@ public abstract class ObjectiveTask implements NetworkSerializer<Objective, com.
    protected TransactionRecord[] nonSerializedTransactionRecords;
    protected int taskIndex;
    @Nonnull
-   protected List<MapMarker> markers = new ObjectArrayList();
+   protected List<ObjectiveTaskMarker> markers = new ObjectArrayList();
    protected int taskSetIndex;
    protected ObjectiveTaskRef<? extends ObjectiveTask> taskRef;
 
@@ -123,22 +122,17 @@ public abstract class ObjectiveTask implements NetworkSerializer<Objective, com.
    }
 
    @Nonnull
-   public Message getInfoMessage(@Nonnull Objective objective) {
-      return Message.translation(this.asset.getDescriptionKey(objective.getObjectiveId(), this.taskSetIndex, this.taskIndex));
-   }
-
-   @Nonnull
-   public List<MapMarker> getMarkers() {
+   public List<ObjectiveTaskMarker> getMarkers() {
       return this.markers;
    }
 
-   public void addMarker(@Nonnull MapMarker marker) {
+   public void addMarker(@Nonnull ObjectiveTaskMarker marker) {
       this.markers.add(marker);
    }
 
    public void removeMarker(String id) {
-      for (MapMarker marker : this.markers) {
-         if (marker.id.equals(id)) {
+      for (ObjectiveTaskMarker marker : this.markers) {
+         if (marker.getId().equals(id)) {
             this.markers.remove(marker);
             return;
          }
@@ -162,19 +156,12 @@ public abstract class ObjectiveTask implements NetworkSerializer<Objective, com.
          this.eventRegistry = new EventRegistry(new CopyOnWriteArrayList<>(), () -> true, null, world.getEventRegistry());
          Vector3i[] mapMarkerPositions = this.asset.getMapMarkers();
          if (mapMarkerPositions != null) {
-            String objectiveUUIDString = objective.getObjectiveUUID().toString();
+            String objectiveIdStr = objective.getObjectiveUUID().toString();
 
             for (int i = 0; i < mapMarkerPositions.length; i++) {
-               Vector3i mapMarkerPosition = mapMarkerPositions[i];
-               this.addMarker(
-                  new MapMarker(
-                     "ObjectiveMarker_" + objectiveUUIDString + "_" + i,
-                     "Objective",
-                     "Home.png",
-                     PositionUtil.toTransformPacket(new Transform(mapMarkerPosition)),
-                     null
-                  )
-               );
+               Transform mapMarkerPosition = new Transform(mapMarkerPositions[i]);
+               String markerId = "ObjectiveMarker_" + objectiveIdStr + "_" + i;
+               this.addMarker(new ObjectiveTaskMarker(markerId, mapMarkerPosition, "Home.png", Message.translation("server.assetTypes.ObjectiveAsset.title")));
             }
          }
 
@@ -212,15 +199,6 @@ public abstract class ObjectiveTask implements NetworkSerializer<Objective, com.
 
    public void complete(@Nonnull Objective objective, @Nullable ComponentAccessor<EntityStore> componentAccessor) {
       if (!this.complete) {
-         if (componentAccessor != null) {
-            objective.forEachParticipant((participantReference, message) -> {
-               Player playerComponent = componentAccessor.getComponent(participantReference, Player.getComponentType());
-               if (playerComponent != null) {
-                  playerComponent.sendMessage(message);
-               }
-            }, Message.translation("server.modules.objective.task.completed").insert(this.getInfoMessage(objective)));
-         }
-
          this.markers.clear();
          this.complete = true;
          this.completeTransactionRecords();
@@ -264,7 +242,7 @@ public abstract class ObjectiveTask implements NetworkSerializer<Objective, com.
 
    private void shutdownEventRegistry() {
       if (this.eventRegistry != null) {
-         this.eventRegistry.shutdown();
+         this.eventRegistry.shutdownAndCleanup(true);
          this.eventRegistry = null;
       }
    }

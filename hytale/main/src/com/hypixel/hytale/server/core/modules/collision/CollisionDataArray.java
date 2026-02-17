@@ -13,11 +13,12 @@ public class CollisionDataArray<T> {
    @Nonnull
    private final List<T> array = new ObjectArrayList();
    private final Supplier<T> supplier;
+   @Nullable
    private final Consumer<T> dispose;
    private final List<T> freeList;
    private int head;
 
-   public CollisionDataArray(Supplier<T> supplier, Consumer<T> dispose, List<T> freeList) {
+   public CollisionDataArray(Supplier<T> supplier, @Nullable Consumer<T> dispose, List<T> freeList) {
       Objects.requireNonNull(supplier, "Must provide supplier for CollisionDataArray");
       this.supplier = supplier;
       this.dispose = dispose;

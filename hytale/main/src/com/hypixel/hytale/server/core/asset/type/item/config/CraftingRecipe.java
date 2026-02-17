@@ -65,8 +65,12 @@ public class CraftingRecipe implements JsonAssetWithMap<String, DefaultAssetMap<
                      (benchRequirement, benchType) -> benchRequirement.type = benchType,
                      benchRequirement -> benchRequirement.type
                   )
+                  .addValidator(Validators.nonNull())
                   .add()
-                  .append(new KeyedCodec<>("Id", Codec.STRING), (benchRequirement, s) -> benchRequirement.id = s, benchRequirement -> benchRequirement.id)
+                  .<String>append(
+                     new KeyedCodec<>("Id", Codec.STRING), (benchRequirement, s) -> benchRequirement.id = s, benchRequirement -> benchRequirement.id
+                  )
+                  .addValidator(Validators.nonNull())
                   .add()
                   .append(
                      new KeyedCodec<>("Categories", Codec.STRING_ARRAY),

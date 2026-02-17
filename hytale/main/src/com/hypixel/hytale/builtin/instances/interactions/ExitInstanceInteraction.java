@@ -17,6 +17,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public class ExitInstanceInteraction extends SimpleInstantInteraction {
+   @Nonnull
    public static final BuilderCodec<ExitInstanceInteraction> CODEC = BuilderCodec.builder(
          ExitInstanceInteraction.class, ExitInstanceInteraction::new, SimpleInstantInteraction.CODEC
       )
@@ -31,8 +32,11 @@ public class ExitInstanceInteraction extends SimpleInstantInteraction {
 
    @Override
    protected void firstRun(@Nonnull InteractionType type, @Nonnull InteractionContext context, @Nonnull CooldownHandler cooldownHandler) {
-      Ref<EntityStore> ref = context.getEntity();
       CommandBuffer<EntityStore> commandBuffer = context.getCommandBuffer();
+
+      assert commandBuffer != null;
+
+      Ref<EntityStore> ref = context.getEntity();
       Player playerComponent = commandBuffer.getComponent(ref, Player.getComponentType());
       if (playerComponent == null || !playerComponent.isWaitingForClientReady()) {
          Archetype<EntityStore> archetype = commandBuffer.getArchetype(ref);

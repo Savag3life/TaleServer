@@ -9,6 +9,7 @@ import com.hypixel.hytale.common.util.ExceptionUtil;
 import com.hypixel.hytale.common.util.PathUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.util.io.ByteBufUtil;
+import com.hypixel.hytale.server.core.util.io.FileUtil;
 import com.hypixel.hytale.sneakythrow.SneakyThrow;
 import io.netty.buffer.ByteBuf;
 import java.io.BufferedWriter;
@@ -17,7 +18,6 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.CompletableFuture;
@@ -92,37 +92,6 @@ public class BsonUtil {
    }
 
    @Nonnull
-   public static CompletableFuture<Void> writeDocumentBytes(@Nonnull Path file, BsonDocument document) {
-      try {
-         if (Files.isRegularFile(file)) {
-            Path resolve = file.resolveSibling(file.getFileName() + ".bak");
-            Files.move(file, resolve, StandardCopyOption.REPLACE_EXISTING);
-         }
-
-         BasicOutputBuffer bob = new BasicOutputBuffer();
-
-         byte[] bytes;
-         try {
-            codec.encode(new BsonBinaryWriter(bob), document, encoderContext);
-            bytes = bob.toByteArray();
-         } catch (Throwable var7) {
-            try {
-               bob.close();
-            } catch (Throwable var6) {
-               var7.addSuppressed(var6);
-            }
-
-            throw var7;
-         }
-
-         bob.close();
-         return CompletableFuture.runAsync(SneakyThrow.sneakyRunnable(() -> Files.write(file, bytes)));
-      } catch (IOException var8) {
-         return CompletableFuture.failedFuture(var8);
-      }
-   }
-
-   @Nonnull
    public static CompletableFuture<Void> writeDocument(@Nonnull Path file, BsonDocument document) {
       return writeDocument(file, document, true);
    }
@@ -135,13 +104,8 @@ public class BsonUtil {
             Files.createDirectories(parent);
          }
 
-         if (backup && Files.isRegularFile(file)) {
-            Path resolve = file.resolveSibling(file.getFileName() + ".bak");
-            Files.move(file, resolve, StandardCopyOption.REPLACE_EXISTING);
-         }
-
          String json = toJson(document);
-         return CompletableFuture.runAsync(SneakyThrow.sneakyRunnable(() -> Files.writeString(file, json)));
+         return CompletableFuture.runAsync(SneakyThrow.sneakyRunnable(() -> FileUtil.writeStringAtomic(file, json, backup)));
       } catch (IOException var5) {
          return CompletableFuture.failedFuture(var5);
       }
@@ -249,18 +213,21 @@ public class BsonUtil {
          Files.createDirectories(parent);
       }
 
-      if (Files.isRegularFile(path)) {
-         Path resolve = path.resolveSibling(path.getFileName() + ".bak");
-         Files.move(path, resolve, StandardCopyOption.REPLACE_EXISTING);
-      }
-
       ExtraInfo extraInfo = ExtraInfo.THREAD_LOCAL.get();
       BsonValue bsonValue = codec.encode(value, extraInfo);
       extraInfo.getValidationResults().logOrThrowValidatorExceptions(logger);
       BsonDocument document = bsonValue.asDocument();
+      Path tmpPath = path.resolveSibling(path.getFileName() + ".tmp");
+      Path bakPath = path.resolveSibling(path.getFileName() + ".bak");
 
-      try (BufferedWriter writer = Files.newBufferedWriter(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+      try (BufferedWriter writer = Files.newBufferedWriter(tmpPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
          BSON_DOCUMENT_CODEC.encode(new JsonWriter(writer, SETTINGS), document, encoderContext);
       }
+
+      if (Files.isRegularFile(path)) {
+         FileUtil.atomicMove(path, bakPath);
+      }
+
+      FileUtil.atomicMove(tmpPath, path);
    }
 }

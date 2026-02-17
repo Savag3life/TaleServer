@@ -10,6 +10,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class CurveMapperDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<CurveMapperDensityAsset> CODEC = BuilderCodec.builder(
          CurveMapperDensityAsset.class, CurveMapperDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )

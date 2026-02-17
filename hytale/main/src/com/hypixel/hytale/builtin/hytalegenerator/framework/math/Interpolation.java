@@ -1,11 +1,11 @@
 package com.hypixel.hytale.builtin.hytalegenerator.framework.math;
 
 public class Interpolation {
-   public static double linear(double valueA, double valueB, double weight) {
-      if (!(weight < 0.0) && !(weight > 1.0)) {
-         return valueA * (1.0 - weight) + valueB * weight;
+   public static double linear(double value0, double value1, double weight) {
+      if (weight <= 0.0) {
+         return value0;
       } else {
-         throw new IllegalArgumentException("weight outside range");
+         return weight >= 1.0 ? value1 : value0 * (1.0 - weight) + value1 * weight;
       }
    }
 }

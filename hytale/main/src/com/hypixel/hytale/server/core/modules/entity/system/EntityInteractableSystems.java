@@ -11,8 +11,8 @@ import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.protocol.ComponentUpdate;
 import com.hypixel.hytale.protocol.ComponentUpdateType;
+import com.hypixel.hytale.protocol.InteractableUpdate;
 import com.hypixel.hytale.server.core.modules.entity.EntityModule;
 import com.hypixel.hytale.server.core.modules.entity.component.Interactable;
 import com.hypixel.hytale.server.core.modules.entity.tracker.EntityTrackerSystems;
@@ -122,8 +122,7 @@ public class EntityInteractableSystems {
       }
 
       private static void queueUpdatesFor(Ref<EntityStore> ref, @Nonnull Map<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> visibleTo) {
-         ComponentUpdate update = new ComponentUpdate();
-         update.type = ComponentUpdateType.Interactable;
+         InteractableUpdate update = new InteractableUpdate();
 
          for (EntityTrackerSystems.EntityViewer viewer : visibleTo.values()) {
             viewer.queueUpdate(ref, update);

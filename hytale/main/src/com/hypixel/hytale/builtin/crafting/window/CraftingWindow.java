@@ -9,19 +9,15 @@ import com.hypixel.hytale.builtin.crafting.state.BenchState;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.protocol.packets.window.CraftRecipeAction;
 import com.hypixel.hytale.protocol.packets.window.WindowType;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.bench.CraftingBench;
 import com.hypixel.hytale.server.core.asset.type.gameplay.GameplayConfig;
 import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
-import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -102,20 +98,8 @@ public abstract class CraftingWindow extends BenchWindow {
    @Override
    public void onClose0(@Nonnull Ref<EntityStore> ref, @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
       super.onClose0(ref, componentAccessor);
-      World world = componentAccessor.getExternalData().getWorld();
-      this.setBlockInteractionState(this.benchState.getTierStateName(), world);
       if (this.bench.getLocalCloseSoundEventIndex() != 0) {
          SoundUtil.playSoundEvent2d(ref, this.bench.getLocalCloseSoundEventIndex(), SoundCategory.UI, componentAccessor);
-      }
-   }
-
-   public void setBlockInteractionState(@Nonnull String state, @Nonnull World world) {
-      WorldChunk worldChunk = world.getChunk(ChunkUtil.indexChunkFromBlock(this.x, this.z));
-      if (worldChunk != null) {
-         BlockType blockType = worldChunk.getBlockType(this.x, this.y, this.z);
-         if (blockType != null) {
-            worldChunk.setBlockInteractionState(this.x, this.y, this.z, blockType, state, true);
-         }
       }
    }
 

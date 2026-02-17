@@ -13,10 +13,14 @@ import com.hypixel.hytale.codec.util.RawJsonReader;
 import com.hypixel.hytale.common.plugin.PluginIdentifier;
 import com.hypixel.hytale.common.plugin.PluginManifest;
 import com.hypixel.hytale.common.util.FormatUtil;
+import com.hypixel.hytale.common.util.PathUtil;
+import com.hypixel.hytale.common.util.java.ManifestUtil;
 import com.hypixel.hytale.event.EventPriority;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.Constants;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.HytaleServerConfig;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.Options;
 import com.hypixel.hytale.server.core.ShutdownReason;
 import com.hypixel.hytale.server.core.asset.monitor.AssetMonitor;
@@ -24,10 +28,14 @@ import com.hypixel.hytale.server.core.asset.type.gameplay.respawn.HomeOrSpawnPoi
 import com.hypixel.hytale.server.core.asset.type.gameplay.respawn.RespawnController;
 import com.hypixel.hytale.server.core.asset.type.gameplay.respawn.WorldSpawnPoint;
 import com.hypixel.hytale.server.core.asset.type.item.DroplistCommand;
+import com.hypixel.hytale.server.core.config.ModConfig;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.BootEvent;
+import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.plugin.PluginManager;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.worldgen.IWorldGen;
 import com.hypixel.hytale.server.core.universe.world.worldgen.ValidatableWorldGen;
 import com.hypixel.hytale.server.core.universe.world.worldgen.WorldGenLoadException;
@@ -35,6 +43,8 @@ import com.hypixel.hytale.server.core.universe.world.worldgen.provider.IWorldGen
 import com.hypixel.hytale.server.core.universe.world.worldmap.IWorldMap;
 import com.hypixel.hytale.server.core.universe.world.worldmap.provider.IWorldMapProvider;
 import com.hypixel.hytale.sneakythrow.SneakyThrow;
+import it.unimi.dsi.fastutil.objects.ObjectBooleanPair;
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -44,6 +54,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -59,6 +71,8 @@ public class AssetModule extends JavaPlugin {
    private AssetMonitor assetMonitor;
    @Nonnull
    private final List<AssetPack> assetPacks = new CopyOnWriteArrayList<>();
+   private final List<ObjectBooleanPair<AssetPack>> pendingAssetPacks = new ArrayList<>();
+   private boolean hasSetup = false;
    private boolean hasLoaded = false;
    private final List<AssetStore<?, ?, ?>> pendingAssetStores = new CopyOnWriteArrayList<>();
 
@@ -79,15 +93,36 @@ public class AssetModule extends JavaPlugin {
          try {
             this.assetMonitor = new AssetMonitor();
             this.getLogger().at(Level.INFO).log("Asset monitor enabled!");
-         } catch (IOException var4) {
-            ((HytaleLogger.Api)this.getLogger().at(Level.SEVERE).withCause(var4)).log("Failed to create asset monitor!");
+         } catch (IOException var8) {
+            ((HytaleLogger.Api)this.getLogger().at(Level.SEVERE).withCause(var8)).log("Failed to create asset monitor!");
          }
       }
 
       for (Path path : Options.getOptionSet().valuesOf(Options.ASSET_DIRECTORY)) {
-         this.loadAndRegisterPack(path);
+         this.loadAndRegisterPack(path, false);
       }
 
+      this.hasSetup = true;
+
+      for (ObjectBooleanPair<AssetPack> p : this.pendingAssetPacks) {
+         if (this.getAssetPack(((AssetPack)p.left()).getName()) != null) {
+            if (!p.rightBoolean()) {
+               throw new IllegalStateException("Asset pack with name '" + ((AssetPack)p.left()).getName() + "' already exists");
+            }
+
+            this.getLogger()
+               .at(Level.WARNING)
+               .log(
+                  "Asset pack with name '%s' already exists, skipping registration from path: %s",
+                  ((AssetPack)p.left()).getName(),
+                  ((AssetPack)p.left()).getRoot()
+               );
+         } else {
+            this.assetPacks.add((AssetPack)p.left());
+         }
+      }
+
+      this.pendingAssetPacks.clear();
       this.loadPacksFromDirectory(PluginManager.MODS_PATH);
 
       for (Path modsPath : Options.getOptionSet().valuesOf(Options.MODS_DIRECTORIES)) {
@@ -97,6 +132,59 @@ public class AssetModule extends JavaPlugin {
       if (this.assetPacks.isEmpty()) {
          HytaleServer.get().shutdownServer(ShutdownReason.MISSING_ASSETS.withMessage("Failed to load any asset packs"));
       } else {
+         boolean hasOutdatedPacks = false;
+         String serverVersion = ManifestUtil.getVersion();
+
+         for (AssetPack pack : this.assetPacks) {
+            if (!pack.getName().equals("Hytale:Hytale")) {
+               PluginManifest manifest = pack.getManifest();
+               String targetServerVersion = manifest.getServerVersion();
+               if (targetServerVersion == null || !targetServerVersion.equals(serverVersion)) {
+                  hasOutdatedPacks = true;
+                  if (targetServerVersion != null && !"*".equals(targetServerVersion)) {
+                     this.getLogger()
+                        .at(Level.WARNING)
+                        .log(
+                           "Plugin '%s' targets a different server version %s. You may encounter issues, please check for plugin updates.",
+                           pack.getName(),
+                           serverVersion
+                        );
+                  } else {
+                     this.getLogger()
+                        .at(Level.WARNING)
+                        .log(
+                           "Plugin '%s' does not specify a target server version. You may encounter issues, please check for plugin updates. This will be a hard error in the future",
+                           pack.getName()
+                        );
+                  }
+               }
+            }
+         }
+
+         if (hasOutdatedPacks && System.getProperty("hytale.allow_outdated_mods") == null) {
+            this.getLogger()
+               .at(Level.SEVERE)
+               .log("One or more asset packs are targeting an older server version. It is recommended to update these plugins to ensure compatibility.");
+
+            try {
+               if (!Constants.SINGLEPLAYER) {
+                  Thread.sleep(Duration.ofSeconds(2L));
+               }
+            } catch (InterruptedException var9) {
+               throw new RuntimeException(var9);
+            }
+
+            HytaleServer.get().getEventBus().registerGlobal(AddPlayerToWorldEvent.class, event -> {
+               PlayerRef playerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
+               Player player = event.getHolder().getComponent(Player.getComponentType());
+               if (playerRef != null && player != null) {
+                  if (player.hasPermission("hytale.mods.outdated.notify")) {
+                     playerRef.sendMessage(Message.translation("server.assetModule.outOfDatePacks").color(Color.RED));
+                  }
+               }
+            });
+         }
+
          this.getEventRegistry().register((short)-16, LoadAssetEvent.class, event -> {
             if (this.hasLoaded) {
                throw new IllegalStateException("LoadAssetEvent has already been dispatched");
@@ -107,8 +195,8 @@ public class AssetModule extends JavaPlugin {
                   this.hasLoaded = true;
                   AssetRegistryLoader.preLoadAssets(event);
 
-                  for (AssetPack pack : this.assetPacks) {
-                     AssetRegistryLoader.loadAssets(event, pack);
+                  for (AssetPack packx : this.assetPacks) {
+                     AssetRegistryLoader.loadAssets(event, packx);
                   }
                } finally {
                   AssetRegistry.ASSET_LOCK.writeLock().unlock();
@@ -194,6 +282,17 @@ public class AssetModule extends JavaPlugin {
       return null;
    }
 
+   public boolean isWithinPackSubDir(@Nonnull Path path, @Nonnull String subDir) {
+      for (AssetPack pack : this.assetPacks) {
+         Path packSubDir = pack.getRoot().resolve(subDir);
+         if (PathUtil.isChildOf(packSubDir, path)) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
    public boolean isAssetPathImmutable(@Nonnull Path path) {
       AssetPack pack = this.findAssetPackForPath(path);
       return pack != null && pack.isImmutable();
@@ -244,7 +343,7 @@ public class AssetModule extends JavaPlugin {
          try (DirectoryStream<Path> stream = Files.newDirectoryStream(modsPath)) {
             for (Path packPath : stream) {
                if (packPath.getFileName() != null && !packPath.getFileName().toString().toLowerCase().endsWith(".jar")) {
-                  this.loadAndRegisterPack(packPath);
+                  this.loadAndRegisterPack(packPath, true);
                }
             }
          } catch (IOException var7) {
@@ -253,7 +352,7 @@ public class AssetModule extends JavaPlugin {
       }
    }
 
-   private void loadAndRegisterPack(Path packPath) {
+   private void loadAndRegisterPack(Path packPath, boolean isExternal) {
       PluginManifest manifest;
       try {
          manifest = this.loadPackManifest(packPath);
@@ -261,24 +360,31 @@ public class AssetModule extends JavaPlugin {
             this.getLogger().at(Level.WARNING).log("Skipping pack at %s: missing or invalid manifest.json", packPath.getFileName());
             return;
          }
-      } catch (Exception var7) {
-         ((HytaleLogger.Api)this.getLogger().at(Level.WARNING).withCause(var7)).log("Failed to load manifest for pack at %s", packPath);
+      } catch (Exception var9) {
+         ((HytaleLogger.Api)this.getLogger().at(Level.WARNING).withCause(var9)).log("Failed to load manifest for pack at %s", packPath);
          return;
       }
 
       PluginIdentifier packIdentifier = new PluginIdentifier(manifest);
-      HytaleServerConfig.ModConfig modConfig = HytaleServer.get().getConfig().getModConfig().get(packIdentifier);
-      boolean enabled = modConfig == null || modConfig.getEnabled() == null || modConfig.getEnabled();
+      HytaleServerConfig serverConfig = HytaleServer.get().getConfig();
+      ModConfig modConfig = serverConfig.getModConfig().get(packIdentifier);
+      boolean enabled;
+      if (modConfig != null && modConfig.getEnabled() != null) {
+         enabled = modConfig.getEnabled();
+      } else {
+         enabled = !manifest.isDisabledByDefault() && (!isExternal || serverConfig.getDefaultModsEnabled());
+      }
+
       String packId = packIdentifier.toString();
       if (enabled) {
-         this.registerPack(packId, packPath, manifest);
+         this.registerPack(packId, packPath, manifest, false);
          this.getLogger().at(Level.INFO).log("Loaded pack: %s from %s", packId, packPath.getFileName());
       } else {
          this.getLogger().at(Level.INFO).log("Skipped disabled pack: %s", packId);
       }
    }
 
-   public void registerPack(@Nonnull String name, @Nonnull Path path, @Nonnull PluginManifest manifest) {
+   public void registerPack(@Nonnull String name, @Nonnull Path path, @Nonnull PluginManifest manifest, boolean ignoreIfExists) {
       Path absolutePath = path.toAbsolutePath().normalize();
       Path packLocation = absolutePath;
       FileSystem fileSystem = null;
@@ -291,22 +397,35 @@ public class AssetModule extends JavaPlugin {
             fileSystem = FileSystems.newFileSystem(absolutePath, (ClassLoader)null);
             absolutePath = fileSystem.getPath("").toAbsolutePath().normalize();
             isImmutable = true;
-         } catch (IOException var13) {
-            throw SneakyThrow.sneakyThrow(var13);
+         } catch (IOException var14) {
+            throw SneakyThrow.sneakyThrow(var14);
          }
       }
 
       AssetPack pack = new AssetPack(packLocation, name, absolutePath, fileSystem, isImmutable, manifest);
-      this.assetPacks.add(pack);
-      AssetRegistry.ASSET_LOCK.writeLock().lock();
-
-      try {
-         if (this.hasLoaded) {
-            HytaleServer.get().getEventBus().<Void, AssetPackRegisterEvent>dispatchFor(AssetPackRegisterEvent.class).dispatch(new AssetPackRegisterEvent(pack));
-            return;
+      if (!this.hasSetup) {
+         this.pendingAssetPacks.add(ObjectBooleanPair.of(pack, ignoreIfExists));
+      } else if (this.getAssetPack(name) != null) {
+         if (ignoreIfExists) {
+            this.getLogger().at(Level.WARNING).log("Asset pack with name '%s' already exists, skipping registration from path: %s", name, path);
+         } else {
+            throw new IllegalStateException("Asset pack with name '" + name + "' already exists");
          }
-      } finally {
-         AssetRegistry.ASSET_LOCK.writeLock().unlock();
+      } else {
+         this.assetPacks.add(pack);
+         AssetRegistry.ASSET_LOCK.writeLock().lock();
+
+         try {
+            if (this.hasLoaded) {
+               HytaleServer.get()
+                  .getEventBus()
+                  .<Void, AssetPackRegisterEvent>dispatchFor(AssetPackRegisterEvent.class)
+                  .dispatch(new AssetPackRegisterEvent(pack));
+               return;
+            }
+         } finally {
+            AssetRegistry.ASSET_LOCK.writeLock().unlock();
+         }
       }
    }
 

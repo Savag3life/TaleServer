@@ -10,8 +10,10 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.math.vector.Vector3d;
+import javax.annotation.Nonnull;
 
 public class DeployableSpawner implements JsonAssetWithMap<String, DefaultAssetMap<String, DeployableSpawner>> {
+   @Nonnull
    public static final AssetBuilderCodec<String, DeployableSpawner> CODEC = AssetBuilderCodec.builder(
          DeployableSpawner.class, DeployableSpawner::new, Codec.STRING, (t, k) -> t.id = k, t -> t.id, (asset, data) -> asset.data = data, asset -> asset.data
       )

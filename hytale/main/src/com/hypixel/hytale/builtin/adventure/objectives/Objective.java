@@ -43,6 +43,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class Objective implements NetworkSerializable<com.hypixel.hytale.protocol.Objective> {
+   @Nonnull
    public static final BuilderCodec<Objective> CODEC = BuilderCodec.builder(Objective.class, Objective::new)
       .append(new KeyedCodec<>("ObjectiveUUID", Codec.UUID_BINARY), (objective, uuid) -> objective.objectiveUUID = uuid, objective -> objective.objectiveUUID)
       .add()
@@ -225,39 +226,47 @@ public class Objective implements NetworkSerializable<com.hypixel.hytale.protoco
    }
 
    public boolean setupCurrentTasks(@Nonnull Store<EntityStore> store) {
-      for (ObjectiveTask task : this.currentTasks) {
-         if (!task.isComplete()) {
-            TransactionRecord[] taskTransactions = task.setup(this, store);
-            if (taskTransactions != null && TransactionUtil.anyFailed(taskTransactions)) {
-               ObjectivePlugin.get()
-                  .getLogger()
-                  .at(Level.WARNING)
-                  .log("Failed to setup objective tasks, transaction records:%s", Arrays.toString((Object[])taskTransactions));
+      if (this.currentTasks == null) {
+         return false;
+      } else {
+         for (ObjectiveTask task : this.currentTasks) {
+            if (!task.isComplete()) {
+               TransactionRecord[] taskTransactions = task.setup(this, store);
+               if (taskTransactions != null && TransactionUtil.anyFailed(taskTransactions)) {
+                  ObjectivePlugin.get()
+                     .getLogger()
+                     .at(Level.WARNING)
+                     .log("Failed to setup objective tasks, transaction records:%s", Arrays.toString((Object[])taskTransactions));
 
-               for (ObjectiveTask taskSetup : this.currentTasks) {
-                  taskSetup.revertTransactionRecords();
-                  if (taskSetup == task) {
-                     break;
+                  for (ObjectiveTask taskSetup : this.currentTasks) {
+                     taskSetup.revertTransactionRecords();
+                     if (taskSetup == task) {
+                        break;
+                     }
                   }
-               }
 
-               return false;
+                  return false;
+               }
             }
          }
-      }
 
-      return true;
+         return true;
+      }
    }
 
    public boolean checkTaskSetCompletion(@Nonnull Store<EntityStore> store) {
-      for (ObjectiveTask task : this.currentTasks) {
-         if (!task.isComplete()) {
-            return false;
+      if (this.currentTasks == null) {
+         return false;
+      } else {
+         for (ObjectiveTask task : this.currentTasks) {
+            if (!task.isComplete()) {
+               return false;
+            }
          }
-      }
 
-      this.taskSetComplete(store);
-      return true;
+         this.taskSetComplete(store);
+         return true;
+      }
    }
 
    protected void taskSetComplete(@Nonnull Store<EntityStore> store) {
@@ -269,13 +278,12 @@ public class Objective implements NetworkSerializable<com.hypixel.hytale.protoco
             this.taskSetComplete(store);
          } else {
             TrackOrUpdateObjective trackObjectivePacket = new TrackOrUpdateObjective(this.toPacket());
-            this.forEachParticipant((participantReference, message, trackOrUpdateObjective) -> {
+            this.forEachParticipant((participantReference, trackOrUpdateObjective) -> {
                PlayerRef playerRefComponent = store.getComponent(participantReference, PlayerRef.getComponentType());
                if (playerRefComponent != null) {
-                  playerRefComponent.sendMessage(message);
                   playerRefComponent.getPacketHandler().writeNoCache(trackOrUpdateObjective);
                }
-            }, this.getTaskInfoMessage(), trackObjectivePacket);
+            }, trackObjectivePacket);
             this.checkTaskSetCompletion(store);
          }
       } else {
@@ -304,26 +312,19 @@ public class Objective implements NetworkSerializable<com.hypixel.hytale.protoco
    }
 
    public void cancel() {
-      for (ObjectiveTask currentTask : this.currentTasks) {
-         currentTask.revertTransactionRecords();
+      if (this.currentTasks != null) {
+         for (ObjectiveTask currentTask : this.currentTasks) {
+            currentTask.revertTransactionRecords();
+         }
       }
    }
 
    public void unload() {
-      for (ObjectiveTask currentTask : this.currentTasks) {
-         currentTask.unloadTransactionRecords();
+      if (this.currentTasks != null) {
+         for (ObjectiveTask currentTask : this.currentTasks) {
+            currentTask.unloadTransactionRecords();
+         }
       }
-   }
-
-   @Nonnull
-   public Message getTaskInfoMessage() {
-      Message info = Message.translation(this.getCurrentDescription());
-
-      for (ObjectiveTask task : this.currentTasks) {
-         info.insert("\n").insert(task.getInfoMessage(this));
-      }
-
-      return info;
    }
 
    public void reloadObjectiveAsset(@Nonnull Map<String, ObjectiveAsset> reloadedAssets) {
@@ -404,13 +405,17 @@ public class Objective implements NetworkSerializable<com.hypixel.hytale.protoco
 
    @Nullable
    private ObjectiveTask findMatchingObjectiveTask(@Nonnull ObjectiveTaskAsset taskAsset) {
-      for (ObjectiveTask objectiveTask : this.currentTasks) {
-         if (objectiveTask.getAsset().matchesAsset(taskAsset)) {
-            return objectiveTask;
+      if (this.currentTasks == null) {
+         return null;
+      } else {
+         for (ObjectiveTask objectiveTask : this.currentTasks) {
+            if (objectiveTask.getAsset().matchesAsset(taskAsset)) {
+               return objectiveTask;
+            }
          }
-      }
 
-      return null;
+         return null;
+      }
    }
 
    private void cancelReload(@Nonnull ObjectiveTask[] newTasks) {
@@ -425,18 +430,20 @@ public class Objective implements NetworkSerializable<com.hypixel.hytale.protoco
    }
 
    private void revertRemovedTasks(@Nonnull ObjectiveTask[] newTasks) {
-      for (ObjectiveTask objectiveTask : this.currentTasks) {
-         boolean foundMatchingTask = false;
+      if (this.currentTasks != null) {
+         for (ObjectiveTask objectiveTask : this.currentTasks) {
+            boolean foundMatchingTask = false;
 
-         for (ObjectiveTask newTask : newTasks) {
-            if (newTask.equals(objectiveTask)) {
-               foundMatchingTask = true;
-               break;
+            for (ObjectiveTask newTask : newTasks) {
+               if (newTask.equals(objectiveTask)) {
+                  foundMatchingTask = true;
+                  break;
+               }
             }
-         }
 
-         if (!foundMatchingTask) {
-            objectiveTask.revertTransactionRecords();
+            if (!foundMatchingTask) {
+               objectiveTask.revertTransactionRecords();
+            }
          }
       }
    }
@@ -463,7 +470,10 @@ public class Objective implements NetworkSerializable<com.hypixel.hytale.protoco
       for (UUID playerUUID : this.playerUUIDs) {
          PlayerRef playerRef = Universe.get().getPlayer(playerUUID);
          if (playerRef != null) {
-            consumer.accept(playerRef.getReference(), t, u);
+            Ref<EntityStore> ref = playerRef.getReference();
+            if (ref != null && ref.isValid()) {
+               consumer.accept(playerRef.getReference(), t, u);
+            }
          }
       }
    }
@@ -514,8 +524,8 @@ public class Objective implements NetworkSerializable<com.hypixel.hytale.protoco
       ObjectiveAsset objectiveAsset = Objects.requireNonNull(this.getObjectiveAsset());
       com.hypixel.hytale.protocol.Objective packet = new com.hypixel.hytale.protocol.Objective();
       packet.objectiveUuid = this.objectiveUUID;
-      packet.objectiveTitleKey = objectiveAsset.getTitleKey();
-      packet.objectiveDescriptionKey = this.getCurrentDescription();
+      packet.objectiveTitleKey = Message.translation(objectiveAsset.getTitleKey()).getFormattedMessage();
+      packet.objectiveDescriptionKey = Message.translation(this.getCurrentDescription()).getFormattedMessage();
       if (this.objectiveLineHistoryData != null) {
          packet.objectiveLineId = this.objectiveLineHistoryData.getId();
       }

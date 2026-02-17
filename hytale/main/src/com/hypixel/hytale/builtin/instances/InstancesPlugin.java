@@ -25,6 +25,7 @@ import com.hypixel.hytale.codec.schema.config.ObjectSchema;
 import com.hypixel.hytale.codec.schema.config.Schema;
 import com.hypixel.hytale.codec.schema.config.StringSchema;
 import com.hypixel.hytale.common.util.FormatUtil;
+import com.hypixel.hytale.common.util.PathUtil;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
@@ -171,14 +172,17 @@ public class InstancesPlugin extends JavaPlugin {
          worldKey = "instance-" + safeName(name) + "-" + uuid;
       }
 
-      Path worldPath = path.resolve("worlds").resolve(worldKey);
+      Path worldPath = universe.validateWorldPath(worldKey);
       String finalWorldKey = worldKey;
       return WorldConfig.load(assetPath.resolve("instance.bson"))
          .thenApplyAsync(
             SneakyThrow.sneakyFunction(
                config -> {
                   config.setUuid(uuid);
-                  config.setDisplayName(WorldConfig.formatDisplayName(name));
+                  if (config.getDisplayName() == null) {
+                     config.setDisplayName(WorldConfig.formatDisplayName(name));
+                  }
+
                   InstanceWorldConfig instanceConfig = InstanceWorldConfig.ensureAndGet(config);
                   instanceConfig.setReturnPoint(
                      new WorldReturnPoint(forWorld.getWorldConfig().getUuid(), returnPoint, instanceConfig.shouldPreventReconnection())
@@ -303,7 +307,7 @@ public class InstancesPlugin extends JavaPlugin {
       }
    }
 
-   public static void exitInstance(@Nonnull Ref<EntityStore> targetRef, @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
+   public static CompletableFuture<Void> exitInstance(@Nonnull Ref<EntityStore> targetRef, @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
       World world = componentAccessor.getExternalData().getWorld();
       InstanceEntityConfig entityConfig = componentAccessor.getComponent(targetRef, InstanceEntityConfig.getComponentType());
       WorldReturnPoint returnPoint = entityConfig != null ? entityConfig.getReturnPoint() : null;
@@ -322,7 +326,10 @@ public class InstancesPlugin extends JavaPlugin {
          throw new IllegalArgumentException("Missing return world");
       } else {
          Teleport teleportComponent = Teleport.createForPlayer(targetWorld, returnPoint.getReturnPoint());
+         CompletableFuture<Void> future = new CompletableFuture<>();
+         teleportComponent.setOnComplete(future);
          componentAccessor.addComponent(targetRef, Teleport.getComponentType(), teleportComponent);
+         return future;
       }
    }
 
@@ -351,13 +358,24 @@ public class InstancesPlugin extends JavaPlugin {
    @Nonnull
    public static Path getInstanceAssetPath(@Nonnull String name) {
       for (AssetPack pack : AssetModule.get().getAssetPacks()) {
-         Path path = pack.getRoot().resolve("Server").resolve("Instances").resolve(name);
+         Path instancesDir = pack.getRoot().resolve("Server").resolve("Instances");
+         Path path = PathUtil.resolvePathWithinDir(instancesDir, name);
+         if (path == null) {
+            throw new IllegalArgumentException("Invalid instance name");
+         }
+
          if (Files.exists(path)) {
             return path;
          }
       }
 
-      return AssetModule.get().getBaseAssetPack().getRoot().resolve("Server").resolve("Instances").resolve(name);
+      Path instancesDirx = AssetModule.get().getBaseAssetPack().getRoot().resolve("Server").resolve("Instances");
+      Path pathx = PathUtil.resolvePathWithinDir(instancesDirx, name);
+      if (pathx == null) {
+         throw new IllegalArgumentException("Invalid instance name");
+      } else {
+         return pathx;
+      }
    }
 
    public static boolean doesInstanceAssetExist(@Nonnull String name) {
@@ -562,7 +580,7 @@ public class InstancesPlugin extends JavaPlugin {
             Path instancePath = getInstanceAssetPath(name);
             Universe universe = Universe.get();
             WorldConfig config = WorldConfig.load(instancePath.resolve("instance.bson")).join();
-            IChunkStorageProvider storage = config.getChunkStorageProvider();
+            IChunkStorageProvider<?> storage = config.getChunkStorageProvider();
             config.setChunkStorageProvider(new MigrationChunkStorageProvider(new IChunkStorageProvider[]{storage}, EmptyChunkStorageProvider.INSTANCE));
             config.setResourceStorageProvider(EmptyResourceStorageProvider.INSTANCE);
             config.setUuid(UUID.randomUUID());
