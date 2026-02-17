@@ -16,6 +16,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class WeightedPropAsset extends PropAsset {
+   @Nonnull
    public static final BuilderCodec<WeightedPropAsset> CODEC = BuilderCodec.builder(WeightedPropAsset.class, WeightedPropAsset::new, PropAsset.ABSTRACT_CODEC)
       .append(
          new KeyedCodec<>("Entries", new ArrayCodec<>(WeightedPropAsset.EntryAsset.CODEC, WeightedPropAsset.EntryAsset[]::new), true),
@@ -55,6 +56,7 @@ public class WeightedPropAsset extends PropAsset {
    }
 
    public static class EntryAsset implements Cleanable, JsonAssetWithMap<String, DefaultAssetMap<String, WeightedPropAsset.EntryAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, WeightedPropAsset.EntryAsset> CODEC = AssetBuilderCodec.builder(
             WeightedPropAsset.EntryAsset.class,
             WeightedPropAsset.EntryAsset::new,

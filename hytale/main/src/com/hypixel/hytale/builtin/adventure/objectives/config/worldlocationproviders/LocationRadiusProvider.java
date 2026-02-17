@@ -9,10 +9,12 @@ import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.math.util.TrigMathUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class LocationRadiusProvider extends WorldLocationProvider {
+   @Nonnull
    public static final BuilderCodec<LocationRadiusProvider> CODEC = BuilderCodec.builder(LocationRadiusProvider.class, LocationRadiusProvider::new, BASE_CODEC)
       .append(
          new KeyedCodec<>("MinRadius", Codec.INTEGER),
@@ -45,15 +47,21 @@ public class LocationRadiusProvider extends WorldLocationProvider {
    protected int minRadius = 10;
    protected int maxRadius = 50;
 
-   @Nonnull
+   @Nullable
    @Override
    public Vector3i runCondition(@Nonnull World world, @Nonnull Vector3i position) {
       double angle = Math.random() * (float) (Math.PI * 2);
       int radius = MathUtil.randomInt(this.minRadius, this.maxRadius);
       Vector3i newPosition = position.clone();
       newPosition.add((int)(radius * TrigMathUtil.cos(angle)), 0, (int)(radius * TrigMathUtil.sin(angle)));
-      newPosition.y = world.getChunk(ChunkUtil.indexChunkFromBlock(newPosition.x, newPosition.z)).getHeight(newPosition.x, newPosition.z);
-      return newPosition;
+      long chunkIndex = ChunkUtil.indexChunkFromBlock(newPosition.x, newPosition.z);
+      WorldChunk worldChunkComponent = world.getChunk(chunkIndex);
+      if (worldChunkComponent == null) {
+         return null;
+      } else {
+         newPosition.y = worldChunkComponent.getHeight(newPosition.x, newPosition.z);
+         return newPosition;
+      }
    }
 
    @Override

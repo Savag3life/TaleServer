@@ -2,6 +2,8 @@ package com.hypixel.hytale.server.core.universe.world.storage;
 
 import com.hypixel.fastutil.longs.Long2ObjectConcurrentHashMap;
 import com.hypixel.hytale.codec.Codec;
+import com.hypixel.hytale.codec.KeyedCodec;
+import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.store.CodecKey;
 import com.hypixel.hytale.codec.store.CodecStore;
 import com.hypixel.hytale.common.util.FormatUtil;
@@ -14,6 +16,7 @@ import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.IResourceStorage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
+import com.hypixel.hytale.component.Resource;
 import com.hypixel.hytale.component.ResourceType;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.SystemGroup;
@@ -25,7 +28,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.metrics.MetricProvider;
 import com.hypixel.hytale.metrics.MetricsRegistry;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -94,6 +97,7 @@ public class ChunkStore implements WorldProvider {
    @Nonnull
    private final Long2ObjectConcurrentHashMap<ChunkStore.ChunkLoadState> chunks = new Long2ObjectConcurrentHashMap<>(true, ChunkUtil.NOT_FOUND);
    private Store<ChunkStore> store;
+   private Object storageData;
    @Nullable
    private IChunkLoader loader;
    @Nullable
@@ -119,6 +123,10 @@ public class ChunkStore implements WorldProvider {
    @Nonnull
    public Store<ChunkStore> getStore() {
       return this.store;
+   }
+
+   public Object getStorageData() {
+      return this.storageData;
    }
 
    @Nullable
@@ -756,6 +764,10 @@ public class ChunkStore implements WorldProvider {
    }
 
    public static class ChunkLoaderSaverSetupSystem extends StoreSystem<ChunkStore> {
+      private final ResourceType<ChunkStore, ChunkStore.ChunkStorage> chunkStorageResourceType = this.registerResource(
+         ChunkStore.ChunkStorage.class, "ChunkStorage", ChunkStore.ChunkStorage.CODEC
+      );
+
       @Nullable
       @Override
       public SystemGroup<ChunkStore> getGroup() {
@@ -766,13 +778,21 @@ public class ChunkStore implements WorldProvider {
       public void onSystemAddedToStore(@Nonnull Store<ChunkStore> store) {
          ChunkStore data = store.getExternalData();
          World world = data.getWorld();
-         IChunkStorageProvider chunkStorageProvider = world.getWorldConfig().getChunkStorageProvider();
+         IChunkStorageProvider<?> chunkStorageProvider = world.getWorldConfig().getChunkStorageProvider();
+         ChunkStore.ChunkStorage chunkStorage = store.getResource(this.chunkStorageResourceType);
 
          try {
-            data.loader = chunkStorageProvider.getLoader(store);
-            data.saver = chunkStorageProvider.getSaver(store);
-         } catch (IOException var6) {
-            throw SneakyThrow.sneakyThrow(var6);
+            if (chunkStorage.currentProvider != null && !chunkStorage.currentProvider.isSame(chunkStorageProvider)) {
+               data.storageData = chunkStorageProvider.migrateFrom(store, chunkStorage.currentProvider);
+            } else {
+               data.storageData = chunkStorageProvider.initialize(store);
+            }
+
+            chunkStorage.currentProvider = chunkStorageProvider;
+            data.loader = ((IChunkStorageProvider<Object>)chunkStorageProvider).getLoader(data.storageData, store);
+            data.saver = ((IChunkStorageProvider<Object>)chunkStorageProvider).getSaver(data.storageData, store);
+         } catch (IOException var7) {
+            throw SneakyThrow.sneakyThrow(var7);
          }
       }
 
@@ -792,18 +812,44 @@ public class ChunkStore implements WorldProvider {
                data.saver = null;
                oldSaver.close();
             }
-         } catch (IOException var4) {
-            ((HytaleLogger.Api)ChunkStore.LOGGER.at(Level.SEVERE).withCause(var4)).log("Failed to close storage!");
+
+            World world = data.getWorld();
+            IChunkStorageProvider<?> chunkStorageProvider = world.getWorldConfig().getChunkStorageProvider();
+            ((IChunkStorageProvider<Object>)chunkStorageProvider).close(data.storageData, store);
+         } catch (IOException var5) {
+            ((HytaleLogger.Api)ChunkStore.LOGGER.at(Level.SEVERE).withCause(var5)).log("Failed to close storage!");
          }
       }
    }
 
-   public abstract static class LoadFuturePacketDataQuerySystem extends EntityDataSystem<ChunkStore, PlayerRef, CompletableFuture<Packet>> {
+   private static class ChunkStorage implements Resource<ChunkStore> {
+      public static final BuilderCodec<ChunkStore.ChunkStorage> CODEC = BuilderCodec.builder(ChunkStore.ChunkStorage.class, ChunkStore.ChunkStorage::new)
+         .append(new KeyedCodec<>("CurrentProvider", IChunkStorageProvider.CODEC), (o, i) -> o.currentProvider = i, o -> o.currentProvider)
+         .add()
+         .build();
+      @Nullable
+      private IChunkStorageProvider<?> currentProvider;
+
+      public ChunkStorage(@Nullable IChunkStorageProvider<?> currentProvider) {
+         this.currentProvider = currentProvider;
+      }
+
+      public ChunkStorage() {
+      }
+
+      @Nullable
+      @Override
+      public Resource<ChunkStore> clone() {
+         return new ChunkStore.ChunkStorage(this.currentProvider);
+      }
    }
 
-   public abstract static class LoadPacketDataQuerySystem extends EntityDataSystem<ChunkStore, PlayerRef, Packet> {
+   public abstract static class LoadFuturePacketDataQuerySystem extends EntityDataSystem<ChunkStore, PlayerRef, CompletableFuture<ToClientPacket>> {
    }
 
-   public abstract static class UnloadPacketDataQuerySystem extends EntityDataSystem<ChunkStore, PlayerRef, Packet> {
+   public abstract static class LoadPacketDataQuerySystem extends EntityDataSystem<ChunkStore, PlayerRef, ToClientPacket> {
+   }
+
+   public abstract static class UnloadPacketDataQuerySystem extends EntityDataSystem<ChunkStore, PlayerRef, ToClientPacket> {
    }
 }

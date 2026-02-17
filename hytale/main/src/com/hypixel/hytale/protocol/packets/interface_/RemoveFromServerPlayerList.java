@@ -1,6 +1,8 @@
 package com.hypixel.hytale.protocol.packets.interface_;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.io.PacketIO;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
@@ -11,7 +13,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class RemoveFromServerPlayerList implements Packet {
+public class RemoveFromServerPlayerList implements Packet, ToClientPacket {
    public static final int PACKET_ID = 225;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -25,6 +27,11 @@ public class RemoveFromServerPlayerList implements Packet {
    @Override
    public int getId() {
       return 225;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public RemoveFromServerPlayerList() {

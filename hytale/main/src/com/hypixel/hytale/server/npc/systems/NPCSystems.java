@@ -33,6 +33,7 @@ import com.hypixel.hytale.server.core.modules.entity.component.FromPrefab;
 import com.hypixel.hytale.server.core.modules.entity.component.FromWorldGen;
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.MovementAudioComponent;
+import com.hypixel.hytale.server.core.modules.entity.component.NPCMarkerComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.NewSpawnComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.PositionDataComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -244,6 +245,7 @@ public class NPCSystems {
             npcComponent.initBlockChangeBlackboardView(ref, commandBuffer);
             role.loaded();
             commandBuffer.ensureComponent(ref, PrefabCopyableComponent.getComponentType());
+            commandBuffer.ensureComponent(ref, NPCMarkerComponent.getComponentType());
             commandBuffer.ensureComponent(ref, PositionDataComponent.getComponentType());
             commandBuffer.ensureComponent(ref, MovementAudioComponent.getComponentType());
             if (reason == AddReason.SPAWN) {

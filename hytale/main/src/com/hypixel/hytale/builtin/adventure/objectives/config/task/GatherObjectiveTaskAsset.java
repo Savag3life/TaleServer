@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class GatherObjectiveTaskAsset extends CountObjectiveTaskAsset {
+   @Nonnull
    public static final BuilderCodec<GatherObjectiveTaskAsset> CODEC = BuilderCodec.builder(
          GatherObjectiveTaskAsset.class, GatherObjectiveTaskAsset::new, CountObjectiveTaskAsset.CODEC
       )

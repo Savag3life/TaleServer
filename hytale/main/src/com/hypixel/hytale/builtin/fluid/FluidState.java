@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 public record FluidState(int fluidLevel, byte verticalFill) {
    public static int SOURCE_LEVEL = 0;
    public static final int FULL_LEVEL = 8;
+   @Nonnull
    public static final FluidState[] FLUID_STATES = generateFluidStates(8);
 
    public FluidState(int fluidLevel, int verticalFill) {

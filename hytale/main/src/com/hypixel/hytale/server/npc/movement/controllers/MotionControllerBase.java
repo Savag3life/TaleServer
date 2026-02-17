@@ -49,6 +49,7 @@ import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.role.RoleDebugFlags;
 import com.hypixel.hytale.server.npc.util.NPCPhysicsMath;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiPredicate;
@@ -1040,10 +1041,6 @@ public abstract class MotionControllerBase implements MotionController {
       }
    }
 
-   protected boolean isDebugMode(RoleDebugFlags mode) {
-      return this.getRole() != null && this.getRole().getDebugSupport().getDebugFlags().contains(mode);
-   }
-
    public boolean isProcessTriggersHasMoved() {
       return this.processTriggersHasMoved;
    }
@@ -1053,15 +1050,20 @@ public abstract class MotionControllerBase implements MotionController {
    }
 
    @Override
+   public void onDebugFlagsChanged(EnumSet<RoleDebugFlags> newFlags) {
+      MotionController.super.onDebugFlagsChanged(newFlags);
+      this.debugModeSteer = newFlags.contains(RoleDebugFlags.MotionControllerSteer);
+      this.debugModeMove = newFlags.contains(RoleDebugFlags.MotionControllerMove);
+      this.debugModeCollisions = newFlags.contains(RoleDebugFlags.Collisions);
+      this.debugModeBlockCollisions = newFlags.contains(RoleDebugFlags.BlockCollisions);
+      this.debugModeProbeBlockCollisions = newFlags.contains(RoleDebugFlags.ProbeBlockCollisions);
+      this.debugModeValidatePositions = newFlags.contains(RoleDebugFlags.ValidatePositions);
+      this.debugModeOverlaps = newFlags.contains(RoleDebugFlags.Overlaps);
+      this.debugModeValidateMath = newFlags.contains(RoleDebugFlags.ValidateMath);
+   }
+
+   @Override
    public void activate() {
-      this.debugModeSteer = this.isDebugMode(RoleDebugFlags.MotionControllerSteer);
-      this.debugModeMove = this.isDebugMode(RoleDebugFlags.MotionControllerMove);
-      this.debugModeCollisions = this.isDebugMode(RoleDebugFlags.Collisions);
-      this.debugModeBlockCollisions = this.isDebugMode(RoleDebugFlags.BlockCollisions);
-      this.debugModeProbeBlockCollisions = this.isDebugMode(RoleDebugFlags.ProbeBlockCollisions);
-      this.debugModeValidatePositions = this.isDebugMode(RoleDebugFlags.ValidatePositions);
-      this.debugModeOverlaps = this.isDebugMode(RoleDebugFlags.Overlaps);
-      this.debugModeValidateMath = this.isDebugMode(RoleDebugFlags.ValidateMath);
       this.resetObstructedFlags();
       this.resetNavState();
    }

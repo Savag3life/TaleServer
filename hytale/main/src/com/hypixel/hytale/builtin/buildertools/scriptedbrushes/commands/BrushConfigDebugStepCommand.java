@@ -26,12 +26,12 @@ import javax.annotation.Nonnull;
 
 public class BrushConfigDebugStepCommand extends AbstractPlayerCommand {
    private final DefaultArg<Integer> numStepsArg = this.withDefaultArg(
-         "steps", "The number of operations to step through", ArgTypes.INTEGER, 1, "A single step"
+         "steps", "server.commands.scriptedbrushes.step.steps.desc", ArgTypes.INTEGER, 1, "server.commands.scriptedbrushes.step.steps.default"
       )
       .addValidator(Validators.range(1, 100));
 
    public BrushConfigDebugStepCommand() {
-      super("step", "Advance one or more steps into your order of operations brush config debug");
+      super("step", "server.commands.scriptedbrushes.step.desc");
    }
 
    @Override

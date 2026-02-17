@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class OrPatternAsset extends PatternAsset {
+   @Nonnull
    public static final BuilderCodec<OrPatternAsset> CODEC = BuilderCodec.builder(OrPatternAsset.class, OrPatternAsset::new, PatternAsset.ABSTRACT_CODEC)
       .append(
          new KeyedCodec<>("Patterns", new ArrayCodec<>(PatternAsset.CODEC, PatternAsset[]::new), true), (t, k) -> t.patternAssets = k, k -> k.patternAssets

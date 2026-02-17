@@ -20,10 +20,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class ObjectiveDataStore {
+   @Nonnull
    private final Map<UUID, Objective> objectives = new ConcurrentHashMap<>();
+   @Nonnull
    private final Map<UUID, Map<String, Set<UUID>>> entityObjectiveUUIDsPerPlayer = new ConcurrentHashMap<>();
    @Nonnull
    private final DataStore<Objective> dataStore;
+   @Nonnull
    private final Map<Class<? extends ObjectiveTask>, Set<ObjectiveTaskRef<? extends ObjectiveTask>>> taskRefByType = new ConcurrentHashMap<>();
    @Nonnull
    private final HytaleLogger logger;

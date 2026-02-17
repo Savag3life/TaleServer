@@ -2,6 +2,7 @@ package com.hypixel.hytale.builtin.adventure.memories.temple;
 
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
@@ -18,13 +19,22 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public class TempleRespawnPlayersSystem extends DelayedEntitySystem<EntityStore> {
-   public static final Query<EntityStore> QUERY = Query.and(PlayerRef.getComponentType(), TransformComponent.getComponentType());
+   @Nonnull
+   private final ComponentType<EntityStore, PlayerRef> playerRefComponentType;
+   @Nonnull
+   private final ComponentType<EntityStore, TransformComponent> transformComponentType;
+   @Nonnull
+   private final Query<EntityStore> query;
 
-   public TempleRespawnPlayersSystem() {
+   public TempleRespawnPlayersSystem(
+      @Nonnull ComponentType<EntityStore, PlayerRef> playerRefComponentType, @Nonnull ComponentType<EntityStore, TransformComponent> transformComponentType
+   ) {
       super(1.0F);
+      this.playerRefComponentType = playerRefComponentType;
+      this.transformComponentType = transformComponentType;
+      this.query = Query.and(playerRefComponentType, transformComponentType);
    }
 
    @Override
@@ -39,7 +49,7 @@ public class TempleRespawnPlayersSystem extends DelayedEntitySystem<EntityStore>
       GameplayConfig gameplayConfig = world.getGameplayConfig();
       ForgottenTempleConfig config = gameplayConfig.getPluginConfig().get(ForgottenTempleConfig.class);
       if (config != null) {
-         TransformComponent transformComponent = archetypeChunk.getComponent(index, TransformComponent.getComponentType());
+         TransformComponent transformComponent = archetypeChunk.getComponent(index, this.transformComponentType);
 
          assert transformComponent != null;
 
@@ -50,15 +60,18 @@ public class TempleRespawnPlayersSystem extends DelayedEntitySystem<EntityStore>
             Transform spawnTransform = spawnProvider.getSpawnPoint(ref, commandBuffer);
             Teleport teleportComponent = Teleport.createForPlayer(null, spawnTransform);
             commandBuffer.addComponent(ref, Teleport.getComponentType(), teleportComponent);
-            PlayerRef playerRef = archetypeChunk.getComponent(index, PlayerRef.getComponentType());
-            SoundUtil.playSoundEvent2dToPlayer(playerRef, config.getRespawnSoundIndex(), SoundCategory.SFX);
+            PlayerRef playerRefComponent = archetypeChunk.getComponent(index, this.playerRefComponentType);
+
+            assert playerRefComponent != null;
+
+            SoundUtil.playSoundEvent2dToPlayer(playerRefComponent, config.getRespawnSoundIndex(), SoundCategory.SFX);
          }
       }
    }
 
-   @Nullable
+   @Nonnull
    @Override
    public Query<EntityStore> getQuery() {
-      return QUERY;
+      return this.query;
    }
 }

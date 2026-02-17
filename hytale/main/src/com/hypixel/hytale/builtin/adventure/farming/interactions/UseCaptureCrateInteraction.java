@@ -26,6 +26,7 @@ import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.entity.component.PersistentModel;
+import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInteraction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
@@ -41,6 +42,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class UseCaptureCrateInteraction extends SimpleBlockInteraction {
+   @Nonnull
    public static final BuilderCodec<UseCaptureCrateInteraction> CODEC = BuilderCodec.builder(
          UseCaptureCrateInteraction.class, UseCaptureCrateInteraction::new, SimpleInteraction.CODEC
       )
@@ -74,20 +76,26 @@ public class UseCaptureCrateInteraction extends SimpleBlockInteraction {
       boolean firstRun, float time, @Nonnull InteractionType type, @Nonnull InteractionContext context, @Nonnull CooldownHandler cooldownHandler
    ) {
       CommandBuffer<EntityStore> commandBuffer = context.getCommandBuffer();
-      if (commandBuffer == null) {
+
+      assert commandBuffer != null;
+
+      ItemStack item = context.getHeldItem();
+      if (item == null) {
          context.getState().state = InteractionState.Failed;
+         super.tick0(firstRun, time, type, context, cooldownHandler);
       } else {
-         ItemStack item = context.getHeldItem();
-         if (item == null) {
+         Ref<EntityStore> ref = context.getEntity();
+         if (!(EntityUtils.getEntity(ref, commandBuffer) instanceof LivingEntity livingEntity)) {
             context.getState().state = InteractionState.Failed;
+            super.tick0(firstRun, time, type, context, cooldownHandler);
          } else {
-            Ref<EntityStore> ref = context.getEntity();
-            if (!(EntityUtils.getEntity(ref, commandBuffer) instanceof LivingEntity livingEntity)) {
+            Inventory inventory = livingEntity.getInventory();
+            byte activeHotbarSlot = inventory.getActiveHotbarSlot();
+            ItemStack inHandItemStack = inventory.getActiveHotbarItem();
+            if (inHandItemStack == null) {
                context.getState().state = InteractionState.Failed;
+               super.tick0(firstRun, time, type, context, cooldownHandler);
             } else {
-               Inventory inventory = livingEntity.getInventory();
-               byte activeHotbarSlot = inventory.getActiveHotbarSlot();
-               ItemStack inHandItemStack = inventory.getActiveHotbarItem();
                CapturedNPCMetadata existingMeta = item.getFromMetadataOrNull("CapturedEntity", CapturedNPCMetadata.CODEC);
                if (existingMeta != null) {
                   super.tick0(firstRun, time, type, context, cooldownHandler);
@@ -95,47 +103,56 @@ public class UseCaptureCrateInteraction extends SimpleBlockInteraction {
                   Ref<EntityStore> targetEntity = context.getTargetEntity();
                   if (targetEntity == null) {
                      context.getState().state = InteractionState.Failed;
+                     super.tick0(firstRun, time, type, context, cooldownHandler);
                   } else {
                      NPCEntity npcComponent = commandBuffer.getComponent(targetEntity, NPCEntity.getComponentType());
                      if (npcComponent == null) {
                         context.getState().state = InteractionState.Failed;
+                        super.tick0(firstRun, time, type, context, cooldownHandler);
                      } else {
-                        TagSetPlugin.TagSetLookup tagSetPlugin = TagSetPlugin.get(NPCGroup.class);
-                        boolean tagFound = false;
-
-                        for (int group : this.acceptedNpcGroupIndexes) {
-                           if (tagSetPlugin.tagInSet(group, npcComponent.getRoleIndex())) {
-                              tagFound = true;
-                              break;
-                           }
-                        }
-
-                        if (!tagFound) {
+                        DeathComponent deathComponent = commandBuffer.getComponent(targetEntity, DeathComponent.getComponentType());
+                        if (deathComponent != null) {
                            context.getState().state = InteractionState.Failed;
+                           super.tick0(firstRun, time, type, context, cooldownHandler);
                         } else {
-                           PersistentModel persistentModel = commandBuffer.getComponent(targetEntity, PersistentModel.getComponentType());
-                           if (persistentModel == null) {
+                           TagSetPlugin.TagSetLookup tagSetPlugin = TagSetPlugin.get(NPCGroup.class);
+                           boolean tagFound = false;
+
+                           for (int group : this.acceptedNpcGroupIndexes) {
+                              if (tagSetPlugin.tagInSet(group, npcComponent.getRoleIndex())) {
+                                 tagFound = true;
+                                 break;
+                              }
+                           }
+
+                           if (!tagFound) {
                               context.getState().state = InteractionState.Failed;
+                              super.tick0(firstRun, time, type, context, cooldownHandler);
                            } else {
-                              ModelAsset modelAsset = ModelAsset.getAssetMap().getAsset(persistentModel.getModelReference().getModelAssetId());
-                              CapturedNPCMetadata meta = inHandItemStack.getFromMetadataOrDefault("CapturedEntity", CapturedNPCMetadata.CODEC);
-                              if (modelAsset != null) {
-                                 meta.setIconPath(modelAsset.getIcon());
-                              }
+                              PersistentModel persistentModelComponent = commandBuffer.getComponent(targetEntity, PersistentModel.getComponentType());
+                              if (persistentModelComponent == null) {
+                                 context.getState().state = InteractionState.Failed;
+                                 super.tick0(firstRun, time, type, context, cooldownHandler);
+                              } else {
+                                 ModelAsset modelAsset = ModelAsset.getAssetMap().getAsset(persistentModelComponent.getModelReference().getModelAssetId());
+                                 CapturedNPCMetadata itemMetaData = inHandItemStack.getFromMetadataOrDefault("CapturedEntity", CapturedNPCMetadata.CODEC);
+                                 if (modelAsset != null) {
+                                    itemMetaData.setIconPath(modelAsset.getIcon());
+                                 }
 
-                              meta.setRoleIndex(npcComponent.getRoleIndex());
-                              String npcName = NPCPlugin.get().getName(npcComponent.getRoleIndex());
-                              if (npcName != null) {
-                                 meta.setNpcNameKey(npcName);
-                              }
+                                 String npcName = NPCPlugin.get().getName(npcComponent.getRoleIndex());
+                                 if (npcName != null) {
+                                    itemMetaData.setNpcNameKey(npcName);
+                                 }
 
-                              if (this.fullIcon != null) {
-                                 meta.setFullItemIcon(this.fullIcon);
-                              }
+                                 if (this.fullIcon != null) {
+                                    itemMetaData.setFullItemIcon(this.fullIcon);
+                                 }
 
-                              ItemStack itemWithNPC = inHandItemStack.withMetadata(CapturedNPCMetadata.KEYED_CODEC, meta);
-                              inventory.getHotbar().replaceItemStackInSlot(activeHotbarSlot, item, itemWithNPC);
-                              commandBuffer.removeEntity(targetEntity, RemoveReason.REMOVE);
+                                 ItemStack itemWithNPC = inHandItemStack.withMetadata(CapturedNPCMetadata.KEYED_CODEC, itemMetaData);
+                                 inventory.getHotbar().replaceItemStackInSlot(activeHotbarSlot, item, itemWithNPC);
+                                 commandBuffer.removeEntity(targetEntity, RemoveReason.REMOVE);
+                              }
                            }
                         }
                      }
@@ -172,46 +189,51 @@ public class UseCaptureCrateInteraction extends SimpleBlockInteraction {
                if (pos == null) {
                   context.getState().state = InteractionState.Failed;
                } else {
-                  WorldChunk worldChunk = world.getChunk(ChunkUtil.indexChunkFromBlock(pos.x, pos.z));
-                  Ref<ChunkStore> blockRef = worldChunk.getBlockComponentEntity(pos.x, pos.y, pos.z);
-                  if (blockRef == null) {
-                     blockRef = BlockModule.ensureBlockEntity(worldChunk, pos.x, pos.y, pos.z);
-                  }
+                  long chunkIndex = ChunkUtil.indexChunkFromBlock(pos.x, pos.z);
+                  WorldChunk worldChunk = world.getChunk(chunkIndex);
+                  if (worldChunk == null) {
+                     context.getState().state = InteractionState.Failed;
+                  } else {
+                     Ref<ChunkStore> blockRef = worldChunk.getBlockComponentEntity(pos.x, pos.y, pos.z);
+                     if (blockRef == null || !blockRef.isValid()) {
+                        blockRef = BlockModule.ensureBlockEntity(worldChunk, pos.x, pos.y, pos.z);
+                     }
 
-                  ItemStack noMetaItemStack = item.withMetadata(null);
-                  if (blockRef != null) {
-                     Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-                     CoopBlock coopBlockState = chunkStore.getComponent(blockRef, CoopBlock.getComponentType());
-                     if (coopBlockState != null) {
-                        WorldTimeResource worldTimeResource = commandBuffer.getResource(WorldTimeResource.getResourceType());
-                        if (coopBlockState.tryPutResident(existingMeta, worldTimeResource)) {
-                           world.execute(
-                              () -> coopBlockState.ensureSpawnResidentsInWorld(
-                                 world, world.getEntityStore().getStore(), new Vector3d(pos.x, pos.y, pos.z), new Vector3d().assign(Vector3d.FORWARD)
-                              )
-                           );
-                           inventory.getHotbar().replaceItemStackInSlot(activeHotbarSlot, item, noMetaItemStack);
-                        } else {
-                           context.getState().state = InteractionState.Failed;
+                     ItemStack noMetaItemStack = item.withMetadata(null);
+                     if (blockRef != null && blockRef.isValid()) {
+                        Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
+                        CoopBlock coopBlockComponent = chunkStore.getComponent(blockRef, CoopBlock.getComponentType());
+                        if (coopBlockComponent != null) {
+                           WorldTimeResource worldTimeResource = commandBuffer.getResource(WorldTimeResource.getResourceType());
+                           if (coopBlockComponent.tryPutResident(existingMeta, worldTimeResource)) {
+                              world.execute(
+                                 () -> coopBlockComponent.ensureSpawnResidentsInWorld(
+                                    world, world.getEntityStore().getStore(), new Vector3d(pos.x, pos.y, pos.z), new Vector3d().assign(Vector3d.FORWARD)
+                                 )
+                              );
+                              inventory.getHotbar().replaceItemStackInSlot(activeHotbarSlot, item, noMetaItemStack);
+                              context.getState().state = InteractionState.Finished;
+                           } else {
+                              context.getState().state = InteractionState.Failed;
+                           }
+
+                           return;
                         }
-
-                        return;
                      }
-                  }
 
-                  Vector3d spawnPos = new Vector3d(pos.x + 0.5F, pos.y, pos.z + 0.5F);
-                  if (context.getClientState() != null) {
-                     BlockFace blockFace = BlockFace.fromProtocolFace(context.getClientState().blockFace);
-                     if (blockFace != null) {
-                        spawnPos.add(blockFace.getDirection());
+                     Vector3d spawnPos = new Vector3d(pos.x + 0.5F, pos.y, pos.z + 0.5F);
+                     if (context.getClientState() != null) {
+                        BlockFace blockFace = BlockFace.fromProtocolFace(context.getClientState().blockFace);
+                        if (blockFace != null) {
+                           spawnPos.add(blockFace.getDirection());
+                        }
                      }
-                  }
 
-                  NPCPlugin npcModule = NPCPlugin.get();
-                  Store<EntityStore> store = context.getCommandBuffer().getStore();
-                  int roleIndex = existingMeta.getRoleIndex();
-                  commandBuffer.run(_store -> npcModule.spawnEntity(store, roleIndex, spawnPos, Vector3f.ZERO, null, null));
-                  inventory.getHotbar().replaceItemStackInSlot(activeHotbarSlot, item, noMetaItemStack);
+                     String roleId = existingMeta.getNpcNameKey();
+                     int roleIndex = NPCPlugin.get().getIndex(roleId);
+                     commandBuffer.run(_store -> NPCPlugin.get().spawnEntity(_store, roleIndex, spawnPos, Vector3f.ZERO, null, null));
+                     inventory.getHotbar().replaceItemStackInSlot(activeHotbarSlot, item, noMetaItemStack);
+                  }
                }
             }
          } else {

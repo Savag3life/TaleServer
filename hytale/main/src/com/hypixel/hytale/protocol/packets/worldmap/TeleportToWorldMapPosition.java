@@ -1,12 +1,14 @@
 package com.hypixel.hytale.protocol.packets.worldmap;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
-public class TeleportToWorldMapPosition implements Packet {
+public class TeleportToWorldMapPosition implements Packet, ToServerPacket {
    public static final int PACKET_ID = 245;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 0;
@@ -20,6 +22,11 @@ public class TeleportToWorldMapPosition implements Packet {
    @Override
    public int getId() {
       return 245;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public TeleportToWorldMapPosition() {

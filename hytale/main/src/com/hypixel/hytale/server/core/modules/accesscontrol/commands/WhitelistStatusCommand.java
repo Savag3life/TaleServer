@@ -4,7 +4,6 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.CommandBase;
 import com.hypixel.hytale.server.core.modules.accesscontrol.provider.HytaleWhitelistProvider;
-import com.hypixel.hytale.server.core.util.message.MessageFormat;
 import javax.annotation.Nonnull;
 
 public class WhitelistStatusCommand extends CommandBase {
@@ -18,6 +17,6 @@ public class WhitelistStatusCommand extends CommandBase {
 
    @Override
    protected void executeSync(@Nonnull CommandContext context) {
-      context.sendMessage(Message.translation("server.modules.whitelist.status").param("status", MessageFormat.enabled(this.whitelistProvider.isEnabled())));
+      context.sendMessage(Message.translation("server.modules.whitelist.status").param("enabled", this.whitelistProvider.isEnabled() ? "true" : "false"));
    }
 }

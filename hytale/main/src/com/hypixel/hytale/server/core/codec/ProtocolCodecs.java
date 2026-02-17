@@ -8,7 +8,6 @@ import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.schema.metadata.HytaleType;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIDisplayMode;
 import com.hypixel.hytale.codec.validation.Validators;
-import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.protocol.AccumulationMode;
 import com.hypixel.hytale.protocol.ChangeStatBehaviour;
 import com.hypixel.hytale.protocol.ChangeVelocityType;
@@ -33,14 +32,11 @@ import com.hypixel.hytale.protocol.UVMotion;
 import com.hypixel.hytale.protocol.UVMotionCurveType;
 import com.hypixel.hytale.protocol.Vector2f;
 import com.hypixel.hytale.protocol.Vector3f;
-import com.hypixel.hytale.protocol.packets.worldmap.ContextMenuItem;
-import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
 import com.hypixel.hytale.server.core.asset.common.BlockyAnimationCache;
 import com.hypixel.hytale.server.core.asset.common.CommonAssetValidator;
 import com.hypixel.hytale.server.core.asset.util.ColorParseUtil;
 import com.hypixel.hytale.server.core.codec.protocol.ColorAlphaCodec;
 import com.hypixel.hytale.server.core.codec.protocol.ColorCodec;
-import com.hypixel.hytale.server.core.util.PositionUtil;
 
 public final class ProtocolCodecs {
    public static final BuilderCodec<Direction> DIRECTION = BuilderCodec.builder(Direction.class, Direction::new)
@@ -164,27 +160,6 @@ public final class ProtocolCodecs {
    public static final BuilderCodec<SavedMovementStates> SAVED_MOVEMENT_STATES = BuilderCodec.builder(SavedMovementStates.class, SavedMovementStates::new)
       .addField(new KeyedCodec<>("Flying", Codec.BOOLEAN), (movementStates, flying) -> movementStates.flying = flying, movementStates -> movementStates.flying)
       .build();
-   public static final BuilderCodec<ContextMenuItem> CONTEXT_MENU_ITEM = BuilderCodec.builder(ContextMenuItem.class, ContextMenuItem::new)
-      .addField(new KeyedCodec<>("Name", Codec.STRING), (item, s) -> item.name = s, item -> item.name)
-      .addField(new KeyedCodec<>("Command", Codec.STRING), (item, s) -> item.command = s, item -> item.command)
-      .build();
-   public static final ArrayCodec<ContextMenuItem> CONTEXT_MENU_ITEM_ARRAY = new ArrayCodec<>(CONTEXT_MENU_ITEM, ContextMenuItem[]::new);
-   public static final BuilderCodec<MapMarker> MARKER = BuilderCodec.builder(MapMarker.class, MapMarker::new)
-      .addField(new KeyedCodec<>("Id", Codec.STRING), (marker, s) -> marker.id = s, marker -> marker.id)
-      .addField(new KeyedCodec<>("Name", Codec.STRING), (marker, s) -> marker.name = s, marker -> marker.name)
-      .addField(new KeyedCodec<>("Image", Codec.STRING), (marker, s) -> marker.markerImage = s, marker -> marker.markerImage)
-      .<Transform>append(
-         new KeyedCodec<>("Transform", Transform.CODEC),
-         (marker, s) -> marker.transform = PositionUtil.toTransformPacket(s),
-         marker -> PositionUtil.toTransform(marker.transform)
-      )
-      .addValidator(Validators.nonNull())
-      .add()
-      .addField(
-         new KeyedCodec<>("ContextMenuItems", CONTEXT_MENU_ITEM_ARRAY), (marker, items) -> marker.contextMenuItems = items, marker -> marker.contextMenuItems
-      )
-      .build();
-   public static final ArrayCodec<MapMarker> MARKER_ARRAY = new ArrayCodec<>(MARKER, MapMarker[]::new);
    public static final BuilderCodec<ItemAnimation> ITEM_ANIMATION_CODEC = BuilderCodec.builder(ItemAnimation.class, ItemAnimation::new)
       .append(new KeyedCodec<>("ThirdPerson", Codec.STRING), (itemAnimation, s) -> itemAnimation.thirdPerson = s, itemAnimation -> itemAnimation.thirdPerson)
       .addValidator(CommonAssetValidator.ANIMATION_ITEM_CHARACTER)

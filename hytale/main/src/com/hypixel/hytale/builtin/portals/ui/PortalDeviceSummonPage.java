@@ -30,7 +30,6 @@ import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.asset.type.item.config.PortalKey;
 import com.hypixel.hytale.server.core.asset.type.portalworld.PillTag;
 import com.hypixel.hytale.server.core.asset.type.portalworld.PortalDescription;
-import com.hypixel.hytale.server.core.asset.type.portalworld.PortalSpawn;
 import com.hypixel.hytale.server.core.asset.type.portalworld.PortalType;
 import com.hypixel.hytale.server.core.asset.util.ColorParseUtil;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
@@ -52,6 +51,8 @@ import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.spawn.IndividualSpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -63,10 +64,10 @@ import javax.annotation.Nullable;
 public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDeviceSummonPage.Data> {
    private final PortalDeviceConfig config;
    private final Ref<ChunkStore> blockRef;
+   @Nullable
    private final ItemStack offeredItemStack;
-   private static final Transform DEFAULT_WORLDGEN_SPAWN = new Transform(0.0, 140.0, 0.0);
 
-   public PortalDeviceSummonPage(@Nonnull PlayerRef playerRef, PortalDeviceConfig config, Ref<ChunkStore> blockRef, ItemStack offeredItemStack) {
+   public PortalDeviceSummonPage(@Nonnull PlayerRef playerRef, PortalDeviceConfig config, Ref<ChunkStore> blockRef, @Nullable ItemStack offeredItemStack) {
       super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, PortalDeviceSummonPage.Data.CODEC);
       this.config = config;
       this.blockRef = blockRef;
@@ -146,7 +147,7 @@ public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDevice
       }
    }
 
-   private static void updateCustomPills(UICommandBuilder commandBuilder, PortalType portalType) {
+   private static void updateCustomPills(@Nonnull UICommandBuilder commandBuilder, @Nonnull PortalType portalType) {
       List<PillTag> pills = portalType.getDescription().getPillTags();
 
       for (int i = 0; i < pills.size(); i++) {
@@ -158,7 +159,7 @@ public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDevice
       }
    }
 
-   private static void updateBulletList(UICommandBuilder commandBuilder, String selector, String[] messageKeys) {
+   private static void updateBulletList(@Nonnull UICommandBuilder commandBuilder, @Nonnull String selector, @Nonnull String[] messageKeys) {
       for (int i = 0; i < messageKeys.length; i++) {
          String messageKey = messageKeys[i];
          String child = selector + "[" + i + "]";
@@ -167,13 +168,15 @@ public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDevice
       }
    }
 
-   public static Message createDescription(PortalType portalType, int timeLimitSeconds) {
-      Message msg = Message.empty();
-      Message durationMsg = formatDurationCrudely(timeLimitSeconds);
-      msg.insert(Message.translation("server.customUI.portalDevice.timeLimit").param("limit", durationMsg.color("#f9cb13")));
-      return msg;
+   @Nonnull
+   public static Message createDescription(@Nonnull PortalType portalType, int timeLimitSeconds) {
+      Message message = Message.empty();
+      Message durationMessage = formatDurationCrudely(timeLimitSeconds);
+      message.insert(Message.translation("server.customUI.portalDevice.timeLimit").param("limit", durationMessage.color("#f9cb13")));
+      return message;
    }
 
+   @Nonnull
    private static Message formatDurationCrudely(int seconds) {
       if (seconds < 0) {
          return Message.translation("server.customUI.portalDevice.durationUnlimited");
@@ -282,9 +285,11 @@ public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDevice
       }
    }
 
-   private static CompletableFuture<World> spawnReturnPortal(World world, PortalWorld portalWorld, UUID sampleUuid, String portalBlockType) {
-      PortalSpawn portalSpawn = portalWorld.getPortalType().getPortalSpawn();
-      return getSpawnTransform(world, sampleUuid, portalSpawn)
+   @Nonnull
+   private static CompletableFuture<World> spawnReturnPortal(
+      @Nonnull World world, @Nonnull PortalWorld portalWorld, @Nonnull UUID sampleUuid, @Nonnull String portalBlockType
+   ) {
+      return getSpawnTransform(world, sampleUuid)
          .thenCompose(
             spawnTransform -> {
                Vector3d spawnPoint = spawnTransform.getPosition();
@@ -314,25 +319,30 @@ public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDevice
          );
    }
 
-   private static CompletableFuture<Transform> getSpawnTransform(World world, UUID sampleUuid, @Nullable PortalSpawn portalSpawn) {
+   @Nonnull
+   private static CompletableFuture<Transform> getSpawnTransform(@Nonnull World world, @Nonnull UUID sampleUuid) {
+      return CompletableFuture.supplyAsync(() -> {
+         List<Vector3d> hintedSpawns = fetchHintedSpawns(world, sampleUuid);
+         return PortalSpawnFinder.computeSpawnTransform(world, hintedSpawns);
+      }, world);
+   }
+
+   private static List<Vector3d> fetchHintedSpawns(World world, UUID sampleUuid) {
       ISpawnProvider spawnProvider = world.getWorldConfig().getSpawnProvider();
       if (spawnProvider == null) {
-         return CompletableFuture.completedFuture(null);
+         return Collections.emptyList();
       } else {
-         Transform worldSpawnPoint = spawnProvider.getSpawnPoint(world, sampleUuid);
-         if (DEFAULT_WORLDGEN_SPAWN.equals(worldSpawnPoint) && portalSpawn != null) {
-            return CompletableFuture.supplyAsync(() -> {
-               Transform computedSpawn = PortalSpawnFinder.computeSpawnTransform(world, portalSpawn);
-               return computedSpawn == null ? worldSpawnPoint : computedSpawn;
-            }, world);
+         Transform[] spawnTransforms = spawnProvider.getSpawnPoints();
+         if (spawnTransforms != null && spawnTransforms.length > 0) {
+            return Arrays.stream(spawnTransforms).map(Transform::getPosition).toList();
          } else {
-            Transform uppedSpawnPoint = worldSpawnPoint.clone();
-            uppedSpawnPoint.getPosition().add(0.0, 0.5, 0.0);
-            return CompletableFuture.completedFuture(uppedSpawnPoint);
+            Transform spawnPoint = spawnProvider.getSpawnPoint(world, sampleUuid);
+            return spawnPoint != null ? Collections.singletonList(spawnPoint.getPosition()) : Collections.emptyList();
          }
       }
    }
 
+   @Nonnull
    private PortalDeviceSummonPage.State computeState(@Nonnull Player player, @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
       if (!this.blockRef.isValid()) {
          return PortalDeviceSummonPage.Error.INVALID_BLOCK;
@@ -346,7 +356,9 @@ public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDevice
             PortalDevice portalDevice = chunkStore.getComponent(this.blockRef, PortalDevice.getComponentType());
             if (blockStateInfo != null && portalDevice != null) {
                Ref<ChunkStore> chunkRef = blockStateInfo.getChunkRef();
-               if (chunkRef != null && chunkRef.isValid()) {
+               if (!chunkRef.isValid()) {
+                  return PortalDeviceSummonPage.Error.INVALID_BLOCK;
+               } else {
                   WorldChunk worldChunk = chunkStore.getComponent(chunkRef, WorldChunk.getComponentType());
                   if (worldChunk == null) {
                      return PortalDeviceSummonPage.Error.INVALID_BLOCK;
@@ -398,8 +410,6 @@ public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDevice
                         }
                      }
                   }
-               } else {
-                  return PortalDeviceSummonPage.Error.INVALID_BLOCK;
                }
             } else {
                return PortalDeviceSummonPage.Error.INVALID_BLOCK;
@@ -408,7 +418,7 @@ public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDevice
       }
    }
 
-   private static void decrementItemInHand(Inventory inventory, int amount) {
+   private static void decrementItemInHand(@Nonnull Inventory inventory, int amount) {
       if (!inventory.usingToolsItem()) {
          byte hotbarSlot = inventory.getActiveHotbarSlot();
          if (hotbarSlot != -1) {
@@ -432,7 +442,9 @@ public class PortalDeviceSummonPage extends InteractiveCustomUIPage<PortalDevice
    }
 
    protected static class Data {
+      @Nonnull
       private static final String KEY_ACTION = "Action";
+      @Nonnull
       public static final BuilderCodec<PortalDeviceSummonPage.Data> CODEC = BuilderCodec.builder(
             PortalDeviceSummonPage.Data.class, PortalDeviceSummonPage.Data::new
          )

@@ -9,6 +9,7 @@ import com.hypixel.hytale.server.core.cosmetics.CosmeticsModule;
 import com.hypixel.hytale.server.core.io.ServerManager;
 import com.hypixel.hytale.server.core.modules.LegacyModule;
 import com.hypixel.hytale.server.core.modules.accesscontrol.AccessControlModule;
+import com.hypixel.hytale.server.core.modules.anchoraction.AnchorActionModule;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthModule;
 import com.hypixel.hytale.server.core.modules.blockset.BlockSetModule;
@@ -70,6 +71,7 @@ public final class Constants {
       BlockHealthModule.MANIFEST,
       PrefabSpawnerModule.MANIFEST,
       TimeModule.MANIFEST,
+      AnchorActionModule.MANIFEST,
       InteractionModule.MANIFEST,
       EntityModule.MANIFEST,
       EntityStatsModule.MANIFEST,
@@ -103,5 +105,9 @@ public final class Constants {
 
    private static Path getUniversePath() {
       return OPTION_SET.has(Options.UNIVERSE) ? (Path)OPTION_SET.valueOf(Options.UNIVERSE) : Path.of("universe");
+   }
+
+   public static boolean shouldSkipModValidation() {
+      return OPTION_SET.has(Options.SKIP_MOD_VALIDATION) || HytaleServer.get().getConfig().shouldSkipModValidation();
    }
 }

@@ -1,14 +1,16 @@
 package com.hypixel.hytale.protocol.packets.connection;
 
 import com.hypixel.hytale.protocol.InstantData;
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class Ping implements Packet {
+public class Ping implements Packet, ToClientPacket {
    public static final int PACKET_ID = 2;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -26,6 +28,11 @@ public class Ping implements Packet {
    @Override
    public int getId() {
       return 2;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public Ping() {

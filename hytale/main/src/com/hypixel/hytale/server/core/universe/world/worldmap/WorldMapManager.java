@@ -5,34 +5,43 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.lookup.CodecMapCodec;
-import com.hypixel.hytale.common.util.ArrayUtil;
 import com.hypixel.hytale.common.util.CompletableFutureUtil;
-import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.util.MathUtil;
+import com.hypixel.hytale.protocol.Color;
+import com.hypixel.hytale.protocol.packets.player.RemoveMapMarker;
+import com.hypixel.hytale.protocol.packets.worldmap.CreateUserMarker;
 import com.hypixel.hytale.protocol.packets.worldmap.MapImage;
 import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
-import com.hypixel.hytale.server.core.entity.UUIDComponent;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.data.PlayerConfigData;
 import com.hypixel.hytale.server.core.entity.entities.player.data.PlayerWorldData;
+import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MapMarkerTracker;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MarkersCollector;
 import com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers.DeathMarkerProvider;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers.OtherPlayersMarkerProvider;
 import com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers.POIMarkerProvider;
-import com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers.PerWorldDataMarkerProvider;
-import com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers.PlayerIconMarkerProvider;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers.PersonalMarkersProvider;
 import com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers.RespawnMarkerProvider;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers.SharedMarkersProvider;
 import com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers.SpawnMarkerProvider;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.user.UserMapMarker;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.user.UserMapMarkersStore;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.user.UserMarkerValidator;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.worldstore.WorldMarkersResource;
 import com.hypixel.hytale.server.core.util.thread.TickingThread;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -71,10 +80,11 @@ public class WorldMapManager extends TickingThread {
       this.logger = HytaleLogger.get("World|" + world.getName() + "|M");
       this.world = world;
       this.addMarkerProvider("spawn", SpawnMarkerProvider.INSTANCE);
-      this.addMarkerProvider("playerIcons", PlayerIconMarkerProvider.INSTANCE);
+      this.addMarkerProvider("playerIcons", OtherPlayersMarkerProvider.INSTANCE);
       this.addMarkerProvider("death", DeathMarkerProvider.INSTANCE);
       this.addMarkerProvider("respawn", RespawnMarkerProvider.INSTANCE);
-      this.addMarkerProvider("playerMarkers", PerWorldDataMarkerProvider.INSTANCE);
+      this.addMarkerProvider("personal", PersonalMarkersProvider.INSTANCE);
+      this.addMarkerProvider("shared", SharedMarkersProvider.INSTANCE);
       this.addMarkerProvider("poi", POIMarkerProvider.INSTANCE);
    }
 
@@ -275,6 +285,74 @@ public class WorldMapManager extends TickingThread {
       }
    }
 
+   public void handleUserCreateMarker(PlayerRef playerRef, CreateUserMarker packet) {
+      Ref<EntityStore> ref = playerRef.getReference();
+      if (ref != null) {
+         UserMarkerValidator.PlaceResult validation = UserMarkerValidator.validatePlacing(ref, packet);
+         if (validation instanceof UserMarkerValidator.CanSpawn canSpawn) {
+            Store var13 = ref.getStore();
+            UserMapMarkersStore markersStore = canSpawn.markersStore();
+            DisplayNameComponent displayNameComponent = var13.getComponent(ref, DisplayNameComponent.getComponentType());
+            String createdByName = displayNameComponent == null ? playerRef.getUsername() : displayNameComponent.getDisplayName().getRawText();
+            UserMapMarker userMapMarker = new UserMapMarker();
+            userMapMarker.setId("user_" + (packet.shared ? "shared" : "personal") + "_" + UUID.randomUUID());
+            userMapMarker.setPosition(packet.x, packet.z);
+            userMapMarker.setName(packet.name);
+            userMapMarker.setIcon(packet.markerImage == null ? "User1.png" : packet.markerImage);
+            userMapMarker.setColorTint(packet.tintColor == null ? new Color((byte)0, (byte)0, (byte)0) : packet.tintColor);
+            userMapMarker.withCreatedByName(createdByName);
+            userMapMarker.withCreatedByUuid(playerRef.getUuid());
+            markersStore.addUserMapMarker(userMapMarker);
+         } else {
+            if (validation instanceof UserMarkerValidator.Fail(Message displayNameComponent)) {
+               playerRef.sendMessage(displayNameComponent.color("#ffc800"));
+            }
+         }
+      }
+   }
+
+   public void handleUserRemoveMarker(PlayerRef playerRef, RemoveMapMarker packet) {
+      Ref<EntityStore> ref = playerRef.getReference();
+      if (ref != null) {
+         Store<EntityStore> store = ref.getStore();
+         World world = store.getExternalData().getWorld();
+         Player player = store.getComponent(ref, Player.getComponentType());
+         PlayerWorldData perWorldData = player.getPlayerConfigData().getPerWorldData(world.getName());
+         boolean removedDeathMarker = perWorldData.removeLastDeath(packet.markerId);
+         if (!removedDeathMarker) {
+            WorldMapManager.MarkerAndItsStore userMarkerAndStore = this.findUserMapMarker(packet.markerId, player, world);
+            if (userMarkerAndStore == null) {
+               playerRef.sendMessage(Message.translation("server.worldmap.markers.edit.notFound").color("#ffc800"));
+               HytaleLogger.getLogger()
+                  .at(Level.WARNING)
+                  .log("Couldn't find marker to remove '" + packet.markerId + "' from " + playerRef.getUsername() + " " + playerRef.getUuid());
+            } else {
+               UserMarkerValidator.RemoveResult validation = UserMarkerValidator.validateRemove(ref, userMarkerAndStore.marker);
+               if (!(validation instanceof UserMarkerValidator.CanRemove)) {
+                  if (validation instanceof UserMarkerValidator.Fail(Message var13)) {
+                     playerRef.sendMessage(var13.color("#ffc800"));
+                  }
+               } else {
+                  userMarkerAndStore.store.removeUserMapMarker(userMarkerAndStore.marker.getId());
+               }
+            }
+         }
+      }
+   }
+
+   @Nullable
+   private WorldMapManager.MarkerAndItsStore findUserMapMarker(String markerId, Player player, World world) {
+      PlayerWorldData perWorldData = player.getPlayerConfigData().getPerWorldData(world.getName());
+      UserMapMarker personalMarker = perWorldData.getUserMapMarker(markerId);
+      if (personalMarker != null) {
+         return new WorldMapManager.MarkerAndItsStore(personalMarker, perWorldData);
+      } else {
+         WorldMarkersResource sharedMarkers = world.getChunkStore().getStore().getResource(WorldMarkersResource.getResourceType());
+         UserMapMarker sharedMarker = sharedMarkers.getUserMapMarker(markerId);
+         return sharedMarker != null ? new WorldMapManager.MarkerAndItsStore(sharedMarker, sharedMarkers) : null;
+      }
+   }
+
    public void clearImages() {
       this.images.clear();
       this.generating.clear();
@@ -287,23 +365,10 @@ public class WorldMapManager extends TickingThread {
       });
    }
 
-   @Nonnull
-   public static WorldMapManager.PlayerMarkerReference createPlayerMarker(
-      @Nonnull Ref<EntityStore> playerRef, @Nonnull MapMarker marker, @Nonnull ComponentAccessor<EntityStore> componentAccessor
-   ) {
-      World world = componentAccessor.getExternalData().getWorld();
-      Player playerComponent = componentAccessor.getComponent(playerRef, Player.getComponentType());
-
-      assert playerComponent != null;
-
-      UUIDComponent uuidComponent = componentAccessor.getComponent(playerRef, UUIDComponent.getComponentType());
-
-      assert uuidComponent != null;
-
-      PlayerWorldData perWorldData = playerComponent.getPlayerConfigData().getPerWorldData(world.getName());
-      MapMarker[] worldMapMarkers = perWorldData.getWorldMapMarkers();
-      perWorldData.setWorldMapMarkers(ArrayUtil.append(worldMapMarkers, marker));
-      return new WorldMapManager.PlayerMarkerReference(uuidComponent.getUuid(), world.getName(), marker.id);
+   public static void sendSettingsToAllWorlds() {
+      for (World world : Universe.get().getWorlds().values()) {
+         world.execute(() -> world.getWorldMapManager().sendSettings());
+      }
    }
 
    static {
@@ -319,8 +384,11 @@ public class WorldMapManager extends TickingThread {
       }
    }
 
+   private record MarkerAndItsStore(UserMapMarker marker, UserMapMarkersStore store) {
+   }
+
    public interface MarkerProvider {
-      void update(World var1, MapMarkerTracker var2, int var3, int var4, int var5);
+      void update(@Nonnull World var1, @Nonnull Player var2, @Nonnull MarkersCollector var3);
    }
 
    public interface MarkerReference {
@@ -409,31 +477,11 @@ public class WorldMapManager extends TickingThread {
       }
 
       @Nullable
-      private static MapMarker removeMarkerFromData(@Nonnull PlayerConfigData data, @Nonnull String worldName, @Nonnull String markerId) {
+      private static void removeMarkerFromData(@Nonnull PlayerConfigData data, @Nonnull String worldName, @Nonnull String markerId) {
          PlayerWorldData perWorldData = data.getPerWorldData(worldName);
-         MapMarker[] worldMapMarkers = perWorldData.getWorldMapMarkers();
-         if (worldMapMarkers == null) {
-            return null;
-         } else {
-            int index = -1;
-
-            for (int i = 0; i < worldMapMarkers.length; i++) {
-               if (worldMapMarkers[i].id.equals(markerId)) {
-                  index = i;
-                  break;
-               }
-            }
-
-            if (index == -1) {
-               return null;
-            } else {
-               MapMarker[] newWorldMapMarkers = new MapMarker[worldMapMarkers.length - 1];
-               System.arraycopy(worldMapMarkers, 0, newWorldMapMarkers, 0, index);
-               System.arraycopy(worldMapMarkers, index + 1, newWorldMapMarkers, index, newWorldMapMarkers.length - index);
-               perWorldData.setWorldMapMarkers(newWorldMapMarkers);
-               return worldMapMarkers[index];
-            }
-         }
+         ArrayList<? extends UserMapMarker> playerMarkers = new ArrayList<>(perWorldData.getUserMapMarkers());
+         playerMarkers.removeIf(marker -> markerId.equals(marker.getId()));
+         perWorldData.setUserMapMarkers(playerMarkers);
       }
    }
 }

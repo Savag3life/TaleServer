@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public class KillNPCObjectiveTask extends KillObjectiveTask {
+   @Nonnull
    public static final BuilderCodec<KillNPCObjectiveTask> CODEC = BuilderCodec.builder(
          KillNPCObjectiveTask.class, KillNPCObjectiveTask::new, KillObjectiveTask.CODEC
       )

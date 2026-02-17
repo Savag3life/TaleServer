@@ -55,6 +55,7 @@ public class StairConnectedBlockRuleSet extends ConnectedBlockRuleSet implements
       .append(new KeyedCodec<>("MaterialName", Codec.STRING), (ruleSet, materialName) -> ruleSet.materialName = materialName, ruleSet -> ruleSet.materialName)
       .add()
       .build();
+   protected Object2IntMap<StairConnectedBlockRuleSet.StairType> stairTypeToBlockId;
    private ConnectedBlockOutput straight;
    private ConnectedBlockOutput cornerLeft;
    private ConnectedBlockOutput cornerRight;
@@ -62,38 +63,6 @@ public class StairConnectedBlockRuleSet extends ConnectedBlockRuleSet implements
    private ConnectedBlockOutput invertedCornerRight;
    private String materialName = "Stair";
    private Int2ObjectMap<StairConnectedBlockRuleSet.StairType> blockIdToStairType;
-   protected Object2IntMap<StairConnectedBlockRuleSet.StairType> stairTypeToBlockId;
-
-   @Override
-   public boolean onlyUpdateOnPlacement() {
-      return false;
-   }
-
-   @Override
-   public void updateCachedBlockTypes(BlockType baseBlockType, BlockTypeAssetMap<String, BlockType> assetMap) {
-      int baseIndex = assetMap.getIndex(baseBlockType.getId());
-      Int2ObjectMap<StairConnectedBlockRuleSet.StairType> blockIdToStairType = new Int2ObjectOpenHashMap();
-      Object2IntMap<StairConnectedBlockRuleSet.StairType> stairTypeToBlockId = new Object2IntOpenHashMap();
-      stairTypeToBlockId.defaultReturnValue(baseIndex);
-      ConnectedBlockOutput[] outputs = new ConnectedBlockOutput[]{
-         this.straight, this.cornerLeft, this.cornerRight, this.invertedCornerLeft, this.invertedCornerRight
-      };
-      StairConnectedBlockRuleSet.StairType[] stairTypes = StairConnectedBlockRuleSet.StairType.VALUES;
-
-      for (int i = 0; i < outputs.length; i++) {
-         ConnectedBlockOutput output = outputs[i];
-         if (output != null) {
-            int index = output.resolve(baseBlockType, assetMap);
-            if (index != -1) {
-               blockIdToStairType.put(index, stairTypes[i]);
-               stairTypeToBlockId.put(stairTypes[i], index);
-            }
-         }
-      }
-
-      this.blockIdToStairType = blockIdToStairType;
-      this.stairTypeToBlockId = stairTypeToBlockId;
-   }
 
    @Nullable
    protected static ObjectIntPair<StairConnectedBlockRuleSet.StairType> getStairData(World world, Vector3i coordinate, @Nullable String requiredMaterialName) {
@@ -127,6 +96,130 @@ public class StairConnectedBlockRuleSet extends ConnectedBlockRuleSet implements
             }
          }
       }
+   }
+
+   protected static StairConnectedBlockRuleSet.StairConnection getCornerConnection(
+      World world,
+      StairLikeConnectedBlockRuleSet currentRuleSet,
+      Vector3i coordinate,
+      Vector3i mutablePos,
+      int rotation,
+      Rotation currentYaw,
+      boolean upsideDown,
+      int width
+   ) {
+      StairConnectedBlockRuleSet.StairConnection backConnection = null;
+      mutablePos.assign(Vector3i.NORTH).scale(width);
+      currentYaw.rotateY(mutablePos, mutablePos);
+      mutablePos.add(coordinate.x, coordinate.y, coordinate.z);
+      ObjectIntPair<StairConnectedBlockRuleSet.StairType> backStair = getStairData(world, mutablePos, currentRuleSet.getMaterialName());
+      if (backStair == null && width > 1) {
+         mutablePos.assign(Vector3i.NORTH).scale(width + 1);
+         currentYaw.rotateY(mutablePos, mutablePos);
+         mutablePos.add(coordinate.x, coordinate.y, coordinate.z);
+         backStair = getStairData(world, mutablePos, currentRuleSet.getMaterialName());
+         if (backStair != null && backStair.first() == StairConnectedBlockRuleSet.StairType.STRAIGHT) {
+            backStair = null;
+         }
+      }
+
+      if (backStair != null) {
+         StairConnectedBlockRuleSet.StairType otherStairType = (StairConnectedBlockRuleSet.StairType)backStair.left();
+         RotationTuple otherStairRotation = RotationTuple.get(backStair.rightInt());
+         Rotation otherYaw = otherStairRotation.yaw();
+         boolean otherUpsideDown = otherStairRotation.pitch() != Rotation.None;
+         if (otherUpsideDown) {
+            otherYaw = otherYaw.flip();
+         }
+
+         if (canConnectTo(currentYaw, otherYaw, upsideDown, otherUpsideDown)) {
+            mutablePos.assign(Vector3i.SOUTH);
+            otherYaw.rotateY(mutablePos, mutablePos);
+            mutablePos.add(coordinate.x, coordinate.y, coordinate.z);
+            ObjectIntPair<StairConnectedBlockRuleSet.StairType> sidewaysStair = getStairData(world, mutablePos, currentRuleSet.getMaterialName());
+            if (sidewaysStair == null || sidewaysStair.rightInt() != rotation) {
+               backConnection = getConnection(currentYaw, otherYaw, otherStairType, false, upsideDown);
+            }
+         }
+      }
+
+      return backConnection;
+   }
+
+   protected static StairConnectedBlockRuleSet.StairConnection getInvertedCornerConnection(
+      World world, StairLikeConnectedBlockRuleSet currentRuleSet, Vector3i coordinate, Vector3i mutablePos, Rotation currentYaw, boolean upsideDown
+   ) {
+      StairConnectedBlockRuleSet.StairConnection frontConnection = null;
+      mutablePos.assign(Vector3i.SOUTH);
+      currentYaw.rotateY(mutablePos, mutablePos);
+      mutablePos.add(coordinate.x, coordinate.y, coordinate.z);
+      ObjectIntPair<StairConnectedBlockRuleSet.StairType> frontStair = getStairData(world, mutablePos, currentRuleSet.getMaterialName());
+      if (frontStair != null) {
+         StairConnectedBlockRuleSet.StairType otherStairType = (StairConnectedBlockRuleSet.StairType)frontStair.left();
+         RotationTuple otherStairRotation = RotationTuple.get(frontStair.rightInt());
+         Rotation otherYaw = otherStairRotation.yaw();
+         boolean otherUpsideDown = otherStairRotation.pitch() != Rotation.None;
+         if (otherUpsideDown) {
+            otherYaw = otherYaw.flip();
+         }
+
+         if (canConnectTo(currentYaw, otherYaw, upsideDown, otherUpsideDown)) {
+            frontConnection = getConnection(currentYaw, otherYaw, otherStairType, true, upsideDown);
+         }
+      }
+
+      return frontConnection;
+   }
+
+   private static boolean canConnectTo(Rotation currentYaw, Rotation otherYaw, boolean upsideDown, boolean otherUpsideDown) {
+      return otherUpsideDown == upsideDown && otherYaw != currentYaw && otherYaw.add(Rotation.OneEighty) != currentYaw;
+   }
+
+   private static StairConnectedBlockRuleSet.StairConnection getConnection(
+      Rotation currentYaw, Rotation otherYaw, StairConnectedBlockRuleSet.StairType otherStairType, boolean inverted, boolean upsideDown
+   ) {
+      if (otherYaw == currentYaw.add(Rotation.Ninety)
+         && otherStairType != StairConnectedBlockRuleSet.StairType.invertedCorner(upsideDown ^ inverted)
+         && otherStairType != StairConnectedBlockRuleSet.StairType.corner(upsideDown ^ !inverted)) {
+         return StairConnectedBlockRuleSet.StairConnection.CORNER_LEFT;
+      } else {
+         return otherYaw == currentYaw.subtract(Rotation.Ninety)
+               && otherStairType != StairConnectedBlockRuleSet.StairType.invertedCorner(upsideDown ^ !inverted)
+               && otherStairType != StairConnectedBlockRuleSet.StairType.corner(upsideDown ^ inverted)
+            ? StairConnectedBlockRuleSet.StairConnection.CORNER_RIGHT
+            : null;
+      }
+   }
+
+   @Override
+   public boolean onlyUpdateOnPlacement() {
+      return false;
+   }
+
+   @Override
+   public void updateCachedBlockTypes(BlockType baseBlockType, BlockTypeAssetMap<String, BlockType> assetMap) {
+      int baseIndex = assetMap.getIndex(baseBlockType.getId());
+      Int2ObjectMap<StairConnectedBlockRuleSet.StairType> blockIdToStairType = new Int2ObjectOpenHashMap();
+      Object2IntMap<StairConnectedBlockRuleSet.StairType> stairTypeToBlockId = new Object2IntOpenHashMap();
+      stairTypeToBlockId.defaultReturnValue(baseIndex);
+      ConnectedBlockOutput[] outputs = new ConnectedBlockOutput[]{
+         this.straight, this.cornerLeft, this.cornerRight, this.invertedCornerLeft, this.invertedCornerRight
+      };
+      StairConnectedBlockRuleSet.StairType[] stairTypes = StairConnectedBlockRuleSet.StairType.VALUES;
+
+      for (int i = 0; i < outputs.length; i++) {
+         ConnectedBlockOutput output = outputs[i];
+         if (output != null) {
+            int index = output.resolve(baseBlockType, assetMap);
+            if (index != -1) {
+               blockIdToStairType.put(index, stairTypes[i]);
+               stairTypeToBlockId.put(stairTypes[i], index);
+            }
+         }
+      }
+
+      this.blockIdToStairType = blockIdToStairType;
+      this.stairTypeToBlockId = stairTypeToBlockId;
    }
 
    @Override
@@ -190,99 +283,6 @@ public class StairConnectedBlockRuleSet extends ConnectedBlockRuleSet implements
       } else {
          String resultingBlockTypeKey = resultingBlockType.getId();
          return Optional.of(new ConnectedBlocksUtil.ConnectedBlockResult(resultingBlockTypeKey, rotation));
-      }
-   }
-
-   protected static StairConnectedBlockRuleSet.StairConnection getCornerConnection(
-      World world,
-      StairLikeConnectedBlockRuleSet currentRuleSet,
-      Vector3i coordinate,
-      Vector3i mutablePos,
-      int rotation,
-      Rotation currentYaw,
-      boolean upsideDown,
-      int width
-   ) {
-      StairConnectedBlockRuleSet.StairConnection backConnection = null;
-      mutablePos.assign(Vector3i.NORTH).scale(width);
-      currentYaw.rotateY(mutablePos, mutablePos);
-      mutablePos.add(coordinate.x, coordinate.y, coordinate.z);
-      ObjectIntPair<StairConnectedBlockRuleSet.StairType> backStair = getStairData(world, mutablePos, currentRuleSet.getMaterialName());
-      if (backStair == null && width > 1) {
-         mutablePos.assign(Vector3i.NORTH).scale(width + 1);
-         currentYaw.rotateY(mutablePos, mutablePos);
-         mutablePos.add(coordinate.x, coordinate.y, coordinate.z);
-         backStair = getStairData(world, mutablePos, currentRuleSet.getMaterialName());
-         if (backStair != null && backStair.first() == StairConnectedBlockRuleSet.StairType.STRAIGHT) {
-            backStair = null;
-         }
-      }
-
-      if (backStair != null) {
-         StairConnectedBlockRuleSet.StairType otherStairType = (StairConnectedBlockRuleSet.StairType)backStair.left();
-         RotationTuple otherStairRotation = RotationTuple.get(backStair.rightInt());
-         Rotation otherYaw = otherStairRotation.yaw();
-         boolean otherUpsideDown = otherStairRotation.pitch() != Rotation.None;
-         if (otherUpsideDown) {
-            otherYaw = otherYaw.flip();
-         }
-
-         if (canConnectTo(currentYaw, otherYaw, upsideDown, otherUpsideDown)) {
-            mutablePos.assign(Vector3i.SOUTH);
-            otherYaw.rotateY(mutablePos, mutablePos);
-            mutablePos.add(coordinate.x, coordinate.y, coordinate.z);
-            ObjectIntPair<StairConnectedBlockRuleSet.StairType> sidewaysStair = getStairData(world, mutablePos, currentRuleSet.getMaterialName());
-            if (sidewaysStair == null || sidewaysStair.rightInt() != rotation) {
-               backConnection = getConnection(currentYaw, otherYaw, otherStairType, false);
-            }
-         }
-      }
-
-      return backConnection;
-   }
-
-   protected static StairConnectedBlockRuleSet.StairConnection getInvertedCornerConnection(
-      World world, StairLikeConnectedBlockRuleSet currentRuleSet, Vector3i coordinate, Vector3i mutablePos, Rotation currentYaw, boolean upsideDown
-   ) {
-      StairConnectedBlockRuleSet.StairConnection frontConnection = null;
-      mutablePos.assign(Vector3i.SOUTH);
-      currentYaw.rotateY(mutablePos, mutablePos);
-      mutablePos.add(coordinate.x, coordinate.y, coordinate.z);
-      ObjectIntPair<StairConnectedBlockRuleSet.StairType> frontStair = getStairData(world, mutablePos, currentRuleSet.getMaterialName());
-      if (frontStair != null) {
-         StairConnectedBlockRuleSet.StairType otherStairType = (StairConnectedBlockRuleSet.StairType)frontStair.left();
-         RotationTuple otherStairRotation = RotationTuple.get(frontStair.rightInt());
-         Rotation otherYaw = otherStairRotation.yaw();
-         boolean otherUpsideDown = otherStairRotation.pitch() != Rotation.None;
-         if (otherUpsideDown) {
-            otherYaw = otherYaw.flip();
-         }
-
-         if (canConnectTo(currentYaw, otherYaw, upsideDown, otherUpsideDown)) {
-            frontConnection = getConnection(currentYaw, otherYaw, otherStairType, true);
-         }
-      }
-
-      return frontConnection;
-   }
-
-   private static boolean canConnectTo(Rotation currentYaw, Rotation otherYaw, boolean upsideDown, boolean otherUpsideDown) {
-      return otherUpsideDown == upsideDown && otherYaw != currentYaw && otherYaw.add(Rotation.OneEighty) != currentYaw;
-   }
-
-   private static StairConnectedBlockRuleSet.StairConnection getConnection(
-      Rotation currentYaw, Rotation otherYaw, StairConnectedBlockRuleSet.StairType otherStairType, boolean inverted
-   ) {
-      if (otherYaw == currentYaw.add(Rotation.Ninety)
-         && otherStairType != StairConnectedBlockRuleSet.StairType.invertedCorner(inverted)
-         && otherStairType != StairConnectedBlockRuleSet.StairType.corner(!inverted)) {
-         return StairConnectedBlockRuleSet.StairConnection.CORNER_LEFT;
-      } else {
-         return otherYaw == currentYaw.subtract(Rotation.Ninety)
-               && otherStairType != StairConnectedBlockRuleSet.StairType.invertedCorner(!inverted)
-               && otherStairType != StairConnectedBlockRuleSet.StairType.corner(inverted)
-            ? StairConnectedBlockRuleSet.StairConnection.CORNER_RIGHT
-            : null;
       }
    }
 

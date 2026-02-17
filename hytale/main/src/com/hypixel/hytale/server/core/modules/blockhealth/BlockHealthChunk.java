@@ -6,7 +6,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockPosition;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.packets.world.UpdateBlockDamage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -109,7 +109,7 @@ public class BlockHealthChunk implements Component<ChunkStore> {
       return this.blockHealthMap.getOrDefault(block, BlockHealth.NO_DAMAGE_INSTANCE).getHealth();
    }
 
-   public void createBlockDamagePackets(@Nonnull List<Packet> list) {
+   public void createBlockDamagePackets(@Nonnull List<ToClientPacket> list) {
       for (Entry<Vector3i, BlockHealth> entry : this.blockHealthMap.entrySet()) {
          Vector3i block = entry.getKey();
          BlockPosition blockPosition = new BlockPosition(block.getX(), block.getY(), block.getZ());

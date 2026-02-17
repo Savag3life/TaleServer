@@ -29,11 +29,13 @@ import javax.annotation.Nonnull;
 
 public class BlockBulkFindHereCommand extends AbstractPlayerCommand {
    @Nonnull
-   private final FlagArg printNameArg = this.withFlagArg("print", "");
+   private final FlagArg printNameArg = this.withFlagArg("print", "server.commands.block.find-here.print.desc");
    @Nonnull
-   private final RequiredArg<String> blockTypeArg = this.withRequiredArg("block", "", ArgTypes.BLOCK_TYPE_KEY);
+   private final RequiredArg<String> blockTypeArg = this.withRequiredArg("block", "server.commands.block.find-here.block.desc", ArgTypes.BLOCK_TYPE_KEY);
    @Nonnull
-   private final DefaultArg<Integer> radiusArg = this.withDefaultArg("radius", "", ArgTypes.INTEGER, 3, "");
+   private final DefaultArg<Integer> radiusArg = this.withDefaultArg(
+      "radius", "server.commands.block.find-here.radius.desc", ArgTypes.INTEGER, 3, "server.commands.block.bulk.find-here.radius.default"
+   );
 
    public BlockBulkFindHereCommand() {
       super("find-here", "server.commands.block.find-here.desc");
@@ -81,7 +83,12 @@ public class BlockBulkFindHereCommand extends AbstractPlayerCommand {
             long diff = System.nanoTime() - start;
             BlockType findBlock = BlockType.getAssetMap().getAsset(blockId);
             String blockName = printBlockName ? " " + findBlock.getId() : "";
-            playerRef.sendMessage(Message.translation("Found " + found.get() + blockName + " blocks in " + TimeUnit.NANOSECONDS.toSeconds(diff) + " seconds!"));
+            playerRef.sendMessage(
+               Message.translation("server.commands.block.find-here.result")
+                  .param("count", found.get())
+                  .param("blockName", blockName)
+                  .param("time", TimeUnit.NANOSECONDS.toSeconds(diff))
+            );
          }
       );
    }

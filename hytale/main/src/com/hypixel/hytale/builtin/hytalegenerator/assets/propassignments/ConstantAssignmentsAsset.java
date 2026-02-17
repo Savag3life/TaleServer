@@ -10,6 +10,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class ConstantAssignmentsAsset extends AssignmentsAsset {
+   @Nonnull
    public static final BuilderCodec<ConstantAssignmentsAsset> CODEC = BuilderCodec.builder(
          ConstantAssignmentsAsset.class, ConstantAssignmentsAsset::new, AssignmentsAsset.ABSTRACT_CODEC
       )
@@ -24,8 +25,7 @@ public class ConstantAssignmentsAsset extends AssignmentsAsset {
       if (super.skip()) {
          return Assignments.noPropDistribution(argument.runtime);
       } else {
-         Prop prop = this.propAsset
-            .build(new PropAsset.Argument(argument.parentSeed, argument.materialCache, argument.referenceBundle, argument.workerIndexer));
+         Prop prop = this.propAsset.build(new PropAsset.Argument(argument.parentSeed, argument.materialCache, argument.referenceBundle, argument.workerId));
          return new ConstantAssignments(prop, argument.runtime);
       }
    }

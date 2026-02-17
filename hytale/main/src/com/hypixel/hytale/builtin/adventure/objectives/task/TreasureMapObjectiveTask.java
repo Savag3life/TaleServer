@@ -5,6 +5,7 @@ import com.hypixel.hytale.builtin.adventure.objectives.ObjectivePlugin;
 import com.hypixel.hytale.builtin.adventure.objectives.blockstates.TreasureChestState;
 import com.hypixel.hytale.builtin.adventure.objectives.config.task.TreasureMapObjectiveTaskAsset;
 import com.hypixel.hytale.builtin.adventure.objectives.events.TreasureChestOpeningEvent;
+import com.hypixel.hytale.builtin.adventure.objectives.markers.ObjectiveTaskMarker;
 import com.hypixel.hytale.builtin.adventure.objectives.transaction.RegistrationTransactionRecord;
 import com.hypixel.hytale.builtin.adventure.objectives.transaction.SpawnTreasureChestTransactionRecord;
 import com.hypixel.hytale.builtin.adventure.objectives.transaction.TransactionRecord;
@@ -21,7 +22,7 @@ import com.hypixel.hytale.math.util.TrigMathUtil;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.item.ItemModule;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -30,7 +31,6 @@ import com.hypixel.hytale.server.core.universe.world.meta.BlockState;
 import com.hypixel.hytale.server.core.universe.world.meta.BlockStateModule;
 import com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerState;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.util.PositionUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +40,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class TreasureMapObjectiveTask extends ObjectiveTask {
+   @Nonnull
    public static final BuilderCodec<TreasureMapObjectiveTask> CODEC = BuilderCodec.builder(
          TreasureMapObjectiveTask.class, TreasureMapObjectiveTask::new, BASE_CODEC
       )
@@ -64,6 +65,7 @@ public class TreasureMapObjectiveTask extends ObjectiveTask {
    public static final int CHEST_SPAWN_TRY = 500;
    private int currentCompletion;
    private int chestCount;
+   @Nonnull
    private final List<UUID> chestUUIDs = new ObjectArrayList();
 
    public TreasureMapObjectiveTask(@Nonnull TreasureMapObjectiveTaskAsset asset, int taskSetIndex, int taskIndex) {
@@ -148,11 +150,10 @@ public class TreasureMapObjectiveTask extends ObjectiveTask {
             this.chestUUIDs.add(chestUUID);
             treasureChestState.getChunk().setState(conditionPosition.getX(), conditionPosition.getY(), conditionPosition.getZ(), treasureChestState);
             ObjectivePlugin.get().getLogger().at(Level.INFO).log("Spawned chest at: " + conditionPosition);
-            this.addMarker(
-               new MapMarker(
-                  this.getChestMarkerIDFromUUID(chestUUID), "Chest", "Home.png", PositionUtil.toTransformPacket(new Transform(conditionPosition)), null
-               )
+            ObjectiveTaskMarker marker = new ObjectiveTaskMarker(
+               this.getChestMarkerIDFromUUID(chestUUID), new Transform(conditionPosition), "Home.png", Message.translation("server.objectives.treasure.marker")
             );
+            this.addMarker(marker);
             return transactionRecord;
          }
       }
@@ -162,20 +163,25 @@ public class TreasureMapObjectiveTask extends ObjectiveTask {
    private TreasureChestState spawnChestBlock(
       @Nonnull World world, @Nonnull Vector3i conditionPosition, String chestBlockTypeKey, @Nonnull SpawnTreasureChestTransactionRecord transactionRecord
    ) {
-      WorldChunk worldChunk = world.getChunk(ChunkUtil.indexChunkFromBlock(conditionPosition.x, conditionPosition.z));
-      worldChunk.setBlock(conditionPosition.x, conditionPosition.y, conditionPosition.z, chestBlockTypeKey);
-      BlockState blockState = worldChunk.getState(conditionPosition.x, conditionPosition.y, conditionPosition.z);
-      if (!(blockState instanceof ItemContainerState)) {
-         transactionRecord.fail("BlockState is not a container");
+      long chunkIndex = ChunkUtil.indexChunkFromBlock(conditionPosition.x, conditionPosition.z);
+      WorldChunk worldChunk = world.getChunk(chunkIndex);
+      if (worldChunk == null) {
          return null;
       } else {
-         TreasureChestState treasureChestState = BlockStateModule.get()
-            .createBlockState(TreasureChestState.class, worldChunk, conditionPosition.clone(), blockState.getBlockType());
-         if (treasureChestState == null) {
-            transactionRecord.fail("Failed to create TreasureChestState!");
+         worldChunk.setBlock(conditionPosition.x, conditionPosition.y, conditionPosition.z, chestBlockTypeKey);
+         BlockState blockState = worldChunk.getState(conditionPosition.x, conditionPosition.y, conditionPosition.z);
+         if (!(blockState instanceof ItemContainerState)) {
+            transactionRecord.fail("BlockState is not a container");
             return null;
          } else {
-            return treasureChestState;
+            TreasureChestState treasureChestState = BlockStateModule.get()
+               .createBlockState(TreasureChestState.class, worldChunk, conditionPosition.clone(), blockState.getBlockType());
+            if (treasureChestState == null) {
+               transactionRecord.fail("Failed to create TreasureChestState!");
+               return null;
+            } else {
+               return treasureChestState;
+            }
          }
       }
    }
@@ -206,7 +212,8 @@ public class TreasureMapObjectiveTask extends ObjectiveTask {
    @Nonnull
    public com.hypixel.hytale.protocol.ObjectiveTask toPacket(@Nonnull Objective objective) {
       com.hypixel.hytale.protocol.ObjectiveTask packet = new com.hypixel.hytale.protocol.ObjectiveTask();
-      packet.taskDescriptionKey = this.asset.getDescriptionKey(objective.getObjectiveId(), this.taskSetIndex, this.taskIndex);
+      packet.taskDescriptionKey = Message.translation(this.asset.getDescriptionKey(objective.getObjectiveId(), this.taskSetIndex, this.taskIndex))
+         .getFormattedMessage();
       packet.currentCompletion = this.currentCompletion;
       packet.completionNeeded = this.chestCount;
       return packet;

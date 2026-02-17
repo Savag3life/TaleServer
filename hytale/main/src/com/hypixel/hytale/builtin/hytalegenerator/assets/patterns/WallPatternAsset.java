@@ -10,6 +10,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 public class WallPatternAsset extends PatternAsset {
+   @Nonnull
    public static final BuilderCodec<WallPatternAsset> CODEC = BuilderCodec.builder(WallPatternAsset.class, WallPatternAsset::new, PatternAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Wall", PatternAsset.CODEC, true), (t, k) -> t.wall = k, k -> k.wall)
       .add()

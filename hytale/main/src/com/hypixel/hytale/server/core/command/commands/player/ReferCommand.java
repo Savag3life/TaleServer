@@ -17,12 +17,12 @@ import javax.annotation.Nullable;
 
 public class ReferCommand extends AbstractTargetPlayerCommand {
    @Nonnull
-   private final RequiredArg<String> hostArg = this.withRequiredArg("host", "Target server hostname or IP", ArgTypes.STRING);
+   private final RequiredArg<String> hostArg = this.withRequiredArg("host", "server.commands.refer.host.desc", ArgTypes.STRING);
    @Nonnull
-   private final RequiredArg<Integer> portArg = this.withRequiredArg("port", "Target server port", ArgTypes.INTEGER);
+   private final RequiredArg<Integer> portArg = this.withRequiredArg("port", "server.commands.refer.port.desc", ArgTypes.INTEGER);
 
    public ReferCommand() {
-      super("refer", "Refer a player to another server for testing");
+      super("refer", "server.commands.refer.desc");
       this.addAliases("transfer");
    }
 

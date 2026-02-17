@@ -19,7 +19,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.CachedPacket;
 import com.hypixel.hytale.protocol.Opacity;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.packets.world.SetChunkEnvironments;
 import com.hypixel.hytale.protocol.packets.world.SetChunkHeightmap;
 import com.hypixel.hytale.protocol.packets.world.SetChunkTintmap;
@@ -579,7 +579,7 @@ public class BlockChunk implements Component<ChunkStore> {
          Store<ChunkStore> store,
          CommandBuffer<ChunkStore> commandBuffer,
          PlayerRef player,
-         @Nonnull List<CompletableFuture<Packet>> results
+         @Nonnull List<CompletableFuture<ToClientPacket>> results
       ) {
          BlockChunk component = archetypeChunk.getComponent(index, this.componentType);
          results.add(component.getCachedHeightmapPacket().exceptionally(throwable -> {

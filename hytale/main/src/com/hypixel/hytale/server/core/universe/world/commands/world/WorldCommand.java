@@ -23,5 +23,6 @@ public class WorldCommand extends AbstractCommandCollection {
       this.addSubCommand(new WorldSettingsCommand());
       this.addSubCommand(new WorldPerfCommand());
       this.addSubCommand(new WorldTpsCommand());
+      this.addSubCommand(new WorldRocksDbCommand());
    }
 }

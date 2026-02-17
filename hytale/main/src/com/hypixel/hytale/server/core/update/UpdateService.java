@@ -8,9 +8,9 @@ import com.hypixel.hytale.codec.util.RawJsonReader;
 import com.hypixel.hytale.common.util.java.ManifestUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.HytaleServer;
-import com.hypixel.hytale.server.core.HytaleServerConfig;
 import com.hypixel.hytale.server.core.auth.AuthConfig;
 import com.hypixel.hytale.server.core.auth.ServerAuthManager;
+import com.hypixel.hytale.server.core.config.UpdateConfig;
 import com.hypixel.hytale.server.core.util.ServiceHttpClientFactory;
 import com.hypixel.hytale.server.core.util.io.FileUtil;
 import java.io.IOException;
@@ -238,7 +238,7 @@ public class UpdateService {
 
    @Nonnull
    public static String getEffectivePatchline() {
-      HytaleServerConfig.UpdateConfig config = HytaleServer.get().getConfig().getUpdateConfig();
+      UpdateConfig config = HytaleServer.get().getConfig().getUpdateConfig();
       String patchline = config.getPatchline();
       if (patchline != null && !patchline.isEmpty()) {
          return patchline;

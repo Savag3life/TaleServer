@@ -306,8 +306,6 @@ public class ProjectileComponent implements Component<EntityStore> {
       if (depthShot != 0.0) {
          PhysicsMath.vectorFromAngles(yaw, pitchAdjust ? pitch : 0.0F, offset);
          offset.setLength(depthShot);
-      } else {
-         offset.assign(0.0, 0.0, 0.0);
       }
 
       offset.add(horizontalCenterShot * -PhysicsMath.headingZ(yaw), -verticalCenterShot, horizontalCenterShot * PhysicsMath.headingX(yaw));

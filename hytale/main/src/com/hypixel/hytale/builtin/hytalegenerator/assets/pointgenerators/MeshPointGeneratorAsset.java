@@ -10,6 +10,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class MeshPointGeneratorAsset extends PointGeneratorAsset {
+   @Nonnull
    public static final BuilderCodec<MeshPointGeneratorAsset> CODEC = BuilderCodec.builder(
          MeshPointGeneratorAsset.class, MeshPointGeneratorAsset::new, PointGeneratorAsset.ABSTRACT_CODEC
       )
@@ -29,9 +30,9 @@ public class MeshPointGeneratorAsset extends PointGeneratorAsset {
       .add()
       .build();
    private double jitter = 0.35;
-   private double scaleX = 1.0;
-   private double scaleY = 1.0;
-   private double scaleZ = 1.0;
+   private double scaleX = 40.0;
+   private double scaleY = 40.0;
+   private double scaleZ = 40.0;
    private String seedKey = "A";
 
    @Override

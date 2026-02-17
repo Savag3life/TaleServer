@@ -33,18 +33,18 @@ public class BlockBulkFindCommand extends AbstractWorldCommand {
    @Nonnull
    private static final Message MESSAGE_COMMANDS_BLOCK_FIND_DONE = Message.translation("server.commands.block.find.done");
    @Nonnull
-   private final RequiredArg<IntCoord> chunkXArg = this.withRequiredArg("chunkX", "", ArgTypes.RELATIVE_INT_COORD);
+   private final RequiredArg<IntCoord> chunkXArg = this.withRequiredArg("chunkX", "server.commands.block.find.chunkX.desc", ArgTypes.RELATIVE_INT_COORD);
    @Nonnull
-   private final RequiredArg<IntCoord> chunkZArg = this.withRequiredArg("chunkZ", "", ArgTypes.RELATIVE_INT_COORD);
+   private final RequiredArg<IntCoord> chunkZArg = this.withRequiredArg("chunkZ", "server.commands.block.find.chunkZ.desc", ArgTypes.RELATIVE_INT_COORD);
    @Nonnull
-   private final RequiredArg<String> blockTypeArg = this.withRequiredArg("block", "", ArgTypes.BLOCK_TYPE_KEY);
+   private final RequiredArg<String> blockTypeArg = this.withRequiredArg("block", "server.commands.block.find.block.desc", ArgTypes.BLOCK_TYPE_KEY);
    @Nonnull
-   private final RequiredArg<Integer> countArg = this.withRequiredArg("count", "", ArgTypes.INTEGER);
+   private final RequiredArg<Integer> countArg = this.withRequiredArg("count", "server.commands.block.find.count.desc", ArgTypes.INTEGER);
    @Nonnull
-   private final RequiredArg<Integer> timeoutArg = this.withRequiredArg("timeout", "", ArgTypes.INTEGER);
+   private final RequiredArg<Integer> timeoutArg = this.withRequiredArg("timeout", "server.commands.block.find.timeout.desc", ArgTypes.INTEGER);
 
    public BlockBulkFindCommand() {
-      super("find", "server.commands.find.desc", true);
+      super("find", "server.commands.block.find.desc", true);
    }
 
    @Override

@@ -239,26 +239,26 @@ public class ChunkSavingSystems {
                chunk.setSaving(true);
                Holder<ChunkStore> holder = store.copySerializableEntity(reference);
                data.toSaveTotal.getAndIncrement();
-               data.chunkSavingFutures
-                  .add(
-                     CompletableFuture.<CompletableFuture<Void>>supplyAsync(() -> saver.saveHolder(chunk.getX(), chunk.getZ(), holder))
-                        .thenCompose(Function.identity())
-                        .whenCompleteAsync(
-                           (aVoid, throwable) -> {
-                              if (throwable != null) {
-                                 ((HytaleLogger.Api)ChunkSavingSystems.LOGGER.at(Level.SEVERE).withCause(throwable))
-                                    .log("Failed to save chunk (%d, %d):", chunk.getX(), chunk.getZ());
-                              } else {
-                                 chunk.setFlag(ChunkFlag.ON_DISK, true);
-                                 ChunkSavingSystems.LOGGER.at(Level.FINEST).log("Finished saving chunk (%d, %d)", chunk.getX(), chunk.getZ());
-                              }
+               CompletableFuture<Void> savingFuture = CompletableFuture.<CompletableFuture<Void>>supplyAsync(
+                     () -> saver.saveHolder(chunk.getX(), chunk.getZ(), holder)
+                  )
+                  .thenCompose(Function.identity());
+               data.chunkSavingFutures.add(savingFuture);
+               savingFuture.whenCompleteAsync(
+                  (aVoid, throwable) -> {
+                     if (throwable != null) {
+                        ((HytaleLogger.Api)ChunkSavingSystems.LOGGER.at(Level.SEVERE).withCause(throwable))
+                           .log("Failed to save chunk (%d, %d):", chunk.getX(), chunk.getZ());
+                     } else {
+                        chunk.setFlag(ChunkFlag.ON_DISK, true);
+                        ChunkSavingSystems.LOGGER.at(Level.FINEST).log("Finished saving chunk (%d, %d)", chunk.getX(), chunk.getZ());
+                     }
 
-                              chunk.consumeNeedsSaving();
-                              chunk.setSaving(false);
-                           },
-                           world
-                        )
-                  );
+                     chunk.consumeNeedsSaving();
+                     chunk.setSaving(false);
+                  },
+                  world
+               );
             }
          }
       }

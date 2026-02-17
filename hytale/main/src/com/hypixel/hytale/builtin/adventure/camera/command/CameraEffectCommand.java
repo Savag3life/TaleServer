@@ -80,7 +80,6 @@ public class CameraEffectCommand extends AbstractCommandCollection {
    }
 
    protected static class DebugCommand extends AbstractTargetPlayerCommand {
-      private static final String MESSAGE_SUCCESS = "server.commands.camshake.debug.success";
       @Nonnull
       protected final RequiredArg<CameraEffect> effectArg = this.withRequiredArg(
          "effect", "server.commands.camshake.effect.desc", CameraEffectCommand.CAMERA_EFFECT_ARGUMENT_TYPE

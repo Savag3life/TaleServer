@@ -1,12 +1,12 @@
 package com.hypixel.hytale.server.core.update.command;
 
 import com.hypixel.hytale.server.core.HytaleServer;
-import com.hypixel.hytale.server.core.HytaleServerConfig;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.basecommands.CommandBase;
+import com.hypixel.hytale.server.core.config.UpdateConfig;
 import com.hypixel.hytale.server.core.update.UpdateService;
 import javax.annotation.Nonnull;
 
@@ -33,7 +33,7 @@ public class UpdatePatchlineCommand extends CommandBase {
       @Override
       protected void executeSync(@Nonnull CommandContext context) {
          String newPatchline = this.patchlineArg.get(context);
-         HytaleServerConfig.UpdateConfig config = HytaleServer.get().getConfig().getUpdateConfig();
+         UpdateConfig config = HytaleServer.get().getConfig().getUpdateConfig();
          config.setPatchline(newPatchline);
          context.sendMessage(Message.translation("server.commands.update.patchline.changed").param("patchline", newPatchline));
       }

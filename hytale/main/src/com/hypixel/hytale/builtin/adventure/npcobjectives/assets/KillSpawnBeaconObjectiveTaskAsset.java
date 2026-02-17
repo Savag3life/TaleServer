@@ -16,6 +16,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class KillSpawnBeaconObjectiveTaskAsset extends KillObjectiveTaskAsset {
+   @Nonnull
    public static final BuilderCodec<KillSpawnBeaconObjectiveTaskAsset> CODEC = BuilderCodec.builder(
          KillSpawnBeaconObjectiveTaskAsset.class, KillSpawnBeaconObjectiveTaskAsset::new, KillObjectiveTaskAsset.CODEC
       )
@@ -56,9 +57,9 @@ public class KillSpawnBeaconObjectiveTaskAsset extends KillObjectiveTaskAsset {
       if (!super.matchesAsset0(task)) {
          return false;
       } else {
-         return !(task instanceof KillSpawnBeaconObjectiveTaskAsset)
-            ? false
-            : Arrays.equals((Object[])((KillSpawnBeaconObjectiveTaskAsset)task).spawnBeacons, (Object[])this.spawnBeacons);
+         return task instanceof KillSpawnBeaconObjectiveTaskAsset killSpawnBeaconObjectiveTaskAsset
+            ? Arrays.equals((Object[])killSpawnBeaconObjectiveTaskAsset.spawnBeacons, (Object[])this.spawnBeacons)
+            : false;
       }
    }
 
@@ -69,6 +70,7 @@ public class KillSpawnBeaconObjectiveTaskAsset extends KillObjectiveTaskAsset {
    }
 
    public static class ObjectiveSpawnBeacon {
+      @Nonnull
       public static final BuilderCodec<KillSpawnBeaconObjectiveTaskAsset.ObjectiveSpawnBeacon> CODEC = BuilderCodec.builder(
             KillSpawnBeaconObjectiveTaskAsset.ObjectiveSpawnBeacon.class, KillSpawnBeaconObjectiveTaskAsset.ObjectiveSpawnBeacon::new
          )

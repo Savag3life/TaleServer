@@ -26,7 +26,7 @@ public class HitboxCollisionRemoveCommand extends AbstractCommandCollection {
 
    public static class HitboxCollisionRemoveEntityCommand extends AbstractWorldCommand {
       @Nonnull
-      private final EntityWrappedArg entityArg = this.withRequiredArg("entity", "server.commands.hitboxcollision.remove.entity.desc", ArgTypes.ENTITY_ID);
+      private final EntityWrappedArg entityArg = this.withRequiredArg("entity", "server.commands.hitboxcollision.remove.entityArg.desc", ArgTypes.ENTITY_ID);
 
       public HitboxCollisionRemoveEntityCommand() {
          super("entity", "server.commands.hitboxcollision.remove.entity.desc");

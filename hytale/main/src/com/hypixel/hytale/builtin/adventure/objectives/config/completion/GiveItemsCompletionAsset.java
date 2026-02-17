@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.asset.type.item.config.ItemDropList;
 import javax.annotation.Nonnull;
 
 public class GiveItemsCompletionAsset extends ObjectiveCompletionAsset {
+   @Nonnull
    public static final BuilderCodec<GiveItemsCompletionAsset> CODEC = BuilderCodec.builder(
          GiveItemsCompletionAsset.class, GiveItemsCompletionAsset::new, BASE_CODEC
       )

@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 
 public class ReputationGameplayConfig {
    public static final String ID = "Reputation";
+   @Nonnull
    public static final BuilderCodec<ReputationGameplayConfig> CODEC = BuilderCodec.builder(ReputationGameplayConfig.class, ReputationGameplayConfig::new)
       .appendInherited(
          new KeyedCodec<>("ReputationStorage", new EnumCodec<>(ReputationGameplayConfig.ReputationStorageType.class)),
@@ -18,6 +19,7 @@ public class ReputationGameplayConfig {
       )
       .add()
       .build();
+   @Nonnull
    private static final ReputationGameplayConfig DEFAULT_REPUTATION_GAMEPLAY_CONFIG = new ReputationGameplayConfig();
    @Nonnull
    protected ReputationGameplayConfig.ReputationStorageType reputationStorageType = ReputationGameplayConfig.ReputationStorageType.PerPlayer;
@@ -27,6 +29,7 @@ public class ReputationGameplayConfig {
       return config.getPluginConfig().get(ReputationGameplayConfig.class);
    }
 
+   @Nonnull
    public static ReputationGameplayConfig getOrDefault(@Nonnull GameplayConfig config) {
       ReputationGameplayConfig reputationGameplayConfig = get(config);
       return reputationGameplayConfig != null ? reputationGameplayConfig : DEFAULT_REPUTATION_GAMEPLAY_CONFIG;

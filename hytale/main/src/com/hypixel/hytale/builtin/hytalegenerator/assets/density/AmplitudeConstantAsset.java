@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class AmplitudeConstantAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<AmplitudeConstantAsset> CODEC = BuilderCodec.builder(
          AmplitudeConstantAsset.class, AmplitudeConstantAsset::new, DensityAsset.ABSTRACT_CODEC
       )

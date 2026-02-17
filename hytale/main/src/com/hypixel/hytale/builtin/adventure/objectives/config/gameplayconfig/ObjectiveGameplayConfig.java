@@ -12,7 +12,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class ObjectiveGameplayConfig {
+   @Nonnull
    public static final String ID = "Objective";
+   @Nonnull
    public static final BuilderCodec<ObjectiveGameplayConfig> CODEC = BuilderCodec.builder(ObjectiveGameplayConfig.class, ObjectiveGameplayConfig::new)
       .appendInherited(
          new KeyedCodec<>("StarterObjectiveLinePerWorld", new MapCodec<>(Codec.STRING, Object2ObjectOpenHashMap::new, true)),

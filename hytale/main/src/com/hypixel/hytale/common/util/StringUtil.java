@@ -426,15 +426,19 @@ public class StringUtil {
    public static String toPaddedBinaryString(int val) {
       byte[] buf = new byte[]{48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48};
       int leadingZeros = Integer.numberOfLeadingZeros(val);
-      int mag = 32 - leadingZeros;
-      int pos = Math.max(mag, 1);
+      if (leadingZeros == 32) {
+         return new String(buf, 0);
+      } else {
+         int mag = 32 - leadingZeros;
+         int pos = Math.max(mag, 1);
 
-      do {
-         buf[leadingZeros + --pos] = (byte)(48 + (val & 1));
-         val >>>= 1;
-      } while (pos > 0);
+         do {
+            buf[leadingZeros + --pos] = (byte)(48 + (val & 1));
+            val >>>= 1;
+         } while (pos > 0);
 
-      return new String(buf, 0);
+         return new String(buf, 0);
+      }
    }
 
    @Nonnull

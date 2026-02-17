@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.npc.decisionmaker.core.EvaluationContext;
 import javax.annotation.Nonnull;
 
 public abstract class ScaledCurveCondition extends Condition {
+   @Nonnull
    public static final BuilderCodec<ScaledCurveCondition> ABSTRACT_CODEC = BuilderCodec.abstractBuilder(ScaledCurveCondition.class, BASE_CODEC)
       .appendInherited(
          new KeyedCodec<>("Curve", ScaledResponseCurve.CODEC),

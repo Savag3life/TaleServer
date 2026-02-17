@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class SmoothCeilingCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<SmoothCeilingCurveAsset> CODEC = BuilderCodec.builder(
          SmoothCeilingCurveAsset.class, SmoothCeilingCurveAsset::new, CurveAsset.ABSTRACT_CODEC
       )

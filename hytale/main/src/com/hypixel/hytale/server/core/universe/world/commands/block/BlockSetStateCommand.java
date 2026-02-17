@@ -8,10 +8,10 @@ import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import javax.annotation.Nonnull;
 
 public class BlockSetStateCommand extends SimpleBlockCommand {
-   private final RequiredArg<String> stateArg = this.withRequiredArg("state", "", ArgTypes.STRING);
+   private final RequiredArg<String> stateArg = this.withRequiredArg("state", "server.commands.block.setstate.arg.state", ArgTypes.STRING);
 
    public BlockSetStateCommand() {
-      super("setstate", "");
+      super("setstate", "server.commands.block.setstate.desc");
    }
 
    @Override

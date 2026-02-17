@@ -93,7 +93,7 @@ public class PortalsPlugin extends JavaPlugin {
       this.getCodecRegistry(GameplayConfig.PLUGIN_CODEC).register(PortalGameplayConfig.class, "Portal", PortalGameplayConfig.CODEC);
    }
 
-   private void turnOffPortalWhenWorldRemoved(RemoveWorldEvent event) {
+   private void turnOffPortalWhenWorldRemoved(@Nonnull RemoveWorldEvent event) {
       for (World world : Universe.get().getWorlds().values()) {
          if (world != event.getWorld()) {
             world.execute(() -> PortalInvalidDestinationSystem.turnOffPortalsInWorld(world, event.getWorld()));

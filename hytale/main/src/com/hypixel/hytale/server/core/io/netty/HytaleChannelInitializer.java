@@ -9,7 +9,7 @@ import com.hypixel.hytale.protocol.io.netty.ProtocolUtil;
 import com.hypixel.hytale.protocol.packets.connection.Disconnect;
 import com.hypixel.hytale.protocol.packets.connection.DisconnectType;
 import com.hypixel.hytale.server.core.HytaleServer;
-import com.hypixel.hytale.server.core.HytaleServerConfig;
+import com.hypixel.hytale.server.core.config.RateLimitConfig;
 import com.hypixel.hytale.server.core.io.PacketStatsRecorderImpl;
 import com.hypixel.hytale.server.core.io.handlers.InitialPacketHandler;
 import com.hypixel.hytale.server.core.io.transport.QUICTransport;
@@ -60,18 +60,30 @@ public class HytaleChannelInitializer extends ChannelInitializer<Channel> {
             .log("Received connection from %s to %s", NettyUtil.formatRemoteAddress(channel), NettyUtil.formatLocalAddress(channel));
       }
 
-      PacketStatsRecorderImpl statsRecorder = new PacketStatsRecorderImpl();
-      channel.attr(PacketStatsRecorder.CHANNEL_KEY).set(statsRecorder);
-      Duration initialTimeout = HytaleServer.get().getConfig().getConnectionTimeouts().getInitial();
-      channel.attr(ProtocolUtil.PACKET_TIMEOUT_KEY).set(initialTimeout);
-      channel.pipeline().addLast("packetDecoder", new PacketDecoder());
-      HytaleServerConfig.RateLimitConfig rateLimitConfig = HytaleServer.get().getConfig().getRateLimitConfig();
-      if (rateLimitConfig.isEnabled()) {
-         channel.pipeline().addLast("rateLimit", new RateLimitHandler(rateLimitConfig.getBurstCapacity(), rateLimitConfig.getPacketsPerSecond()));
+      boolean canRead = true;
+      boolean canWrite = true;
+      if (channel instanceof QuicStreamChannel streamChannel) {
+         canRead = !streamChannel.isInputShutdown();
+         canWrite = !streamChannel.isOutputShutdown();
       }
 
-      channel.pipeline().addLast("packetEncoder", new PacketEncoder());
-      channel.pipeline().addLast("packetArrayEncoder", NettyUtil.PACKET_ARRAY_ENCODER_INSTANCE);
+      PacketStatsRecorderImpl statsRecorder = new PacketStatsRecorderImpl();
+      channel.attr(PacketStatsRecorder.CHANNEL_KEY).set(statsRecorder);
+      if (canRead) {
+         Duration initialTimeout = HytaleServer.get().getConfig().getConnectionTimeouts().getInitial();
+         channel.attr(ProtocolUtil.PACKET_TIMEOUT_KEY).set(initialTimeout);
+         channel.pipeline().addLast("packetDecoder", new PacketDecoder());
+         RateLimitConfig rateLimitConfig = HytaleServer.get().getConfig().getRateLimitConfig();
+         if (rateLimitConfig.isEnabled()) {
+            channel.pipeline().addLast("rateLimit", new RateLimitHandler(rateLimitConfig.getBurstCapacity(), rateLimitConfig.getPacketsPerSecond()));
+         }
+      }
+
+      if (canWrite) {
+         channel.pipeline().addLast("packetEncoder", new PacketEncoder());
+         channel.pipeline().addLast("packetArrayEncoder", NettyUtil.PACKET_ARRAY_ENCODER_INSTANCE);
+      }
+
       if (NettyUtil.PACKET_LOGGER.getLevel() != Level.OFF) {
          channel.pipeline().addLast("logger", NettyUtil.LOGGER);
       }

@@ -6,8 +6,11 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class FloatContainer3d {
+   @Nonnull
    private final Bounds3i bounds_voxelGrid;
+   @Nonnull
    private final Vector3i size_voxelGrid;
+   @Nonnull
    private final float[] data;
    private final float outOfBoundsValue;
 

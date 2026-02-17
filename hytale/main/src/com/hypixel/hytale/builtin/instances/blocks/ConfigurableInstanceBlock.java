@@ -76,6 +76,7 @@ public class ConfigurableInstanceBlock implements Component<ChunkStore> {
    private boolean personalReturnPoint = false;
    private double removeBlockAfter = -1.0;
 
+   @Nonnull
    public static ComponentType<ChunkStore, ConfigurableInstanceBlock> getComponentType() {
       return InstancesPlugin.get().getConfigurableInstanceBlockComponentType();
    }

@@ -3,6 +3,7 @@ package com.hypixel.hytale.server.core.asset.type.gameplay;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.server.core.asset.type.gameplay.sleep.SleepConfig;
 import javax.annotation.Nonnull;
 
 public class WorldConfig {

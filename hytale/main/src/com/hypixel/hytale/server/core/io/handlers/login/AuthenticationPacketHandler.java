@@ -36,7 +36,7 @@ public class AuthenticationPacketHandler extends HandshakeHandler {
    @Nonnull
    @Override
    public String getIdentifier() {
-      return "{Authenticating(" + NettyUtil.formatRemoteAddress(this.channel) + "), authHandlerSupplier=" + this.authHandlerSupplier + "}";
+      return "{Authenticating(" + NettyUtil.formatRemoteAddress(this.getChannel()) + "), authHandlerSupplier=" + this.authHandlerSupplier + "}";
    }
 
    @Override
@@ -51,11 +51,11 @@ public class AuthenticationPacketHandler extends HandshakeHandler {
 
    @Override
    protected void onAuthenticated(byte[] passwordChallenge) {
-      PacketHandler.logConnectionTimings(this.channel, "Authenticated", Level.FINE);
+      PacketHandler.logConnectionTimings(this.getChannel(), "Authenticated", Level.FINE);
       NettyUtil.setChannelHandler(
-         this.channel,
+         this.getChannel(),
          new PasswordPacketHandler(
-            this.channel,
+            this.getChannel(),
             this.protocolVersion,
             this.language,
             this.auth.getUuid(),

@@ -16,16 +16,24 @@ import javax.annotation.Nonnull;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 public class BoxProp extends Prop {
+   @Nonnull
    private final Vector3i range;
+   @Nonnull
    private final Material material;
+   @Nonnull
    private final Scanner scanner;
+   @Nonnull
    private final Pattern pattern;
+   @Nonnull
    private final ContextDependency contextDependency;
+   @Nonnull
    private final Bounds3i readBounds_voxelGrid;
+   @Nonnull
    private final Bounds3i writeBounds_voxelGrid;
+   @Nonnull
    private final Bounds3i boxBounds_voxelGrid;
 
-   public BoxProp(Vector3i range, @Nonnull Material material, @Nonnull Scanner scanner, @Nonnull Pattern pattern) {
+   public BoxProp(@Nonnull Vector3i range, @Nonnull Material material, @Nonnull Scanner scanner, @Nonnull Pattern pattern) {
       if (VectorUtil.isAnySmaller(range, new Vector3i())) {
          throw new IllegalArgumentException("negative range");
       } else {
@@ -44,6 +52,7 @@ public class BoxProp extends Prop {
       }
    }
 
+   @Nonnull
    public PositionListScanResult scan(@Nonnull Vector3i position, @Nonnull VoxelSpace<Material> materialSpace, @Nonnull WorkerIndexer.Id id) {
       Scanner.Context scannerContext = new Scanner.Context(position, this.pattern, materialSpace, id);
       List<Vector3i> validPositions = this.scanner.scan(scannerContext);
@@ -80,6 +89,7 @@ public class BoxProp extends Prop {
       }
    }
 
+   @Nonnull
    @Override
    public ContextDependency getContextDependency() {
       return this.contextDependency.clone();

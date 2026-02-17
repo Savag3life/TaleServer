@@ -10,22 +10,27 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class VoidEvent implements Component<EntityStore> {
    public static final double MIN_BLOCKS_BETWEEN_SPAWNERS = 62.0;
+   @Nonnull
    private SpatialHashGrid<Ref<EntityStore>> voidSpawners = new SpatialHashGrid<>(62.0);
+   @Nullable
    private VoidEventStage activeStage;
 
    public static ComponentType<EntityStore, VoidEvent> getComponentType() {
       return PortalsPlugin.getInstance().getVoidEventComponentType();
    }
 
-   public VoidEventConfig getConfig(World world) {
+   @Nullable
+   public static VoidEventConfig getConfig(@Nonnull World world) {
       PortalGameplayConfig portalConfig = world.getGameplayConfig().getPluginConfig().get(PortalGameplayConfig.class);
-      return portalConfig.getVoidEvent();
+      return portalConfig != null ? portalConfig.getVoidEvent() : null;
    }
 
+   @Nonnull
    public SpatialHashGrid<Ref<EntityStore>> getVoidSpawners() {
       return this.voidSpawners;
    }

@@ -11,18 +11,25 @@ public class OffsetPattern extends Pattern {
    private final Vector3i offset;
    @Nonnull
    private final SpaceSize readSpaceSize;
+   @Nonnull
+   private final Vector3i rChildPosition;
+   @Nonnull
+   private final Pattern.Context rChildContext;
 
    public OffsetPattern(@Nonnull Pattern pattern, @Nonnull Vector3i offset) {
       this.pattern = pattern;
       this.offset = offset;
       this.readSpaceSize = pattern.readSpace().moveBy(offset);
+      this.rChildPosition = new Vector3i();
+      this.rChildContext = new Pattern.Context();
    }
 
    @Override
    public boolean matches(@Nonnull Pattern.Context context) {
-      Pattern.Context childContext = new Pattern.Context(context);
-      childContext.position = context.position.clone().add(this.offset);
-      return this.pattern.matches(childContext);
+      this.rChildPosition.assign(context.position).add(this.offset);
+      this.rChildContext.assign(context);
+      this.rChildContext.position = this.rChildPosition;
+      return this.pattern.matches(this.rChildContext);
    }
 
    @Nonnull

@@ -8,6 +8,7 @@ import javax.annotation.Nonnull;
 public interface RemovalCondition {
    @Nonnull
    CodecMapCodec<RemovalCondition> CODEC = new CodecMapCodec<>("Type");
+   @Nonnull
    RemovalCondition[] EMPTY = new RemovalCondition[0];
 
    boolean shouldRemoveWorld(@Nonnull Store<ChunkStore> var1);

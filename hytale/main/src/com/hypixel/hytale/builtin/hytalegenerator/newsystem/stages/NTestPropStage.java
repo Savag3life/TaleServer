@@ -15,14 +15,22 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 
 public class NTestPropStage implements NStage {
+   @Nonnull
    private static final Class<NVoxelBuffer> bufferClass = NVoxelBuffer.class;
+   @Nonnull
    private static final Class<SolidMaterial> solidMaterialClass = SolidMaterial.class;
    private final int CONTEXT_DEPENDENCY_RANGE_BUFFER_GRID = 0;
+   @Nonnull
    private final Bounds3i inputBounds_bufferGrid = new Bounds3i(new Vector3i(0, 0, 0), new Vector3i(1, 40, 1));
+   @Nonnull
    private final NParametrizedBufferType inputBufferType;
+   @Nonnull
    private final NParametrizedBufferType outputBufferType;
+   @Nonnull
    private final SolidMaterial floorMaterial;
+   @Nonnull
    private final SolidMaterial anchorMaterial;
+   @Nonnull
    private final SolidMaterial propMaterial;
 
    public NTestPropStage(

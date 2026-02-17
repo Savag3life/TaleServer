@@ -3,6 +3,8 @@ package com.hypixel.hytale.builtin.fluid;
 import com.hypixel.hytale.assetstore.map.BlockTypeAssetMap;
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
 import com.hypixel.hytale.codec.lookup.Priority;
+import com.hypixel.hytale.component.ComponentRegistryProxy;
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.event.EventPriority;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -11,6 +13,7 @@ import com.hypixel.hytale.server.core.asset.type.blocktick.BlockTickStrategy;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.fluid.DefaultFluidTicker;
 import com.hypixel.hytale.server.core.asset.type.fluid.FiniteFluidTicker;
+import com.hypixel.hytale.server.core.asset.type.fluid.FireFluidTicker;
 import com.hypixel.hytale.server.core.asset.type.fluid.Fluid;
 import com.hypixel.hytale.server.core.asset.type.fluid.FluidTicker;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
@@ -19,6 +22,7 @@ import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.ChunkColumn;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.FluidSection;
 import com.hypixel.hytale.server.core.universe.world.events.ChunkPreLoadProcessEvent;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -28,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class FluidPlugin extends JavaPlugin {
+   @Nonnull
    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
    private static FluidPlugin instance;
 
@@ -42,76 +47,93 @@ public class FluidPlugin extends JavaPlugin {
 
    @Override
    protected void setup() {
+      ComponentRegistryProxy<ChunkStore> chunkStoreRegistry = this.getChunkStoreRegistry();
       FluidTicker.CODEC.register(Priority.DEFAULT, "Default", DefaultFluidTicker.class, DefaultFluidTicker.CODEC);
+      FluidTicker.CODEC.register("Fire", FireFluidTicker.class, FireFluidTicker.CODEC);
       FluidTicker.CODEC.register("Finite", FiniteFluidTicker.class, FiniteFluidTicker.CODEC);
-      this.getChunkStoreRegistry().registerSystem(new FluidSystems.EnsureFluidSection());
-      this.getChunkStoreRegistry().registerSystem(new FluidSystems.MigrateFromColumn());
-      this.getChunkStoreRegistry().registerSystem(new FluidSystems.SetupSection());
-      this.getChunkStoreRegistry().registerSystem(new FluidSystems.LoadPacketGenerator());
-      this.getChunkStoreRegistry().registerSystem(new FluidSystems.ReplicateChanges());
-      this.getChunkStoreRegistry().registerSystem(new FluidSystems.Ticking());
+      ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType = ChunkSection.getComponentType();
+      ComponentType<ChunkStore, FluidSection> fluidSectionComponentType = FluidSection.getComponentType();
+      ComponentType<ChunkStore, ChunkColumn> chunkColumnComponentType = ChunkColumn.getComponentType();
+      ComponentType<ChunkStore, BlockChunk> blockChunkComponentType = BlockChunk.getComponentType();
+      ComponentType<ChunkStore, WorldChunk> worldChunkComponentType = WorldChunk.getComponentType();
+      chunkStoreRegistry.registerSystem(new FluidSystems.EnsureFluidSection(chunkSectionComponentType, fluidSectionComponentType));
+      chunkStoreRegistry.registerSystem(new FluidSystems.MigrateFromColumn(chunkColumnComponentType, blockChunkComponentType, fluidSectionComponentType));
+      chunkStoreRegistry.registerSystem(new FluidSystems.SetupSection(chunkSectionComponentType, fluidSectionComponentType));
+      chunkStoreRegistry.registerSystem(new FluidSystems.LoadPacketGenerator(chunkColumnComponentType, fluidSectionComponentType));
+      chunkStoreRegistry.registerSystem(new FluidSystems.ReplicateChanges(chunkSectionComponentType, fluidSectionComponentType, worldChunkComponentType));
+      chunkStoreRegistry.registerSystem(new FluidSystems.Ticking(chunkSectionComponentType, fluidSectionComponentType, blockChunkComponentType));
       this.getEventRegistry().registerGlobal(EventPriority.FIRST, ChunkPreLoadProcessEvent.class, FluidPlugin::onChunkPreProcess);
       this.getCommandRegistry().registerCommand(new FluidCommand());
    }
 
    private static void onChunkPreProcess(@Nonnull ChunkPreLoadProcessEvent event) {
       if (event.isNewlyGenerated()) {
-         WorldChunk wc = event.getChunk();
+         WorldChunk worldChunk = event.getChunk();
          Holder<ChunkStore> holder = event.getHolder();
-         ChunkColumn column = holder.getComponent(ChunkColumn.getComponentType());
-         if (column != null) {
-            BlockChunk blockChunk = holder.getComponent(BlockChunk.getComponentType());
-            if (blockChunk != null) {
+         ChunkColumn chunkColumnComponent = holder.getComponent(ChunkColumn.getComponentType());
+         if (chunkColumnComponent != null) {
+            BlockChunk blockChunkComponent = holder.getComponent(BlockChunk.getComponentType());
+            if (blockChunkComponent != null) {
                IndexedLookupTableAssetMap<String, Fluid> fluidMap = Fluid.getAssetMap();
                BlockTypeAssetMap<String, BlockType> blockMap = BlockType.getAssetMap();
-               Holder<ChunkStore>[] sections = column.getSectionHolders();
+               Holder<ChunkStore>[] sections = chunkColumnComponent.getSectionHolders();
                if (sections != null) {
                   for (int i = 0; i < sections.length && i < 10; i++) {
                      Holder<ChunkStore> section = sections[i];
-                     FluidSection fluid = section.getComponent(FluidSection.getComponentType());
-                     if (fluid != null && !fluid.isEmpty()) {
-                        BlockSection blockSection = section.ensureAndGetComponent(BlockSection.getComponentType());
+                     FluidSection fluidSectionComponent = section.getComponent(FluidSection.getComponentType());
+                     if (fluidSectionComponent != null && !fluidSectionComponent.isEmpty()) {
+                        BlockSection blockSectionComponent = section.ensureAndGetComponent(BlockSection.getComponentType());
 
                         for (int idx = 0; idx < 32768; idx++) {
-                           int fluidId = fluid.getFluidId(idx);
+                           int fluidId = fluidSectionComponent.getFluidId(idx);
                            if (fluidId != 0) {
                               Fluid fluidType = fluidMap.getAsset(fluidId);
                               if (fluidType == null) {
                                  LOGGER.at(Level.WARNING)
-                                    .log("Invalid fluid found in chunk section: %d, %d %d with id %d", fluid.getX(), fluid.getY(), fluid.getZ(), fluid);
-                                 fluid.setFluid(idx, 0, (byte)0);
+                                    .log(
+                                       "Invalid fluid found in chunk section: %d, %d %d with id %d",
+                                       fluidSectionComponent.getX(),
+                                       fluidSectionComponent.getY(),
+                                       fluidSectionComponent.getZ(),
+                                       fluidSectionComponent
+                                    );
+                                 fluidSectionComponent.setFluid(idx, 0, (byte)0);
                               } else {
                                  FluidTicker ticker = fluidType.getTicker();
-                                 if (FluidTicker.isSolid(blockMap.getAsset(blockSection.get(idx)))) {
-                                    fluid.setFluid(idx, 0, (byte)0);
+                                 if (FluidTicker.isSolid(blockMap.getAsset(blockSectionComponent.get(idx)))) {
+                                    fluidSectionComponent.setFluid(idx, 0, (byte)0);
                                  } else {
                                     if (!ticker.canDemote()) {
-                                       int x = ChunkUtil.minBlock(fluid.getX()) + ChunkUtil.xFromIndex(idx);
-                                       int y = ChunkUtil.minBlock(fluid.getY()) + ChunkUtil.yFromIndex(idx);
-                                       int z = ChunkUtil.minBlock(fluid.getZ()) + ChunkUtil.zFromIndex(idx);
+                                       int x = ChunkUtil.minBlock(fluidSectionComponent.getX()) + ChunkUtil.xFromIndex(idx);
+                                       int y = ChunkUtil.minBlock(fluidSectionComponent.getY()) + ChunkUtil.yFromIndex(idx);
+                                       int z = ChunkUtil.minBlock(fluidSectionComponent.getZ()) + ChunkUtil.zFromIndex(idx);
                                        boolean canSpread = ChunkUtil.isBorderBlock(x, z)
-                                          || fluid.getFluidId(x - 1, y, z) == 0 && !FluidTicker.isSolid(blockMap.getAsset(blockSection.get(x - 1, y, z)))
-                                          || fluid.getFluidId(x + 1, y, z) == 0 && !FluidTicker.isSolid(blockMap.getAsset(blockSection.get(x + 1, y, z)))
-                                          || fluid.getFluidId(x, y, z - 1) == 0 && !FluidTicker.isSolid(blockMap.getAsset(blockSection.get(x, y, z - 1)))
-                                          || fluid.getFluidId(x, y, z + 1) == 0 && !FluidTicker.isSolid(blockMap.getAsset(blockSection.get(x, y, z + 1)));
+                                          || fluidSectionComponent.getFluidId(x - 1, y, z) != fluidId
+                                             && !FluidTicker.isSolid(blockMap.getAsset(blockSectionComponent.get(x - 1, y, z)))
+                                          || fluidSectionComponent.getFluidId(x + 1, y, z) != fluidId
+                                             && !FluidTicker.isSolid(blockMap.getAsset(blockSectionComponent.get(x + 1, y, z)))
+                                          || fluidSectionComponent.getFluidId(x, y, z - 1) != fluidId
+                                             && !FluidTicker.isSolid(blockMap.getAsset(blockSectionComponent.get(x, y, z - 1)))
+                                          || fluidSectionComponent.getFluidId(x, y, z + 1) != fluidId
+                                             && !FluidTicker.isSolid(blockMap.getAsset(blockSectionComponent.get(x, y, z + 1)));
                                        if (y > 0) {
                                           if (ChunkUtil.chunkCoordinate(y) == ChunkUtil.chunkCoordinate(y - 1)) {
-                                             canSpread |= fluid.getFluidId(x, y - 1, z) == 0
-                                                && !FluidTicker.isSolid(blockMap.getAsset(blockSection.get(x, y - 1, z)));
+                                             canSpread |= fluidSectionComponent.getFluidId(x, y - 1, z) != fluidId
+                                                && !FluidTicker.isSolid(blockMap.getAsset(blockSectionComponent.get(x, y - 1, z)));
                                           } else {
                                              FluidSection fluidSection2 = sections[i - 1].getComponent(FluidSection.getComponentType());
-                                             canSpread |= fluidSection2.getFluidId(x, y - 1, z) == 0
-                                                && !FluidTicker.isSolid(blockMap.getAsset(blockChunk.getBlock(x, y - 1, z)));
+                                             canSpread |= fluidSection2.getFluidId(x, y - 1, z) != fluidId
+                                                && !FluidTicker.isSolid(blockMap.getAsset(blockChunkComponent.getBlock(x, y - 1, z)));
                                           }
                                        }
 
                                        if (!canSpread) {
-                                          blockSection.setTicking(idx, false);
+                                          blockSectionComponent.setTicking(idx, false);
                                           continue;
                                        }
                                     }
 
-                                    blockSection.setTicking(idx, true);
+                                    blockSectionComponent.setTicking(idx, true);
                                  }
                               }
                            }
@@ -119,32 +141,32 @@ public class FluidPlugin extends JavaPlugin {
                      }
                   }
 
-                  int tickingBlocks = blockChunk.getTickingBlocksCount();
+                  int tickingBlocks = blockChunkComponent.getTickingBlocksCount();
                   if (tickingBlocks != 0) {
-                     FluidPlugin.PreprocesorAccessor accessor = new FluidPlugin.PreprocesorAccessor(wc, blockChunk, sections);
+                     FluidPlugin.PreprocesorAccessor accessor = new FluidPlugin.PreprocesorAccessor(worldChunk, blockChunkComponent, sections);
 
                      do {
-                        blockChunk.preTick(Instant.MIN);
+                        blockChunkComponent.preTick(Instant.MIN);
 
                         for (int ix = 0; ix < sections.length; ix++) {
                            Holder<ChunkStore> section = sections[ix];
-                           FluidSection fluidSection = section.getComponent(FluidSection.getComponentType());
-                           if (fluidSection != null && !fluidSection.isEmpty()) {
-                              BlockSection blockSection = section.ensureAndGetComponent(BlockSection.getComponentType());
-                              fluidSection.preload(wc.getX(), ix, wc.getZ());
-                              accessor.blockSection = blockSection;
-                              blockSection.forEachTicking(
+                           FluidSection fluidSectionComponent = section.getComponent(FluidSection.getComponentType());
+                           if (fluidSectionComponent != null && !fluidSectionComponent.isEmpty()) {
+                              BlockSection blockSectionComponent = section.ensureAndGetComponent(BlockSection.getComponentType());
+                              fluidSectionComponent.preload(worldChunk.getX(), ix, worldChunk.getZ());
+                              accessor.blockSection = blockSectionComponent;
+                              blockSectionComponent.forEachTicking(
                                  accessor,
-                                 fluidSection,
+                                 fluidSectionComponent,
                                  ix,
                                  (preprocesorAccessor, fluidSection1, xx, yx, zx, block) -> {
                                     int fluidId = fluidSection1.getFluidId(xx, yx, zx);
                                     if (fluidId == 0) {
                                        return BlockTickStrategy.IGNORED;
                                     } else {
-                                       Fluid fluid = Fluid.getAssetMap().getAsset(fluidId);
                                        int blockX = fluidSection1.getX() << 5 | xx;
                                        int blockZ = fluidSection1.getZ() << 5 | zx;
+                                       Fluid fluid = Fluid.getAssetMap().getAsset(fluidId);
                                        return fluid.getTicker()
                                           .process(
                                              preprocesorAccessor.worldChunk.getWorld(),
@@ -164,11 +186,11 @@ public class FluidPlugin extends JavaPlugin {
                            }
                         }
 
-                        tickingBlocks = blockChunk.getTickingBlocksCount();
+                        tickingBlocks = blockChunkComponent.getTickingBlocksCount();
                         accessor.tick++;
                      } while (tickingBlocks != 0 && accessor.tick <= 100L);
 
-                     blockChunk.mergeTickingBlocks();
+                     blockChunkComponent.mergeTickingBlocks();
                   }
                }
             }
@@ -177,13 +199,16 @@ public class FluidPlugin extends JavaPlugin {
    }
 
    public static class PreprocesorAccessor implements FluidTicker.Accessor {
+      @Nonnull
       private final WorldChunk worldChunk;
+      @Nonnull
       private final BlockChunk blockChunk;
+      @Nonnull
       private final Holder<ChunkStore>[] sections;
       public long tick;
       public BlockSection blockSection;
 
-      public PreprocesorAccessor(WorldChunk worldChunk, BlockChunk blockChunk, Holder<ChunkStore>[] sections) {
+      public PreprocesorAccessor(@Nonnull WorldChunk worldChunk, @Nonnull BlockChunk blockChunk, @Nonnull Holder<ChunkStore>[] sections) {
          this.worldChunk = worldChunk;
          this.blockChunk = blockChunk;
          this.sections = sections;

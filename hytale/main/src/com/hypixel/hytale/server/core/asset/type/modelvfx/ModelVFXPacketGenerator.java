@@ -1,7 +1,7 @@
 package com.hypixel.hytale.server.core.asset.type.modelvfx;
 
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateModelvfxs;
 import com.hypixel.hytale.server.core.asset.packet.SimpleAssetPacketGenerator;
@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
 
 public class ModelVFXPacketGenerator extends SimpleAssetPacketGenerator<String, ModelVFX, IndexedLookupTableAssetMap<String, ModelVFX>> {
    @Nonnull
-   public Packet generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, ModelVFX> assetMap, @Nonnull Map<String, ModelVFX> assets) {
+   public ToClientPacket generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, ModelVFX> assetMap, @Nonnull Map<String, ModelVFX> assets) {
       UpdateModelvfxs packet = new UpdateModelvfxs();
       packet.type = UpdateType.Init;
       packet.modelVFXs = new Int2ObjectOpenHashMap(assets.size());
@@ -34,7 +34,7 @@ public class ModelVFXPacketGenerator extends SimpleAssetPacketGenerator<String, 
    }
 
    @Nonnull
-   protected Packet generateUpdatePacket(@Nonnull IndexedLookupTableAssetMap<String, ModelVFX> assetMap, @Nonnull Map<String, ModelVFX> loadedAssets) {
+   protected ToClientPacket generateUpdatePacket(@Nonnull IndexedLookupTableAssetMap<String, ModelVFX> assetMap, @Nonnull Map<String, ModelVFX> loadedAssets) {
       UpdateModelvfxs packet = new UpdateModelvfxs();
       packet.type = UpdateType.AddOrUpdate;
       packet.modelVFXs = new Int2ObjectOpenHashMap(loadedAssets.size());
@@ -54,7 +54,7 @@ public class ModelVFXPacketGenerator extends SimpleAssetPacketGenerator<String, 
    }
 
    @Nonnull
-   protected Packet generateRemovePacket(@Nonnull IndexedLookupTableAssetMap<String, ModelVFX> assetMap, @Nonnull Set<String> removed) {
+   protected ToClientPacket generateRemovePacket(@Nonnull IndexedLookupTableAssetMap<String, ModelVFX> assetMap, @Nonnull Set<String> removed) {
       UpdateModelvfxs packet = new UpdateModelvfxs();
       packet.type = UpdateType.Remove;
       packet.modelVFXs = new Int2ObjectOpenHashMap(removed.size());

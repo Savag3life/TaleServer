@@ -12,6 +12,7 @@ import java.util.EnumSet;
 import javax.annotation.Nonnull;
 
 public class BuilderActionStartObjective extends BuilderActionBase {
+   @Nonnull
    protected final AssetHolder objectiveId = new AssetHolder();
 
    @Nonnull

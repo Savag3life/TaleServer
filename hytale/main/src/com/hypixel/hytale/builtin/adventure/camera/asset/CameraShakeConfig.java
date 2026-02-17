@@ -9,6 +9,7 @@ import java.util.Arrays;
 import javax.annotation.Nonnull;
 
 public class CameraShakeConfig implements NetworkSerializable<com.hypixel.hytale.protocol.CameraShakeConfig> {
+   @Nonnull
    public static final BuilderCodec<CameraShakeConfig> CODEC = BuilderCodec.builder(CameraShakeConfig.class, CameraShakeConfig::new)
       .appendInherited(new KeyedCodec<>("Duration", Codec.FLOAT), (o, v) -> o.duration = v, o -> o.duration, (o, p) -> o.duration = p.duration)
       .documentation("The time period that the camera will shake at full intensity for")
@@ -73,6 +74,7 @@ public class CameraShakeConfig implements NetworkSerializable<com.hypixel.hytale
    }
 
    public static class OffsetNoise implements NetworkSerializable<com.hypixel.hytale.protocol.OffsetNoise> {
+      @Nonnull
       public static final BuilderCodec<CameraShakeConfig.OffsetNoise> CODEC = BuilderCodec.builder(
             CameraShakeConfig.OffsetNoise.class, CameraShakeConfig.OffsetNoise::new
          )
@@ -89,6 +91,7 @@ public class CameraShakeConfig implements NetworkSerializable<com.hypixel.hytale
          .documentation("The noise used to vary the camera z-offset")
          .add()
          .build();
+      @Nonnull
       public static final CameraShakeConfig.OffsetNoise NONE = new CameraShakeConfig.OffsetNoise();
       protected NoiseConfig[] x;
       protected NoiseConfig[] y;
@@ -113,6 +116,7 @@ public class CameraShakeConfig implements NetworkSerializable<com.hypixel.hytale
    }
 
    public static class RotationNoise implements NetworkSerializable<com.hypixel.hytale.protocol.RotationNoise> {
+      @Nonnull
       public static final BuilderCodec<CameraShakeConfig.RotationNoise> CODEC = BuilderCodec.builder(
             CameraShakeConfig.RotationNoise.class, CameraShakeConfig.RotationNoise::new
          )
@@ -129,6 +133,7 @@ public class CameraShakeConfig implements NetworkSerializable<com.hypixel.hytale
          .documentation("The noise used to vary the camera roll")
          .add()
          .build();
+      @Nonnull
       public static final CameraShakeConfig.RotationNoise NONE = new CameraShakeConfig.RotationNoise();
       protected NoiseConfig[] pitch;
       protected NoiseConfig[] yaw;

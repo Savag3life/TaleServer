@@ -13,6 +13,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class PlaneDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<PlaneDensityAsset> CODEC = BuilderCodec.builder(
          PlaneDensityAsset.class, PlaneDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -30,7 +31,7 @@ public class PlaneDensityAsset extends DensityAsset {
       .build();
    private CurveAsset distanceCurveAsset = new ConstantCurveAsset();
    private Vector3d planeNormal = new Vector3d(0.0, 1.0, 0.0);
-   private boolean isAnchored = false;
+   private boolean isAnchored;
 
    @Nonnull
    @Override

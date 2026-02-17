@@ -12,6 +12,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 public class SettingsAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, SettingsAsset>> {
+   @Nonnull
    public static final AssetBuilderCodec<String, SettingsAsset> CODEC = AssetBuilderCodec.builder(
          SettingsAsset.class,
          SettingsAsset::new,

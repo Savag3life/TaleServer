@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class NSimplePixelBuffer<T> extends NPixelBuffer<T> {
+   @Nonnull
    private static final Bounds3i bounds = new Bounds3i(Vector3i.ZERO, SIZE);
    @Nonnull
    private final Class<T> pixelType;
@@ -112,6 +113,7 @@ public class NSimplePixelBuffer<T> extends NPixelBuffer<T> {
    }
 
    public static class ArrayContents<T> implements MemInstrument {
+      @Nonnull
       private final T[] array = (T[])(new Object[NPixelBuffer.SIZE.x * NPixelBuffer.SIZE.y * NPixelBuffer.SIZE.z]);
 
       @Nonnull

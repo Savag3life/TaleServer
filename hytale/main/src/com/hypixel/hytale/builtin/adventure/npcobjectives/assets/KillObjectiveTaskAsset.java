@@ -12,6 +12,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class KillObjectiveTaskAsset extends CountObjectiveTaskAsset {
+   @Nonnull
    public static final BuilderCodec<KillObjectiveTaskAsset> CODEC = BuilderCodec.builder(
          KillObjectiveTaskAsset.class, KillObjectiveTaskAsset::new, CountObjectiveTaskAsset.CODEC
       )
@@ -45,7 +46,7 @@ public class KillObjectiveTaskAsset extends CountObjectiveTaskAsset {
       if (!super.matchesAsset0(task)) {
          return false;
       } else {
-         return !(task instanceof KillObjectiveTaskAsset) ? false : ((KillObjectiveTaskAsset)task).npcGroupId.equals(this.npcGroupId);
+         return task instanceof KillObjectiveTaskAsset killObjectiveTaskAsset ? killObjectiveTaskAsset.npcGroupId.equals(this.npcGroupId) : false;
       }
    }
 

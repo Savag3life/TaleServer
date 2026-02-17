@@ -87,6 +87,7 @@ public abstract class PluginBase implements CommandOwner {
    private final Map<Codec<?>, IRegistry> codecMapRegistries = new ConcurrentHashMap<>();
    @Nonnull
    private final String basePermission;
+   private Throwable failureCause;
 
    public PluginBase(@Nonnull PluginInit init) {
       PluginManifest pluginManifest = init.getPluginManifest();
@@ -234,7 +235,7 @@ public abstract class PluginBase implements CommandOwner {
    }
 
    public boolean isDisabled() {
-      return this.state == PluginState.NONE || this.state == PluginState.DISABLED || this.state == PluginState.SHUTDOWN;
+      return this.state == PluginState.NONE || this.state == PluginState.DISABLED || this.state == PluginState.SHUTDOWN || this.state == PluginState.FAILED;
    }
 
    public boolean isEnabled() {
@@ -251,7 +252,8 @@ public abstract class PluginBase implements CommandOwner {
             this.setup();
          } catch (Throwable var2) {
             ((HytaleLogger.Api)this.logger.at(Level.SEVERE).withCause(var2)).log("Failed to setup plugin %s", this.identifier);
-            this.state = PluginState.DISABLED;
+            this.state = PluginState.FAILED;
+            this.failureCause = var2;
          }
       }
    }
@@ -270,7 +272,8 @@ public abstract class PluginBase implements CommandOwner {
             this.state = PluginState.ENABLED;
          } catch (Throwable var2) {
             ((HytaleLogger.Api)this.logger.at(Level.SEVERE).withCause(var2)).log("Failed to start %s", this.identifier);
-            this.state = PluginState.DISABLED;
+            this.state = PluginState.FAILED;
+            this.failureCause = var2;
          }
       }
    }
@@ -283,9 +286,13 @@ public abstract class PluginBase implements CommandOwner {
 
       try {
          this.shutdown();
-         this.state = PluginState.DISABLED;
+         this.state = this.failureCause == null ? PluginState.DISABLED : PluginState.FAILED;
       } catch (Throwable var3) {
          ((HytaleLogger.Api)this.logger.at(Level.SEVERE).withCause(var3)).log("Failed to shutdown %s", this.identifier);
+         this.state = PluginState.FAILED;
+         if (this.failureCause == null) {
+            this.failureCause = var3;
+         }
       }
 
       this.cleanup(shutdown);
@@ -308,6 +315,14 @@ public abstract class PluginBase implements CommandOwner {
       for (int i = this.shutdownTasks.size() - 1; i >= 0; i--) {
          this.shutdownTasks.get(i).accept(shutdown);
       }
+   }
+
+   Throwable getFailureCause() {
+      return this.failureCause;
+   }
+
+   void setFailureCause(Throwable t) {
+      this.failureCause = t;
    }
 
    @Nonnull

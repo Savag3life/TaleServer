@@ -17,13 +17,16 @@ import java.util.Map.Entry;
 import javax.annotation.Nonnull;
 
 public class NPCReputationHolderSystem extends HolderSystem<EntityStore> {
+   @Nonnull
    private final ComponentType<EntityStore, ReputationGroupComponent> reputationGroupComponentType;
+   @Nonnull
    private final ComponentType<EntityStore, NPCEntity> npcEntityComponentType;
    @Nonnull
    private final Query<EntityStore> query;
 
    public NPCReputationHolderSystem(
-      ComponentType<EntityStore, ReputationGroupComponent> reputationGroupComponentType, ComponentType<EntityStore, NPCEntity> npcEntityComponentType
+      @Nonnull ComponentType<EntityStore, ReputationGroupComponent> reputationGroupComponentType,
+      @Nonnull ComponentType<EntityStore, NPCEntity> npcEntityComponentType
    ) {
       this.reputationGroupComponentType = reputationGroupComponentType;
       this.npcEntityComponentType = npcEntityComponentType;
@@ -38,8 +41,11 @@ public class NPCReputationHolderSystem extends HolderSystem<EntityStore> {
 
    @Override
    public void onEntityAdd(@Nonnull Holder<EntityStore> holder, @Nonnull AddReason reason, @Nonnull Store<EntityStore> store) {
-      NPCEntity npcEntity = holder.getComponent(this.npcEntityComponentType);
-      int npcTypeIndex = npcEntity.getNPCTypeIndex();
+      NPCEntity npcComponent = holder.getComponent(this.npcEntityComponentType);
+
+      assert npcComponent != null;
+
+      int npcTypeIndex = npcComponent.getNPCTypeIndex();
 
       for (Entry<String, ReputationGroup> reputationEntry : ReputationGroup.getAssetMap().getAssetMap().entrySet()) {
          for (String npcGroup : reputationEntry.getValue().getNpcGroups()) {

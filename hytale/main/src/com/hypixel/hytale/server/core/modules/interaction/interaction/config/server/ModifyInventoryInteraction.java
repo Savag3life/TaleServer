@@ -121,7 +121,7 @@ public class ModifyInventoryInteraction extends SimpleInstantInteraction {
       } else {
          boolean hasRequiredGameMode = this.requiredGameMode == null || playerComponent.getGameMode() == this.requiredGameMode;
          if (hasRequiredGameMode) {
-            CombinedItemContainer combinedHotbarFirst = playerComponent.getInventory().getCombinedHotbarFirst();
+            CombinedItemContainer combinedHotbarFirst = playerComponent.getInventory().getCombinedBackpackStorageHotbarFirst();
             if (this.itemToRemove != null) {
                ItemStackTransaction removeItemStack = combinedHotbarFirst.removeItemStack(this.itemToRemove, true, true);
                if (!removeItemStack.succeeded()) {

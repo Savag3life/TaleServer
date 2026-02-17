@@ -17,6 +17,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class CheckTagWorldHeightRadiusProvider extends WorldLocationProvider {
+   @Nonnull
    public static final BuilderCodec<CheckTagWorldHeightRadiusProvider> CODEC = BuilderCodec.builder(
          CheckTagWorldHeightRadiusProvider.class, CheckTagWorldHeightRadiusProvider::new, BASE_CODEC
       )
@@ -73,13 +74,16 @@ public class CheckTagWorldHeightRadiusProvider extends WorldLocationProvider {
          long pos = iterator.next();
          int blockX = MathUtil.unpackLeft(pos);
          int blockZ = MathUtil.unpackRight(pos);
-         WorldChunk chunk = world.getNonTickingChunk(ChunkUtil.indexChunkFromBlock(blockX, blockZ));
-         int blockY = chunk.getHeight(blockX, blockZ);
-         int blockId = chunk.getBlock(blockX, blockY, blockZ);
+         long chunkIndex = ChunkUtil.indexChunkFromBlock(blockX, blockZ);
+         WorldChunk worldChunkComponent = world.getNonTickingChunk(chunkIndex);
+         if (worldChunkComponent != null) {
+            int blockY = worldChunkComponent.getHeight(blockX, blockZ);
+            int blockId = worldChunkComponent.getBlock(blockX, blockY, blockZ);
 
-         for (int i = 0; i < this.blockTagsIndexes.length; i++) {
-            if (BlockType.getAssetMap().getIndexesForTag(this.blockTagsIndexes[i]).contains(blockId)) {
-               return new Vector3i(blockX, blockY + 1, blockZ);
+            for (int i = 0; i < this.blockTagsIndexes.length; i++) {
+               if (BlockType.getAssetMap().getIndexesForTag(this.blockTagsIndexes[i]).contains(blockId)) {
+                  return new Vector3i(blockX, blockY + 1, blockZ);
+               }
             }
          }
       }

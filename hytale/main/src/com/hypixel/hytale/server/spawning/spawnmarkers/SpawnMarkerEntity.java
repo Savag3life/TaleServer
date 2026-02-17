@@ -4,6 +4,7 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
+import com.hypixel.hytale.common.map.IWeightedMap;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
@@ -111,7 +112,7 @@ public class SpawnMarkerEntity implements Component<EntityStore> {
    @Nullable
    private Set<UUID> suppressedBy;
    private int failedSpawns;
-   @Nonnull
+   @Nullable
    private final SpawningContext context;
    private final Vector3d spawnPosition = new Vector3d();
    private InvalidatablePersistentRef[] npcReferences;
@@ -128,7 +129,11 @@ public class SpawnMarkerEntity implements Component<EntityStore> {
    }
 
    public SpawnMarkerEntity() {
-      this.context = new SpawningContext();
+      this(new SpawningContext());
+   }
+
+   private SpawnMarkerEntity(@Nullable SpawningContext context) {
+      this.context = context;
       this.npcReferences = EMPTY_REFERENCES;
    }
 
@@ -241,160 +246,169 @@ public class SpawnMarkerEntity implements Component<EntityStore> {
    }
 
    public boolean spawnNPC(@Nonnull Ref<EntityStore> ref, @Nonnull SpawnMarker marker, @Nonnull Store<EntityStore> store) {
-      SpawnMarker.SpawnConfiguration spawn = marker.getWeightedConfigurations().get(ThreadLocalRandom.current());
-      if (spawn == null) {
-         SpawningPlugin.get().getLogger().at(Level.SEVERE).log("Marker %s has no spawn configuration to spawn", ref);
+      IWeightedMap<SpawnMarker.SpawnConfiguration> configs = marker.getWeightedConfigurations();
+      if (configs == null) {
+         SpawningPlugin.get().getLogger().at(Level.SEVERE).log("Marker %s has no spawn configurations to spawn", ref);
          this.refreshTimeout();
          return false;
       } else {
-         boolean realtime = marker.isRealtimeRespawn();
-         if (realtime) {
-            this.respawnCounter = spawn.getRealtimeRespawnTime();
+         SpawnMarker.SpawnConfiguration spawn = configs.get(ThreadLocalRandom.current());
+         if (spawn == null) {
+            SpawningPlugin.get().getLogger().at(Level.SEVERE).log("Marker %s has no spawn configuration to spawn", ref);
+            this.refreshTimeout();
+            return false;
          } else {
-            this.spawnAfter = null;
-            this.gameTimeRespawn = spawn.getSpawnAfterGameTime();
-         }
-
-         UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
-
-         assert uuidComponent != null;
-
-         UUID uuid = uuidComponent.getUuid();
-         String roleName = spawn.getNpc();
-         if (roleName != null && !roleName.isEmpty()) {
-            NPCPlugin npcModule = NPCPlugin.get();
-            int roleIndex = npcModule.getIndex(roleName);
-            TransformComponent transformComponent = store.getComponent(ref, TransformComponent.getComponentType());
-
-            assert transformComponent != null;
-
-            Vector3d position = transformComponent.getPosition();
-            BuilderInfo builderInfo = npcModule.getRoleBuilderInfo(roleIndex);
-            if (builderInfo == null) {
-               SpawningPlugin.get().getLogger().at(Level.SEVERE).log("Marker %s attempted to spawn non-existent NPC role '%s'", uuid, roleName);
-               this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.NONEXISTENT_ROLE);
-               return false;
+            boolean realtime = marker.isRealtimeRespawn();
+            if (realtime) {
+               this.respawnCounter = spawn.getRealtimeRespawnTime();
             } else {
-               Builder<?> role = builderInfo.isValid() ? builderInfo.getBuilder() : null;
-               if (role == null) {
-                  SpawningPlugin.get().getLogger().at(Level.SEVERE).log("Marker %s attempted to spawn invalid NPC role '%s'", uuid, roleName);
-                  this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.INVALID_ROLE);
-                  return false;
-               } else if (!role.isSpawnable()) {
-                  SpawningPlugin.get().getLogger().at(Level.SEVERE).log("Marker %s attempted to spawn a non-spawnable (abstract) role '%s'", uuid, roleName);
-                  this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.INVALID_ROLE);
-                  return false;
-               } else if (!this.context.setSpawnable((ISpawnableWithModel)role)) {
-                  SpawningPlugin.get()
-                     .getLogger()
-                     .at(Level.SEVERE)
-                     .log("Marker %s failed to spawn NPC role '%s' due to failed role validation", uuid, roleName);
-                  this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.FAILED_ROLE_VALIDATION);
+               this.spawnAfter = null;
+               this.gameTimeRespawn = spawn.getSpawnAfterGameTime();
+            }
+
+            UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
+
+            assert uuidComponent != null;
+
+            UUID uuid = uuidComponent.getUuid();
+            String roleName = spawn.getNpc();
+            if (roleName != null && !roleName.isEmpty()) {
+               NPCPlugin npcModule = NPCPlugin.get();
+               int roleIndex = npcModule.getIndex(roleName);
+               TransformComponent transformComponent = store.getComponent(ref, TransformComponent.getComponentType());
+
+               assert transformComponent != null;
+
+               Vector3d position = transformComponent.getPosition();
+               BuilderInfo builderInfo = npcModule.getRoleBuilderInfo(roleIndex);
+               if (builderInfo == null) {
+                  SpawningPlugin.get().getLogger().at(Level.SEVERE).log("Marker %s attempted to spawn non-existent NPC role '%s'", uuid, roleName);
+                  this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.NONEXISTENT_ROLE);
                   return false;
                } else {
-                  ObjectList<Ref<EntityStore>> results = SpatialResource.getThreadLocalReferenceList();
-                  SpatialResource<Ref<EntityStore>, EntityStore> spatialResource = store.getResource(EntityModule.get().getPlayerSpatialResourceType());
-                  spatialResource.getSpatialStructure().collect(position, marker.getExclusionRadius(), results);
-                  boolean hasPlayersInRange = !results.isEmpty();
-                  if (hasPlayersInRange) {
-                     this.refreshTimeout();
+                  Builder<?> role = builderInfo.isValid() ? builderInfo.getBuilder() : null;
+                  if (role == null) {
+                     SpawningPlugin.get().getLogger().at(Level.SEVERE).log("Marker %s attempted to spawn invalid NPC role '%s'", uuid, roleName);
+                     this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.INVALID_ROLE);
+                     return false;
+                  } else if (!role.isSpawnable()) {
+                     SpawningPlugin.get().getLogger().at(Level.SEVERE).log("Marker %s attempted to spawn a non-spawnable (abstract) role '%s'", uuid, roleName);
+                     this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.INVALID_ROLE);
+                     return false;
+                  } else if (!this.context.setSpawnable((ISpawnableWithModel)role)) {
+                     SpawningPlugin.get()
+                        .getLogger()
+                        .at(Level.SEVERE)
+                        .log("Marker %s failed to spawn NPC role '%s' due to failed role validation", uuid, roleName);
+                     this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.FAILED_ROLE_VALIDATION);
                      return false;
                   } else {
-                     World world = store.getExternalData().getWorld();
-                     if (!this.context.set(world, position.x, position.y, position.z)) {
-                        SpawningPlugin.get()
-                           .getLogger()
-                           .at(Level.FINE)
-                           .log("Marker %s attempted to spawn NPC '%s' at %s but could not fit", uuid, roleName, position);
-                        this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.NO_ROOM);
+                     ObjectList<Ref<EntityStore>> results = SpatialResource.getThreadLocalReferenceList();
+                     SpatialResource<Ref<EntityStore>, EntityStore> spatialResource = store.getResource(EntityModule.get().getPlayerSpatialResourceType());
+                     spatialResource.getSpatialStructure().collect(position, marker.getExclusionRadius(), results);
+                     boolean hasPlayersInRange = !results.isEmpty();
+                     if (hasPlayersInRange) {
+                        this.refreshTimeout();
                         return false;
                      } else {
-                        SpawnTestResult testResult = this.context.canSpawn(true, false);
-                        if (testResult != SpawnTestResult.TEST_OK) {
+                        World world = store.getExternalData().getWorld();
+                        if (!this.context.set(world, position.x, position.y, position.z)) {
                            SpawningPlugin.get()
                               .getLogger()
                               .at(Level.FINE)
-                              .log("Marker %s attempted to spawn NPC '%s' at %s but could not fit: %s", uuid, roleName, position, testResult);
+                              .log("Marker %s attempted to spawn NPC '%s' at %s but could not fit", uuid, roleName, position);
                            this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.NO_ROOM);
                            return false;
                         } else {
-                           this.spawnPosition.assign(this.context.xSpawn, this.context.ySpawn, this.context.zSpawn);
-                           if (this.spawnPosition.distanceSquaredTo(position) > marker.getMaxDropHeightSquared()) {
+                           SpawnTestResult testResult = this.context.canSpawn(true, false);
+                           if (testResult != SpawnTestResult.TEST_OK) {
                               SpawningPlugin.get()
                                  .getLogger()
                                  .at(Level.FINE)
-                                 .log("Marker %s attempted to spawn NPC '%s' but was offset too far from the ground at %s", uuid, roleName, position);
-                              this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.TOO_HIGH);
+                                 .log("Marker %s attempted to spawn NPC '%s' at %s but could not fit: %s", uuid, roleName, position, testResult);
+                              this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.NO_ROOM);
                               return false;
                            } else {
-                              TriConsumer<NPCEntity, Ref<EntityStore>, Store<EntityStore>> postSpawn = (_entity, _ref, _store) -> {
-                                 SpawnMarkerReference spawnMarkerReference = _store.ensureAndGetComponent(_ref, SpawnMarkerReference.getComponentType());
-                                 spawnMarkerReference.getReference().setEntity(ref, _store);
-                                 spawnMarkerReference.refreshTimeoutCounter();
-                                 WorldGenId worldGenIdComponent = _store.getComponent(ref, WorldGenId.getComponentType());
-                                 int worldGenId = worldGenIdComponent != null ? worldGenIdComponent.getWorldGenId() : 0;
-                                 _store.putComponent(_ref, WorldGenId.getComponentType(), new WorldGenId(worldGenId));
-                              };
-                              Vector3f rotation = transformComponent.getRotation();
-                              Pair<Ref<EntityStore>, NPCEntity> npcPair = npcModule.spawnEntity(store, roleIndex, this.spawnPosition, rotation, null, postSpawn);
-                              if (npcPair == null) {
-                                 SpawningPlugin.get()
-                                    .getLogger()
-                                    .at(Level.SEVERE)
-                                    .log("Marker %s failed to spawn NPC role '%s' due to an internal error", uuid, roleName);
-                                 this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.INVALID_ROLE);
-                                 return false;
-                              } else {
-                                 Ref<EntityStore> npcRef = (Ref<EntityStore>)npcPair.first();
-                                 NPCEntity npcComponent = (NPCEntity)npcPair.second();
-                                 Ref<EntityStore> flockReference = FlockPlugin.trySpawnFlock(
-                                    npcRef, npcComponent, store, roleIndex, this.spawnPosition, rotation, spawn.getFlockDefinition(), postSpawn
-                                 );
-                                 EntityGroup group = flockReference == null ? null : store.getComponent(flockReference, EntityGroup.getComponentType());
-                                 this.spawnCount = group != null ? group.size() : 1;
-                                 if (this.storedFlock != null) {
-                                    this.despawnStarted = false;
-                                    this.npcReferences = new InvalidatablePersistentRef[this.spawnCount];
-                                    if (group != null) {
-                                       group.forEachMember((index, member, referenceArray) -> {
-                                          InvalidatablePersistentRef referencex = new InvalidatablePersistentRef();
-                                          referencex.setEntity(member, store);
-                                          referenceArray[index] = referencex;
-                                       }, this.npcReferences);
-                                    } else {
-                                       InvalidatablePersistentRef reference = new InvalidatablePersistentRef();
-                                       reference.setEntity(npcRef, store);
-                                       this.npcReferences[0] = reference;
-                                    }
-
-                                    this.storedFlock.clear();
-                                 }
-
+                              this.spawnPosition.assign(this.context.xSpawn, this.context.ySpawn, this.context.zSpawn);
+                              if (this.spawnPosition.distanceSquaredTo(position) > marker.getMaxDropHeightSquared()) {
                                  SpawningPlugin.get()
                                     .getLogger()
                                     .at(Level.FINE)
-                                    .log(
-                                       "Marker %s spawned %s and set respawn to %s",
-                                       uuid,
-                                       npcComponent.getRoleName(),
-                                       realtime ? this.respawnCounter : this.gameTimeRespawn
+                                    .log("Marker %s attempted to spawn NPC '%s' but was offset too far from the ground at %s", uuid, roleName, position);
+                                 this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.TOO_HIGH);
+                                 return false;
+                              } else {
+                                 TriConsumer<NPCEntity, Ref<EntityStore>, Store<EntityStore>> postSpawn = (_entity, _ref, _store) -> {
+                                    SpawnMarkerReference spawnMarkerReference = _store.ensureAndGetComponent(_ref, SpawnMarkerReference.getComponentType());
+                                    spawnMarkerReference.getReference().setEntity(ref, _store);
+                                    spawnMarkerReference.refreshTimeoutCounter();
+                                    WorldGenId worldGenIdComponent = _store.getComponent(ref, WorldGenId.getComponentType());
+                                    int worldGenId = worldGenIdComponent != null ? worldGenIdComponent.getWorldGenId() : 0;
+                                    _store.putComponent(_ref, WorldGenId.getComponentType(), new WorldGenId(worldGenId));
+                                 };
+                                 Vector3f rotation = transformComponent.getRotation();
+                                 Pair<Ref<EntityStore>, NPCEntity> npcPair = npcModule.spawnEntity(
+                                    store, roleIndex, this.spawnPosition, rotation, null, postSpawn
+                                 );
+                                 if (npcPair == null) {
+                                    SpawningPlugin.get()
+                                       .getLogger()
+                                       .at(Level.SEVERE)
+                                       .log("Marker %s failed to spawn NPC role '%s' due to an internal error", uuid, roleName);
+                                    this.fail(ref, uuid, roleName, position, store, SpawnMarkerEntity.FailReason.INVALID_ROLE);
+                                    return false;
+                                 } else {
+                                    Ref<EntityStore> npcRef = (Ref<EntityStore>)npcPair.first();
+                                    NPCEntity npcComponent = (NPCEntity)npcPair.second();
+                                    Ref<EntityStore> flockReference = FlockPlugin.trySpawnFlock(
+                                       npcRef, npcComponent, store, roleIndex, this.spawnPosition, rotation, spawn.getFlockDefinition(), postSpawn
                                     );
-                                 this.refreshTimeout();
-                                 return true;
+                                    EntityGroup group = flockReference == null ? null : store.getComponent(flockReference, EntityGroup.getComponentType());
+                                    this.spawnCount = group != null ? group.size() : 1;
+                                    if (this.storedFlock != null) {
+                                       this.despawnStarted = false;
+                                       this.npcReferences = new InvalidatablePersistentRef[this.spawnCount];
+                                       if (group != null) {
+                                          group.forEachMember((index, member, referenceArray) -> {
+                                             InvalidatablePersistentRef referencex = new InvalidatablePersistentRef();
+                                             referencex.setEntity(member, store);
+                                             referenceArray[index] = referencex;
+                                          }, this.npcReferences);
+                                       } else {
+                                          InvalidatablePersistentRef reference = new InvalidatablePersistentRef();
+                                          reference.setEntity(npcRef, store);
+                                          this.npcReferences[0] = reference;
+                                       }
+
+                                       this.storedFlock.clear();
+                                    }
+
+                                    SpawningPlugin.get()
+                                       .getLogger()
+                                       .at(Level.FINE)
+                                       .log(
+                                          "Marker %s spawned %s and set respawn to %s",
+                                          uuid,
+                                          npcComponent.getRoleName(),
+                                          realtime ? this.respawnCounter : this.gameTimeRespawn
+                                       );
+                                    this.refreshTimeout();
+                                    return true;
+                                 }
                               }
                            }
                         }
                      }
                   }
                }
+            } else {
+               SpawningPlugin.get()
+                  .getLogger()
+                  .at(Level.FINE)
+                  .log("Marker %s performed noop spawn and set repawn to %s", uuid, realtime ? this.respawnCounter : this.gameTimeRespawn);
+               this.refreshTimeout();
+               return true;
             }
-         } else {
-            SpawningPlugin.get()
-               .getLogger()
-               .at(Level.FINE)
-               .log("Marker %s performed noop spawn and set repawn to %s", uuid, realtime ? this.respawnCounter : this.gameTimeRespawn);
-            this.refreshTimeout();
-            return true;
          }
       }
    }
@@ -484,6 +498,21 @@ public class SpawnMarkerEntity implements Component<EntityStore> {
       spawnMarker.timeToDeactivation = this.timeToDeactivation;
       spawnMarker.despawnStarted = this.despawnStarted;
       spawnMarker.spawnLostTimeoutCounter = this.spawnLostTimeoutCounter;
+      return spawnMarker;
+   }
+
+   @Nullable
+   @Override
+   public Component<EntityStore> cloneSerializable() {
+      SpawnMarkerEntity spawnMarker = new SpawnMarkerEntity(null);
+      spawnMarker.spawnMarkerId = this.spawnMarkerId;
+      spawnMarker.respawnCounter = this.respawnCounter;
+      spawnMarker.spawnCount = this.spawnCount;
+      spawnMarker.gameTimeRespawn = this.gameTimeRespawn;
+      spawnMarker.spawnAfter = this.spawnAfter;
+      spawnMarker.npcReferences = this.npcReferences;
+      spawnMarker.storedFlock = this.storedFlock != null ? this.storedFlock.cloneSerializable() : null;
+      spawnMarker.spawnPosition.assign(this.spawnPosition);
       return spawnMarker;
    }
 

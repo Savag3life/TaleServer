@@ -13,6 +13,7 @@ import javax.annotation.Nonnull;
 
 public class MacroCommandPlugin extends JavaPlugin {
    private static MacroCommandPlugin instance;
+   @Nonnull
    private final Map<String, CommandRegistration> macroCommandRegistrations = new Object2ObjectOpenHashMap();
 
    public static MacroCommandPlugin get() {

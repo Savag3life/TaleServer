@@ -49,38 +49,48 @@ public class PortalInvalidDestinationSystem extends RefSystem<ChunkStore> {
       return Query.and(PortalDevice.getComponentType(), BlockModule.BlockStateInfo.getComponentType());
    }
 
-   public static void turnOffPortalsInWorld(World originWorld, World destinationWorld) {
+   public static void turnOffPortalsInWorld(@Nonnull World originWorld, @Nonnull World destinationWorld) {
       UUID destinationWorldUuid = destinationWorld.getWorldConfig().getUuid();
-      Store<ChunkStore> store = originWorld.getChunkStore().getStore();
+      Store<ChunkStore> originStore = originWorld.getChunkStore().getStore();
       AndQuery<ChunkStore> entityQuery = Query.and(PortalDevice.getComponentType(), BlockModule.BlockStateInfo.getComponentType());
-      store.forEachEntityParallel(entityQuery, (id, archetypeChunk, commandBuffer) -> {
+      originStore.forEachEntityParallel(entityQuery, (id, archetypeChunk, commandBuffer) -> {
          PortalDevice portalDevice = archetypeChunk.getComponent(id, PortalDevice.getComponentType());
-         if (destinationWorldUuid.equals(portalDevice.getDestinationWorldUuid())) {
+         if (portalDevice != null && destinationWorldUuid.equals(portalDevice.getDestinationWorldUuid())) {
             BlockModule.BlockStateInfo blockStateInfo = archetypeChunk.getComponent(id, BlockModule.BlockStateInfo.getComponentType());
             originWorld.execute(() -> turnOffPortalBlock(originWorld, portalDevice, blockStateInfo));
          }
       });
    }
 
-   private static void turnOffPortalBlock(World world, PortalDevice portalDevice, BlockModule.BlockStateInfo blockStateInfo) {
+   private static void turnOffPortalBlock(@Nonnull World world, @Nonnull PortalDevice portalDevice, @Nonnull BlockModule.BlockStateInfo blockStateInfo) {
       Ref<ChunkStore> chunkRef = blockStateInfo.getChunkRef();
-      if (chunkRef != null && chunkRef.isValid()) {
+      if (chunkRef.isValid()) {
          Store<ChunkStore> store = world.getChunkStore().getStore();
-         WorldChunk worldChunk = store.getComponent(chunkRef, WorldChunk.getComponentType());
-         if (worldChunk != null) {
+         WorldChunk worldChunkComponent = store.getComponent(chunkRef, WorldChunk.getComponentType());
+         if (worldChunkComponent != null) {
             int index = blockStateInfo.getIndex();
             int x = ChunkUtil.xFromBlockInColumn(index);
             int y = ChunkUtil.yFromBlockInColumn(index);
             int z = ChunkUtil.zFromBlockInColumn(index);
             PortalDeviceConfig config = portalDevice.getConfig();
-            BlockType blockType = worldChunk.getBlockType(x, y, z);
-            BlockType offState = BlockTypeUtils.getBlockForState(blockType, config.getOffState());
-            if (offState == null) {
+            BlockType blockType = worldChunkComponent.getBlockType(x, y, z);
+            if (blockType == null) {
                HytaleLogger.getLogger()
                   .at(Level.WARNING)
-                  .log("Couldn't find/set off set for portal block, either " + blockType.getId() + " is misconfigured or the block changed unexpectedly");
+                  .log(
+                     "Couldn't find portal block at expected location, either "
+                        + portalDevice.getBaseBlockTypeKey()
+                        + " is misconfigured or the block changed unexpectedly"
+                  );
             } else {
-               worldChunk.setBlockInteractionState(x, y, z, blockType, config.getOffState(), false);
+               BlockType offBlockType = BlockTypeUtils.getBlockForState(blockType, config.getOffState());
+               if (offBlockType == null) {
+                  HytaleLogger.getLogger()
+                     .at(Level.WARNING)
+                     .log("Couldn't find/set off set for portal block, either " + blockType.getId() + " is misconfigured or the block changed unexpectedly");
+               } else {
+                  worldChunkComponent.setBlockInteractionState(x, y, z, blockType, config.getOffState(), false);
+               }
             }
          }
       }

@@ -1,5 +1,6 @@
 package com.hypixel.hytale.builtin.buildertools.prefablist;
 
+import com.hypixel.hytale.common.util.PathUtil;
 import com.hypixel.hytale.common.util.StringCompareUtil;
 import com.hypixel.hytale.server.core.prefab.PrefabStore;
 import com.hypixel.hytale.server.core.ui.browser.FileListProvider;
@@ -67,7 +68,10 @@ public class AssetPrefabFileProvider implements FileListProvider {
       } else {
          Path targetPath = packPath.prefabsPath();
          if (!subPath.isEmpty()) {
-            targetPath = targetPath.resolve(subPath);
+            targetPath = PathUtil.resolvePathWithinDir(targetPath, subPath);
+            if (targetPath == null) {
+               return entries;
+            }
          }
 
          if (!Files.isDirectory(targetPath)) {
@@ -116,7 +120,10 @@ public class AssetPrefabFileProvider implements FileListProvider {
          if (packPath != null) {
             Path searchRoot = packPath.prefabsPath();
             if (!subPath.isEmpty()) {
-               searchRoot = searchRoot.resolve(subPath);
+               searchRoot = PathUtil.resolvePathWithinDir(searchRoot, subPath);
+               if (searchRoot == null) {
+                  return List.of();
+               }
             }
 
             this.searchInDirectory(searchRoot, packKey, subPath, lowerQuery, allResults);
@@ -203,7 +210,7 @@ public class AssetPrefabFileProvider implements FileListProvider {
          if (packPath == null) {
             return null;
          } else {
-            return subPath.isEmpty() ? packPath.prefabsPath() : packPath.prefabsPath().resolve(subPath);
+            return subPath.isEmpty() ? packPath.prefabsPath() : PathUtil.resolvePathWithinDir(packPath.prefabsPath(), subPath);
          }
       }
    }

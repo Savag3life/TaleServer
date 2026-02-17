@@ -1,6 +1,8 @@
 package com.hypixel.hytale.protocol.packets.setup;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.io.PacketIO;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
@@ -13,7 +15,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class ServerTags implements Packet {
+public class ServerTags implements Packet, ToClientPacket {
    public static final int PACKET_ID = 34;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -27,6 +29,11 @@ public class ServerTags implements Packet {
    @Override
    public int getId() {
       return 34;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public ServerTags() {

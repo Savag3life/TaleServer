@@ -20,6 +20,7 @@ import com.hypixel.hytale.server.npc.valuestore.ValueStore;
 import javax.annotation.Nonnull;
 
 public class SensorCombatActionEvaluator extends SensorBase {
+   @Nonnull
    protected static final ComponentType<EntityStore, TransformComponent> TRANSFORM_COMPONENT_TYPE = TransformComponent.getComponentType();
    protected final boolean targetInRange;
    protected final double allowableDeviation;
@@ -33,7 +34,9 @@ public class SensorCombatActionEvaluator extends SensorBase {
    protected final SingleDoubleParameterProvider maxRangeParameterProvider;
    @Nonnull
    protected final SingleDoubleParameterProvider positioningAngleParameterProvider;
+   @Nonnull
    protected final MultipleParameterProvider parameterProvider = new MultipleParameterProvider();
+   @Nonnull
    protected final EntityPositionProvider positionProvider = new EntityPositionProvider(this.parameterProvider);
    protected final ComponentType<EntityStore, ValueStore> valueStoreComponentType;
 

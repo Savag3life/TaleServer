@@ -81,6 +81,7 @@ public class AreaScanner extends Scanner {
       CIRCLE,
       SQUARE;
 
+      @Nonnull
       public static final Codec<AreaScanner.ScanShape> CODEC = new EnumCodec<>(AreaScanner.ScanShape.class, EnumCodec.EnumStyle.LEGACY);
    }
 

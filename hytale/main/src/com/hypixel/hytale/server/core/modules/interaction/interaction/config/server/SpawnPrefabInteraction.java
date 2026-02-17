@@ -63,46 +63,48 @@ public class SpawnPrefabInteraction extends SimpleInstantInteraction {
 
    @Override
    protected void firstRun(@Nonnull InteractionType type, @Nonnull InteractionContext context, @Nonnull CooldownHandler cooldownHandler) {
-      Path prefabRoot = PrefabStore.get().getAssetPrefabsPath();
-      IPrefabBuffer prefab = PrefabBufferUtil.getCached(prefabRoot.resolve(this.prefabPath));
-      if (prefab != null) {
-         CommandBuffer<EntityStore> commandBuffer = context.getCommandBuffer();
-         World world = commandBuffer.getExternalData().getWorld();
-         Ref<EntityStore> ref = context.getEntity();
-         TransformComponent transformComponent = commandBuffer.getComponent(ref, TransformComponent.getComponentType());
+      Path resolvedPath = PrefabStore.get().findAssetPrefabPath(this.prefabPath);
+      if (resolvedPath != null) {
+         IPrefabBuffer prefab = PrefabBufferUtil.getCached(resolvedPath);
+         if (prefab != null) {
+            CommandBuffer<EntityStore> commandBuffer = context.getCommandBuffer();
+            World world = commandBuffer.getExternalData().getWorld();
+            Ref<EntityStore> ref = context.getEntity();
+            TransformComponent transformComponent = commandBuffer.getComponent(ref, TransformComponent.getComponentType());
 
-         assert transformComponent != null;
+            assert transformComponent != null;
 
-         Vector3d entityPosition = transformComponent.getPosition();
-         Rotation yaw = this.rotationYaw;
-         Vector3i target;
-         switch (this.originSource) {
-            case ENTITY:
-               target = entityPosition.toVector3i();
-               target.add(this.offset);
-               break;
-            case BLOCK:
-               BlockPosition targetBlock = context.getTargetBlock();
-               if (targetBlock == null) {
-                  return;
-               }
+            Vector3d entityPosition = transformComponent.getPosition();
+            Rotation yaw = this.rotationYaw;
+            Vector3i target;
+            switch (this.originSource) {
+               case ENTITY:
+                  target = entityPosition.toVector3i();
+                  target.add(this.offset);
+                  break;
+               case BLOCK:
+                  BlockPosition targetBlock = context.getTargetBlock();
+                  if (targetBlock == null) {
+                     return;
+                  }
 
-               WorldChunk chunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z));
-               if (chunk == null) {
-                  return;
-               }
+                  WorldChunk chunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z));
+                  if (chunk == null) {
+                     return;
+                  }
 
-               Rotation blockYaw = chunk.getRotation(targetBlock.x, targetBlock.y, targetBlock.z).yaw();
-               target = new Vector3i();
-               blockYaw.rotateYaw(this.offset, target);
-               yaw = yaw.add(blockYaw);
-               target.add(targetBlock.x, targetBlock.y, targetBlock.z);
-               break;
-            default:
-               throw new IllegalArgumentException("Unhandled origin source");
+                  Rotation blockYaw = chunk.getRotation(targetBlock.x, targetBlock.y, targetBlock.z).yaw();
+                  target = new Vector3i();
+                  blockYaw.rotateYaw(this.offset, target);
+                  yaw = yaw.add(blockYaw);
+                  target.add(targetBlock.x, targetBlock.y, targetBlock.z);
+                  break;
+               default:
+                  throw new IllegalArgumentException("Unhandled origin source");
+            }
+
+            PrefabUtil.paste(prefab, world, target, yaw, this.force, new FastRandom(), commandBuffer);
          }
-
-         PrefabUtil.paste(prefab, world, target, yaw, this.force, new FastRandom(), commandBuffer);
       }
    }
 

@@ -1,6 +1,8 @@
 package com.hypixel.hytale.protocol.packets.setup;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import com.hypixel.hytale.protocol.io.VarInt;
@@ -12,7 +14,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class UpdateFeatures implements Packet {
+public class UpdateFeatures implements Packet, ToClientPacket {
    public static final int PACKET_ID = 31;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -26,6 +28,11 @@ public class UpdateFeatures implements Packet {
    @Override
    public int getId() {
       return 31;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public UpdateFeatures() {

@@ -22,6 +22,7 @@ import com.hypixel.hytale.server.npc.corecomponents.entity.builders.BuilderSenso
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.npc.movement.controllers.MotionController;
 import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.role.support.DebugSupport;
 import com.hypixel.hytale.server.npc.sensorinfo.EntityPositionProvider;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hypixel.hytale.server.npc.util.IEntityByPriorityFilter;
@@ -50,6 +51,8 @@ public abstract class SensorEntityBase extends SensorWithEntityFilters {
    protected final ISensorEntityCollector collector;
    protected int ownRole;
    protected final EntityPositionProvider positionProvider = new EntityPositionProvider();
+   protected int currentVisSensorColorIndex = -1;
+   protected final float visViewAngle;
 
    public SensorEntityBase(@Nonnull BuilderSensorEntityBase builder, ISensorEntityPrioritiser prioritiser, @Nonnull BuilderSupport builderSupport) {
       super(builder, builder.getFilters(builderSupport, prioritiser, ComponentContext.SensorEntity));
@@ -63,12 +66,14 @@ public abstract class SensorEntityBase extends SensorWithEntityFilters {
       this.ignoredTargetSlot = builder.getIgnoredTargetSlot(builderSupport);
       this.prioritiser = prioritiser;
       this.collector = builder.getCollector(builderSupport);
+      this.visViewAngle = this.findViewAngleFromFilters();
    }
 
    @Override
    public boolean matches(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, double dt, @Nonnull Store<EntityStore> store) {
       if (!super.matches(ref, role, dt, store)) {
          this.positionProvider.clear();
+         this.currentVisSensorColorIndex = -1;
          return false;
       } else {
          TransformComponent transformComponent = store.getComponent(ref, TRANSFORM_COMPONENT_TYPE);
@@ -77,6 +82,13 @@ public abstract class SensorEntityBase extends SensorWithEntityFilters {
 
          Vector3d position = transformComponent.getPosition();
          this.ownRole = role.getRoleIndex();
+         DebugSupport debugSupport = role.getDebugSupport();
+         if (debugSupport.isVisSensorRanges()) {
+            this.currentVisSensorColorIndex = debugSupport.recordSensorRange(this.range, this.minRange, this.visViewAngle);
+         } else {
+            this.currentVisSensorColorIndex = -1;
+         }
+
          if (this.ignoredTargetSlot == Integer.MIN_VALUE || this.ignoredTargetSlot != this.lockedTargetSlot) {
             Ref<EntityStore> targetRef = this.filterLockedEntity(ref, position, role, store);
             if (targetRef != null) {
@@ -281,20 +293,29 @@ public abstract class SensorEntityBase extends SensorWithEntityFilters {
       @Nonnull Ref<EntityStore> targetRef,
       @Nonnull Role role,
       @Nonnull Store<EntityStore> store,
-      @Nonnull IEntityByPriorityFilter playerPrioritiser
+      @Nonnull IEntityByPriorityFilter entityPrioritiser
    ) {
-      if (!this.filterEntity(ref, targetRef, role, store)) {
+      boolean filterMatch = this.filterEntity(ref, targetRef, role, store);
+      if (!filterMatch) {
          this.collector.collectNonMatching(targetRef, store);
+         this.recordEntityVisData(targetRef, role, false);
          return false;
       } else {
-         boolean match = playerPrioritiser.test(ref, targetRef, store);
+         boolean match = entityPrioritiser.test(ref, targetRef, store);
          if (match) {
             this.collector.collectMatching(ref, targetRef, store);
          } else {
             this.collector.collectNonMatching(targetRef, store);
          }
 
+         this.recordEntityVisData(targetRef, role, match);
          return this.collector.terminateOnFirstMatch() && match;
+      }
+   }
+
+   private void recordEntityVisData(@Nonnull Ref<EntityStore> targetRef, @Nonnull Role role, boolean matched) {
+      if (this.currentVisSensorColorIndex >= 0) {
+         role.getDebugSupport().recordEntityCheck(targetRef, this.currentVisSensorColorIndex, matched);
       }
    }
 

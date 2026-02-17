@@ -20,6 +20,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class PondFillerPropAsset extends PropAsset {
+   @Nonnull
    public static final BuilderCodec<PondFillerPropAsset> CODEC = BuilderCodec.builder(
          PondFillerPropAsset.class, PondFillerPropAsset::new, PropAsset.ABSTRACT_CODEC
       )

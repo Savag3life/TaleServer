@@ -16,6 +16,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 public class StartObjectiveInteraction extends ChoiceInteraction {
+   @Nonnull
    public static final BuilderCodec<StartObjectiveInteraction> CODEC = BuilderCodec.builder(
          StartObjectiveInteraction.class, StartObjectiveInteraction::new, ChoiceInteraction.BASE_CODEC
       )
@@ -29,7 +30,7 @@ public class StartObjectiveInteraction extends ChoiceInteraction {
       .build();
    protected String objectiveId;
 
-   public StartObjectiveInteraction(String objectiveId) {
+   public StartObjectiveInteraction(@Nonnull String objectiveId) {
       this.objectiveId = objectiveId;
    }
 

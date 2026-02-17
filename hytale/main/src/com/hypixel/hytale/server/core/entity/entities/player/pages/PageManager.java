@@ -9,6 +9,7 @@ import com.hypixel.hytale.protocol.packets.interface_.SetPage;
 import com.hypixel.hytale.protocol.packets.window.OpenWindow;
 import com.hypixel.hytale.server.core.entity.entities.player.windows.Window;
 import com.hypixel.hytale.server.core.entity.entities.player.windows.WindowManager;
+import com.hypixel.hytale.server.core.modules.anchoraction.AnchorActionModule;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -125,11 +126,15 @@ public class PageManager {
             this.customPage = null;
             break;
          case Data:
-            if (this.customPageRequiredAcknowledgments.get() != 0 || this.customPage == null) {
+            if (this.customPageRequiredAcknowledgments.get() != 0) {
                return;
             }
 
-            this.customPage.handleDataEvent(ref, store, event.data);
+            if (this.customPage != null) {
+               this.customPage.handleDataEvent(ref, store, event.data);
+            } else {
+               AnchorActionModule.get().tryHandle(this.playerRef, event.data);
+            }
             break;
          case Acknowledge:
             if (this.customPageRequiredAcknowledgments.decrementAndGet() < 0) {

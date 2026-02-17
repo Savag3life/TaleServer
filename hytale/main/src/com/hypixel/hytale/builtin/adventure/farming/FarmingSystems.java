@@ -42,13 +42,14 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class FarmingSystems {
-   private static boolean hasCropAbove(BlockChunk blockChunk, int x, int y, int z) {
+   private static boolean hasCropAbove(@Nonnull BlockChunk blockChunk, int x, int y, int z) {
       if (y + 1 >= 320) {
          return false;
       } else {
@@ -67,35 +68,54 @@ public class FarmingSystems {
       }
    }
 
-   private static boolean updateSoilDecayTime(CommandBuffer<ChunkStore> commandBuffer, TilledSoilBlock soilBlock, BlockType blockType) {
-      if (blockType != null && blockType.getFarming() != null && blockType.getFarming().getSoilConfig() != null) {
-         FarmingData.SoilConfig soilConfig = blockType.getFarming().getSoilConfig();
-         Rangef range = soilConfig.getLifetime();
-         if (range == null) {
-            return false;
-         } else {
-            double baseDuration = range.min + (range.max - range.min) * ThreadLocalRandom.current().nextDouble();
-            Instant currentTime = commandBuffer.getExternalData()
-               .getWorld()
-               .getEntityStore()
-               .getStore()
-               .getResource(WorldTimeResource.getResourceType())
-               .getGameTime();
-            Instant endTime = currentTime.plus(Math.round(baseDuration), ChronoUnit.SECONDS);
-            soilBlock.setDecayTime(endTime);
-            return true;
-         }
-      } else {
+   private static boolean updateSoilDecayTime(
+      @Nonnull CommandBuffer<ChunkStore> commandBuffer, @Nonnull TilledSoilBlock soilBlock, @Nullable BlockType blockType
+   ) {
+      if (blockType == null) {
          return false;
+      } else {
+         FarmingData farming = blockType.getFarming();
+         if (farming != null && farming.getSoilConfig() != null) {
+            FarmingData.SoilConfig soilConfig = farming.getSoilConfig();
+            Rangef range = soilConfig.getLifetime();
+            if (range == null) {
+               return false;
+            } else {
+               double baseDuration = range.min + (range.max - range.min) * ThreadLocalRandom.current().nextDouble();
+               Instant currentTime = commandBuffer.getExternalData()
+                  .getWorld()
+                  .getEntityStore()
+                  .getStore()
+                  .getResource(WorldTimeResource.getResourceType())
+                  .getGameTime();
+               Instant endTime = currentTime.plus(Math.round(baseDuration), ChronoUnit.SECONDS);
+               soilBlock.setDecayTime(endTime);
+               return true;
+            }
+         } else {
+            return false;
+         }
       }
    }
 
    public static class CoopResidentEntitySystem extends RefSystem<EntityStore> {
-      private static final ComponentType<EntityStore, CoopResidentComponent> componentType = CoopResidentComponent.getComponentType();
+      @Nonnull
+      private final ComponentType<EntityStore, CoopResidentComponent> coopResidentComponentType;
+      @Nonnull
+      private final ComponentType<EntityStore, UUIDComponent> uuidComponentType;
 
+      public CoopResidentEntitySystem(
+         @Nonnull ComponentType<EntityStore, CoopResidentComponent> coopResidentComponentType,
+         @Nonnull ComponentType<EntityStore, UUIDComponent> uuidComponentType
+      ) {
+         this.coopResidentComponentType = coopResidentComponentType;
+         this.uuidComponentType = uuidComponentType;
+      }
+
+      @Nonnull
       @Override
       public Query<EntityStore> getQuery() {
-         return componentType;
+         return this.coopResidentComponentType;
       }
 
       @Override
@@ -109,26 +129,26 @@ public class FarmingSystems {
          @Nonnull Ref<EntityStore> ref, @Nonnull RemoveReason reason, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer
       ) {
          if (reason != RemoveReason.UNLOAD) {
-            UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
+            UUIDComponent uuidComponent = commandBuffer.getComponent(ref, this.uuidComponentType);
             if (uuidComponent != null) {
                UUID uuid = uuidComponent.getUuid();
-               CoopResidentComponent coopResidentComponent = commandBuffer.getComponent(ref, componentType);
+               CoopResidentComponent coopResidentComponent = commandBuffer.getComponent(ref, this.coopResidentComponentType);
                if (coopResidentComponent != null) {
                   Vector3i coopPosition = coopResidentComponent.getCoopLocation();
                   World world = commandBuffer.getExternalData().getWorld();
                   long chunkIndex = ChunkUtil.indexChunkFromBlock(coopPosition.x, coopPosition.z);
-                  WorldChunk chunk = world.getChunkIfLoaded(chunkIndex);
-                  if (chunk != null) {
-                     Ref<ChunkStore> chunkReference = world.getChunkStore().getChunkReference(chunkIndex);
-                     if (chunkReference != null && chunkReference.isValid()) {
+                  WorldChunk worldChunkComponent = world.getChunkIfLoaded(chunkIndex);
+                  if (worldChunkComponent != null) {
+                     Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIndex);
+                     if (chunkRef != null && chunkRef.isValid()) {
                         Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-                        ChunkColumn chunkColumnComponent = chunkStore.getComponent(chunkReference, ChunkColumn.getComponentType());
+                        ChunkColumn chunkColumnComponent = chunkStore.getComponent(chunkRef, ChunkColumn.getComponentType());
                         if (chunkColumnComponent != null) {
-                           BlockChunk blockChunkComponent = chunkStore.getComponent(chunkReference, BlockChunk.getComponentType());
+                           BlockChunk blockChunkComponent = chunkStore.getComponent(chunkRef, BlockChunk.getComponentType());
                            if (blockChunkComponent != null) {
                               Ref<ChunkStore> sectionRef = chunkColumnComponent.getSection(ChunkUtil.chunkCoordinate(coopPosition.y));
                               if (sectionRef != null && sectionRef.isValid()) {
-                                 BlockComponentChunk blockComponentChunk = chunkStore.getComponent(chunkReference, BlockComponentChunk.getComponentType());
+                                 BlockComponentChunk blockComponentChunk = chunkStore.getComponent(chunkRef, BlockComponentChunk.getComponentType());
                                  if (blockComponentChunk != null) {
                                     int blockIndexColumn = ChunkUtil.indexBlockInColumn(coopPosition.x, coopPosition.y, coopPosition.z);
                                     Ref<ChunkStore> coopEntityReference = blockComponentChunk.getEntityReference(blockIndexColumn);
@@ -151,11 +171,17 @@ public class FarmingSystems {
    }
 
    public static class CoopResidentTicking extends EntityTickingSystem<EntityStore> {
-      private static final ComponentType<EntityStore, CoopResidentComponent> componentType = CoopResidentComponent.getComponentType();
+      @Nonnull
+      private final ComponentType<EntityStore, CoopResidentComponent> coopResidentComponentType;
 
+      public CoopResidentTicking(@Nonnull ComponentType<EntityStore, CoopResidentComponent> coopResidentComponentType) {
+         this.coopResidentComponentType = coopResidentComponentType;
+      }
+
+      @Nonnull
       @Override
       public Query<EntityStore> getQuery() {
-         return componentType;
+         return this.coopResidentComponentType;
       }
 
       @Override
@@ -166,11 +192,12 @@ public class FarmingSystems {
          @Nonnull Store<EntityStore> store,
          @Nonnull CommandBuffer<EntityStore> commandBuffer
       ) {
-         CoopResidentComponent coopResidentComponent = archetypeChunk.getComponent(index, CoopResidentComponent.getComponentType());
-         if (coopResidentComponent != null) {
-            if (coopResidentComponent.getMarkedForDespawn()) {
-               commandBuffer.removeEntity(archetypeChunk.getReferenceTo(index), RemoveReason.REMOVE);
-            }
+         CoopResidentComponent coopResidentComponent = archetypeChunk.getComponent(index, this.coopResidentComponentType);
+
+         assert coopResidentComponent != null;
+
+         if (coopResidentComponent.getMarkedForDespawn()) {
+            commandBuffer.removeEntity(archetypeChunk.getReferenceTo(index), RemoveReason.REMOVE);
          }
       }
    }
@@ -200,32 +227,47 @@ public class FarmingSystems {
    }
 
    public static class OnCoopAdded extends RefSystem<ChunkStore> {
-      private static final Query<ChunkStore> QUERY = Query.and(BlockModule.BlockStateInfo.getComponentType(), CoopBlock.getComponentType());
+      @Nonnull
+      private final ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, CoopBlock> coopBlockComponentType;
+      @Nonnull
+      private final Query<ChunkStore> query;
+
+      public OnCoopAdded(
+         @Nonnull ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoComponentType,
+         @Nonnull ComponentType<ChunkStore, CoopBlock> coopBlockComponentType
+      ) {
+         this.blockStateInfoComponentType = blockStateInfoComponentType;
+         this.coopBlockComponentType = coopBlockComponentType;
+         this.query = Query.and(blockStateInfoComponentType, coopBlockComponentType);
+      }
 
       @Override
       public void onEntityAdded(
          @Nonnull Ref<ChunkStore> ref, @Nonnull AddReason reason, @Nonnull Store<ChunkStore> store, @Nonnull CommandBuffer<ChunkStore> commandBuffer
       ) {
-         CoopBlock coopBlock = commandBuffer.getComponent(ref, CoopBlock.getComponentType());
-         if (coopBlock != null) {
-            WorldTimeResource worldTimeResource = commandBuffer.getExternalData()
-               .getWorld()
-               .getEntityStore()
-               .getStore()
-               .getResource(WorldTimeResource.getResourceType());
-            BlockModule.BlockStateInfo info = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
+         CoopBlock coopBlockComponent = commandBuffer.getComponent(ref, this.coopBlockComponentType);
 
-            assert info != null;
+         assert coopBlockComponent != null;
 
-            int x = ChunkUtil.xFromBlockInColumn(info.getIndex());
-            int y = ChunkUtil.yFromBlockInColumn(info.getIndex());
-            int z = ChunkUtil.zFromBlockInColumn(info.getIndex());
-            BlockChunk blockChunk = commandBuffer.getComponent(info.getChunkRef(), BlockChunk.getComponentType());
+         BlockModule.BlockStateInfo blockStateInfoComponent = commandBuffer.getComponent(ref, this.blockStateInfoComponentType);
 
-            assert blockChunk != null;
+         assert blockStateInfoComponent != null;
 
-            BlockSection blockSection = blockChunk.getSectionAtBlockY(y);
-            blockSection.scheduleTick(ChunkUtil.indexBlock(x, y, z), coopBlock.getNextScheduledTick(worldTimeResource));
+         World world = commandBuffer.getExternalData().getWorld();
+         Store<EntityStore> entityStore = world.getEntityStore().getStore();
+         WorldTimeResource worldTimeResource = entityStore.getResource(WorldTimeResource.getResourceType());
+         int x = ChunkUtil.xFromBlockInColumn(blockStateInfoComponent.getIndex());
+         int y = ChunkUtil.yFromBlockInColumn(blockStateInfoComponent.getIndex());
+         int z = ChunkUtil.zFromBlockInColumn(blockStateInfoComponent.getIndex());
+         Ref<ChunkStore> chunkRef = blockStateInfoComponent.getChunkRef();
+         if (chunkRef.isValid()) {
+            BlockChunk blockChunkComponent = commandBuffer.getComponent(chunkRef, BlockChunk.getComponentType());
+            if (blockChunkComponent != null) {
+               BlockSection blockSection = blockChunkComponent.getSectionAtBlockY(y);
+               blockSection.scheduleTick(ChunkUtil.indexBlock(x, y, z), coopBlockComponent.getNextScheduledTick(worldTimeResource));
+            }
          }
       }
 
@@ -234,147 +276,188 @@ public class FarmingSystems {
          @Nonnull Ref<ChunkStore> ref, @Nonnull RemoveReason reason, @Nonnull Store<ChunkStore> store, @Nonnull CommandBuffer<ChunkStore> commandBuffer
       ) {
          if (reason != RemoveReason.UNLOAD) {
-            CoopBlock coop = commandBuffer.getComponent(ref, CoopBlock.getComponentType());
-            if (coop != null) {
-               BlockModule.BlockStateInfo info = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
+            CoopBlock coopBlockComponent = commandBuffer.getComponent(ref, this.coopBlockComponentType);
 
-               assert info != null;
+            assert coopBlockComponent != null;
 
-               Store<EntityStore> entityStore = commandBuffer.getExternalData().getWorld().getEntityStore().getStore();
-               int x = ChunkUtil.xFromBlockInColumn(info.getIndex());
-               int y = ChunkUtil.yFromBlockInColumn(info.getIndex());
-               int z = ChunkUtil.zFromBlockInColumn(info.getIndex());
-               BlockChunk blockChunk = commandBuffer.getComponent(info.getChunkRef(), BlockChunk.getComponentType());
+            BlockModule.BlockStateInfo blockStateInfoComponent = commandBuffer.getComponent(ref, this.blockStateInfoComponentType);
 
-               assert blockChunk != null;
+            assert blockStateInfoComponent != null;
 
-               ChunkColumn column = commandBuffer.getComponent(info.getChunkRef(), ChunkColumn.getComponentType());
+            int index = blockStateInfoComponent.getIndex();
+            int x = ChunkUtil.xFromBlockInColumn(index);
+            int y = ChunkUtil.yFromBlockInColumn(index);
+            int z = ChunkUtil.zFromBlockInColumn(index);
+            BlockChunk blockChunkComponent = commandBuffer.getComponent(blockStateInfoComponent.getChunkRef(), BlockChunk.getComponentType());
 
-               assert column != null;
+            assert blockChunkComponent != null;
 
-               Ref<ChunkStore> sectionRef = column.getSection(ChunkUtil.chunkCoordinate(y));
+            ChunkColumn chunkColumnComponent = commandBuffer.getComponent(blockStateInfoComponent.getChunkRef(), ChunkColumn.getComponentType());
 
-               assert sectionRef != null;
+            assert chunkColumnComponent != null;
 
-               BlockSection blockSection = commandBuffer.getComponent(sectionRef, BlockSection.getComponentType());
+            Ref<ChunkStore> sectionRef = chunkColumnComponent.getSection(ChunkUtil.chunkCoordinate(y));
 
-               assert blockSection != null;
+            assert sectionRef != null;
 
-               ChunkSection chunkSection = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
+            BlockSection blockSectionComponent = commandBuffer.getComponent(sectionRef, BlockSection.getComponentType());
 
-               assert chunkSection != null;
+            assert blockSectionComponent != null;
 
-               int worldX = ChunkUtil.worldCoordFromLocalCoord(chunkSection.getX(), x);
-               int worldY = ChunkUtil.worldCoordFromLocalCoord(chunkSection.getY(), y);
-               int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkSection.getZ(), z);
-               World world = commandBuffer.getExternalData().getWorld();
-               WorldTimeResource worldTimeResource = world.getEntityStore().getStore().getResource(WorldTimeResource.getResourceType());
-               coop.handleBlockBroken(world, worldTimeResource, entityStore, worldX, worldY, worldZ);
-            }
+            ChunkSection chunkSectionComponent = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
+
+            assert chunkSectionComponent != null;
+
+            int worldX = ChunkUtil.worldCoordFromLocalCoord(chunkSectionComponent.getX(), x);
+            int worldY = ChunkUtil.worldCoordFromLocalCoord(chunkSectionComponent.getY(), y);
+            int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkSectionComponent.getZ(), z);
+            World world = commandBuffer.getExternalData().getWorld();
+            Store<EntityStore> entityStore = world.getEntityStore().getStore();
+            WorldTimeResource worldTimeResource = entityStore.getResource(WorldTimeResource.getResourceType());
+            coopBlockComponent.handleBlockBroken(world, worldTimeResource, entityStore, worldX, worldY, worldZ);
          }
       }
 
-      @Nullable
+      @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return QUERY;
+         return this.query;
       }
    }
 
    public static class OnFarmBlockAdded extends RefSystem<ChunkStore> {
-      private static final Query<ChunkStore> QUERY = Query.and(BlockModule.BlockStateInfo.getComponentType(), FarmingBlock.getComponentType());
+      @Nonnull
+      private final ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, FarmingBlock> farmingBlockComponentType;
+      @Nonnull
+      private final Query<ChunkStore> query;
+
+      public OnFarmBlockAdded(
+         @Nonnull ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoComponentType,
+         @Nonnull ComponentType<ChunkStore, FarmingBlock> farmingBlockComponentType
+      ) {
+         this.blockStateInfoComponentType = blockStateInfoComponentType;
+         this.farmingBlockComponentType = farmingBlockComponentType;
+         this.query = Query.and(blockStateInfoComponentType, farmingBlockComponentType);
+      }
 
       @Override
       public void onEntityAdded(
          @Nonnull Ref<ChunkStore> ref, @Nonnull AddReason reason, @Nonnull Store<ChunkStore> store, @Nonnull CommandBuffer<ChunkStore> commandBuffer
       ) {
-         FarmingBlock farmingBlock = commandBuffer.getComponent(ref, FarmingBlock.getComponentType());
+         FarmingBlock farmingBlockComponent = commandBuffer.getComponent(ref, this.farmingBlockComponentType);
 
-         assert farmingBlock != null;
+         assert farmingBlockComponent != null;
 
-         BlockModule.BlockStateInfo info = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
+         BlockModule.BlockStateInfo blockStateInfoComponent = commandBuffer.getComponent(ref, this.blockStateInfoComponentType);
 
-         assert info != null;
+         assert blockStateInfoComponent != null;
 
-         BlockChunk blockChunk = commandBuffer.getComponent(info.getChunkRef(), BlockChunk.getComponentType());
-         if (farmingBlock.getLastTickGameTime() == null) {
-            int blockId = blockChunk.getBlock(
-               ChunkUtil.xFromBlockInColumn(info.getIndex()), ChunkUtil.yFromBlockInColumn(info.getIndex()), ChunkUtil.zFromBlockInColumn(info.getIndex())
-            );
-            BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
-            if (blockType.getFarming() == null) {
-               return;
-            }
+         Ref<ChunkStore> chunkRef = blockStateInfoComponent.getChunkRef();
+         if (chunkRef.isValid()) {
+            BlockChunk blockChunkComponent = commandBuffer.getComponent(chunkRef, BlockChunk.getComponentType());
 
-            farmingBlock.setCurrentStageSet(blockType.getFarming().getStartingStageSet());
-            farmingBlock.setLastTickGameTime(
-               store.getExternalData().getWorld().getEntityStore().getStore().getResource(WorldTimeResource.getResourceType()).getGameTime()
-            );
-            blockChunk.markNeedsSaving();
-            if (blockType.getFarming().getStages() != null) {
-               FarmingStageData[] stages = blockType.getFarming().getStages().get(blockType.getFarming().getStartingStageSet());
-               if (stages != null && stages.length > 0) {
-                  boolean found = false;
+            assert blockChunkComponent != null;
 
-                  for (int i = 0; i < stages.length; i++) {
-                     FarmingStageData stage = stages[i];
-                     switch (stage) {
-                        case BlockTypeFarmingStageData data:
-                           if (data.getBlock().equals(blockType.getId())) {
-                              farmingBlock.setGrowthProgress(i);
-                              found = true;
-                           }
-                           break;
-                        case BlockStateFarmingStageData datax:
-                           BlockType stateBlockType = blockType.getBlockForState(datax.getState());
-                           if (stateBlockType != null && stateBlockType.getId().equals(blockType.getId())) {
-                              farmingBlock.setGrowthProgress(i);
-                              found = true;
-                           }
-                           break;
-                        default:
+            World world = store.getExternalData().getWorld();
+            Store<EntityStore> entityStore = world.getEntityStore().getStore();
+            WorldTimeResource worldTimeResource = entityStore.getResource(WorldTimeResource.getResourceType());
+            if (farmingBlockComponent.getLastTickGameTime() == null) {
+               int index = blockStateInfoComponent.getIndex();
+               int blockId = blockChunkComponent.getBlock(
+                  ChunkUtil.xFromBlockInColumn(index), ChunkUtil.yFromBlockInColumn(index), ChunkUtil.zFromBlockInColumn(index)
+               );
+               BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
+               if (blockType == null) {
+                  return;
+               }
+
+               FarmingData blockTypeFarming = blockType.getFarming();
+               if (blockTypeFarming == null) {
+                  return;
+               }
+
+               String startingStageSet = blockTypeFarming.getStartingStageSet();
+               farmingBlockComponent.setCurrentStageSet(startingStageSet);
+               farmingBlockComponent.setLastTickGameTime(worldTimeResource.getGameTime());
+               blockChunkComponent.markNeedsSaving();
+               Map<String, FarmingStageData[]> farmingStages = blockTypeFarming.getStages();
+               if (farmingStages != null) {
+                  FarmingStageData[] stages = farmingStages.get(startingStageSet);
+                  if (stages != null && stages.length > 0) {
+                     boolean found = false;
+
+                     for (int i = 0; i < stages.length; i++) {
+                        FarmingStageData stage = stages[i];
+                        switch (stage) {
+                           case BlockTypeFarmingStageData data:
+                              if (data.getBlock().equals(blockType.getId())) {
+                                 farmingBlockComponent.setGrowthProgress(i);
+                                 found = true;
+                              }
+                              break;
+                           case BlockStateFarmingStageData datax:
+                              BlockType stateBlockType = blockType.getBlockForState(datax.getState());
+                              if (stateBlockType != null && stateBlockType.getId().equals(blockType.getId())) {
+                                 farmingBlockComponent.setGrowthProgress(i);
+                                 found = true;
+                              }
+                              break;
+                           default:
+                        }
                      }
-                  }
 
-                  if (!found) {
-                     Ref<ChunkStore> sectionRef = commandBuffer.getComponent(info.getChunkRef(), ChunkColumn.getComponentType())
-                        .getSection(ChunkUtil.chunkCoordinate(ChunkUtil.yFromBlockInColumn(info.getIndex())));
-                     stages[0]
-                        .apply(
-                           commandBuffer,
-                           sectionRef,
-                           ref,
-                           ChunkUtil.xFromBlockInColumn(info.getIndex()),
-                           ChunkUtil.yFromBlockInColumn(info.getIndex()),
-                           ChunkUtil.zFromBlockInColumn(info.getIndex()),
-                           null
-                        );
+                     if (!found) {
+                        ChunkColumn chunkColumnComponent = commandBuffer.getComponent(chunkRef, ChunkColumn.getComponentType());
+
+                        assert chunkColumnComponent != null;
+
+                        int chunkCoordinate = ChunkUtil.chunkCoordinate(ChunkUtil.yFromBlockInColumn(index));
+                        Ref<ChunkStore> sectionRef = chunkColumnComponent.getSection(chunkCoordinate);
+                        if (sectionRef != null && sectionRef.isValid()) {
+                           stages[0]
+                              .apply(
+                                 commandBuffer,
+                                 sectionRef,
+                                 ref,
+                                 ChunkUtil.xFromBlockInColumn(index),
+                                 ChunkUtil.yFromBlockInColumn(index),
+                                 ChunkUtil.zFromBlockInColumn(index),
+                                 null
+                              );
+                        }
+                     }
                   }
                }
             }
+
+            if (farmingBlockComponent.getLastTickGameTime() == null) {
+               farmingBlockComponent.setLastTickGameTime(worldTimeResource.getGameTime());
+               blockChunkComponent.markNeedsSaving();
+            }
+
+            int indexx = blockStateInfoComponent.getIndex();
+            int x = ChunkUtil.xFromBlockInColumn(indexx);
+            int y = ChunkUtil.yFromBlockInColumn(indexx);
+            int z = ChunkUtil.zFromBlockInColumn(indexx);
+            BlockComponentChunk blockComponentChunk = commandBuffer.getComponent(chunkRef, BlockComponentChunk.getComponentType());
+
+            assert blockComponentChunk != null;
+
+            ChunkColumn chunkColumnComponentx = commandBuffer.getComponent(chunkRef, ChunkColumn.getComponentType());
+
+            assert chunkColumnComponentx != null;
+
+            Ref<ChunkStore> section = chunkColumnComponentx.getSection(ChunkUtil.chunkCoordinate(y));
+            if (section != null) {
+               BlockSection blockSectionComponent = commandBuffer.getComponent(section, BlockSection.getComponentType());
+
+               assert blockSectionComponent != null;
+
+               FarmingUtil.tickFarming(commandBuffer, blockChunkComponent, blockSectionComponent, section, ref, farmingBlockComponent, x, y, z, true);
+            }
          }
-
-         if (farmingBlock.getLastTickGameTime() == null) {
-            farmingBlock.setLastTickGameTime(
-               store.getExternalData().getWorld().getEntityStore().getStore().getResource(WorldTimeResource.getResourceType()).getGameTime()
-            );
-            blockChunk.markNeedsSaving();
-         }
-
-         int x = ChunkUtil.xFromBlockInColumn(info.getIndex());
-         int y = ChunkUtil.yFromBlockInColumn(info.getIndex());
-         int z = ChunkUtil.zFromBlockInColumn(info.getIndex());
-         BlockComponentChunk blockComponentChunk = commandBuffer.getComponent(info.getChunkRef(), BlockComponentChunk.getComponentType());
-
-         assert blockComponentChunk != null;
-
-         ChunkColumn column = commandBuffer.getComponent(info.getChunkRef(), ChunkColumn.getComponentType());
-
-         assert column != null;
-
-         Ref<ChunkStore> section = column.getSection(ChunkUtil.chunkCoordinate(y));
-         BlockSection blockSection = commandBuffer.getComponent(section, BlockSection.getComponentType());
-         FarmingUtil.tickFarming(commandBuffer, blockChunk, blockSection, section, ref, farmingBlock, x, y, z, true);
       }
 
       @Override
@@ -383,51 +466,67 @@ public class FarmingSystems {
       ) {
       }
 
-      @Nullable
+      @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return QUERY;
+         return this.query;
       }
    }
 
    public static class OnSoilAdded extends RefSystem<ChunkStore> {
-      private static final Query<ChunkStore> QUERY = Query.and(BlockModule.BlockStateInfo.getComponentType(), TilledSoilBlock.getComponentType());
+      @Nonnull
+      private final ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, TilledSoilBlock> tilledSoilBlockComponentType;
+      @Nonnull
+      private final Query<ChunkStore> query;
+
+      public OnSoilAdded(
+         @Nonnull ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoComponentType,
+         @Nonnull ComponentType<ChunkStore, TilledSoilBlock> tilledSoilBlockComponentType
+      ) {
+         this.blockStateInfoComponentType = blockStateInfoComponentType;
+         this.tilledSoilBlockComponentType = tilledSoilBlockComponentType;
+         this.query = Query.and(blockStateInfoComponentType, tilledSoilBlockComponentType);
+      }
 
       @Override
       public void onEntityAdded(
          @Nonnull Ref<ChunkStore> ref, @Nonnull AddReason reason, @Nonnull Store<ChunkStore> store, @Nonnull CommandBuffer<ChunkStore> commandBuffer
       ) {
-         TilledSoilBlock soil = commandBuffer.getComponent(ref, TilledSoilBlock.getComponentType());
+         TilledSoilBlock soilComponent = commandBuffer.getComponent(ref, this.tilledSoilBlockComponentType);
 
-         assert soil != null;
+         assert soilComponent != null;
 
-         BlockModule.BlockStateInfo info = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
+         BlockModule.BlockStateInfo blockStateInfoComponent = commandBuffer.getComponent(ref, this.blockStateInfoComponentType);
 
-         assert info != null;
+         assert blockStateInfoComponent != null;
 
-         if (!soil.isPlanted()) {
-            int x = ChunkUtil.xFromBlockInColumn(info.getIndex());
-            int y = ChunkUtil.yFromBlockInColumn(info.getIndex());
-            int z = ChunkUtil.zFromBlockInColumn(info.getIndex());
+         Ref<ChunkStore> chunkRef = blockStateInfoComponent.getChunkRef();
+         if (chunkRef.isValid()) {
+            if (!soilComponent.isPlanted()) {
+               int index = blockStateInfoComponent.getIndex();
+               int x = ChunkUtil.xFromBlockInColumn(index);
+               int y = ChunkUtil.yFromBlockInColumn(index);
+               int z = ChunkUtil.zFromBlockInColumn(index);
+               BlockChunk blockChunkComponent = commandBuffer.getComponent(chunkRef, BlockChunk.getComponentType());
 
-            assert info.getChunkRef() != null;
+               assert blockChunkComponent != null;
 
-            BlockChunk blockChunk = commandBuffer.getComponent(info.getChunkRef(), BlockChunk.getComponentType());
+               BlockSection blockSection = blockChunkComponent.getSectionAtBlockY(y);
+               Instant decayTime = soilComponent.getDecayTime();
+               if (decayTime == null) {
+                  int blockId = blockSection.get(x, y, z);
+                  BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
+                  FarmingSystems.updateSoilDecayTime(commandBuffer, soilComponent, blockType);
+               }
 
-            assert blockChunk != null;
+               if (decayTime == null) {
+                  return;
+               }
 
-            BlockSection blockSection = blockChunk.getSectionAtBlockY(y);
-            Instant decayTime = soil.getDecayTime();
-            if (decayTime == null) {
-               BlockType blockType = BlockType.getAssetMap().getAsset(blockSection.get(x, y, z));
-               FarmingSystems.updateSoilDecayTime(commandBuffer, soil, blockType);
+               blockSection.scheduleTick(ChunkUtil.indexBlock(x, y, z), decayTime);
             }
-
-            if (decayTime == null) {
-               return;
-            }
-
-            blockSection.scheduleTick(ChunkUtil.indexBlock(x, y, z), decayTime);
          }
       }
 
@@ -437,15 +536,41 @@ public class FarmingSystems {
       ) {
       }
 
-      @Nullable
+      @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return QUERY;
+         return this.query;
       }
    }
 
    public static class Ticking extends EntityTickingSystem<ChunkStore> {
-      private static final Query<ChunkStore> QUERY = Query.and(BlockSection.getComponentType(), ChunkSection.getComponentType());
+      @Nonnull
+      private final ComponentType<ChunkStore, BlockSection> blockSectionComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, FarmingBlock> farmingBlockComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, TilledSoilBlock> tilledSoilBlockComponentType;
+      @Nonnull
+      private final ComponentType<ChunkStore, CoopBlock> coopBlockComponentType;
+      @Nonnull
+      private final Query<ChunkStore> query;
+
+      public Ticking(
+         @Nonnull ComponentType<ChunkStore, BlockSection> blockSectionComponentType,
+         @Nonnull ComponentType<ChunkStore, ChunkSection> chunkSectionComponentType,
+         @Nonnull ComponentType<ChunkStore, FarmingBlock> farmingBlockComponentType,
+         @Nonnull ComponentType<ChunkStore, TilledSoilBlock> tilledSoilBlockComponentType,
+         @Nonnull ComponentType<ChunkStore, CoopBlock> coopBlockComponentType
+      ) {
+         this.blockSectionComponentType = blockSectionComponentType;
+         this.chunkSectionComponentType = chunkSectionComponentType;
+         this.farmingBlockComponentType = farmingBlockComponentType;
+         this.tilledSoilBlockComponentType = tilledSoilBlockComponentType;
+         this.coopBlockComponentType = coopBlockComponentType;
+         this.query = Query.and(blockSectionComponentType, chunkSectionComponentType);
+      }
 
       @Override
       public void tick(
@@ -455,44 +580,50 @@ public class FarmingSystems {
          @Nonnull Store<ChunkStore> store,
          @Nonnull CommandBuffer<ChunkStore> commandBuffer
       ) {
-         BlockSection blocks = archetypeChunk.getComponent(index, BlockSection.getComponentType());
+         BlockSection blockSectionComponent = archetypeChunk.getComponent(index, this.blockSectionComponentType);
 
-         assert blocks != null;
+         assert blockSectionComponent != null;
 
-         if (blocks.getTickingBlocksCountCopy() != 0) {
-            ChunkSection section = archetypeChunk.getComponent(index, ChunkSection.getComponentType());
+         if (blockSectionComponent.getTickingBlocksCountCopy() != 0) {
+            ChunkSection chunkSectionComponent = archetypeChunk.getComponent(index, this.chunkSectionComponentType);
 
-            assert section != null;
+            assert chunkSectionComponent != null;
 
-            if (section.getChunkColumnReference() != null && section.getChunkColumnReference().isValid()) {
-               BlockComponentChunk blockComponentChunk = commandBuffer.getComponent(section.getChunkColumnReference(), BlockComponentChunk.getComponentType());
+            Ref<ChunkStore> chunkColumnRef = chunkSectionComponent.getChunkColumnReference();
+            if (chunkColumnRef != null && chunkColumnRef.isValid()) {
+               BlockComponentChunk blockComponentChunk = commandBuffer.getComponent(chunkColumnRef, BlockComponentChunk.getComponentType());
 
                assert blockComponentChunk != null;
 
                Ref<ChunkStore> ref = archetypeChunk.getReferenceTo(index);
-               BlockChunk blockChunk = commandBuffer.getComponent(section.getChunkColumnReference(), BlockChunk.getComponentType());
+               BlockChunk blockChunk = commandBuffer.getComponent(chunkColumnRef, BlockChunk.getComponentType());
 
                assert blockChunk != null;
 
-               blocks.forEachTicking(
-                  blockComponentChunk, commandBuffer, section.getY(), (blockComponentChunk1, commandBuffer1, localX, localY, localZ, blockId) -> {
+               blockSectionComponent.forEachTicking(
+                  blockComponentChunk,
+                  commandBuffer,
+                  chunkSectionComponent.getY(),
+                  (blockComponentChunk1, commandBuffer1, localX, localY, localZ, blockId) -> {
                      Ref<ChunkStore> blockRef = blockComponentChunk1.getEntityReference(ChunkUtil.indexBlockInColumn(localX, localY, localZ));
                      if (blockRef == null) {
                         return BlockTickStrategy.IGNORED;
                      } else {
-                        FarmingBlock farming = commandBuffer1.getComponent(blockRef, FarmingBlock.getComponentType());
-                        if (farming != null) {
-                           FarmingUtil.tickFarming(commandBuffer1, blockChunk, blocks, ref, blockRef, farming, localX, localY, localZ, false);
+                        FarmingBlock farmingBlockComp = commandBuffer1.getComponent(blockRef, this.farmingBlockComponentType);
+                        if (farmingBlockComp != null) {
+                           FarmingUtil.tickFarming(
+                              commandBuffer1, blockChunk, blockSectionComponent, ref, blockRef, farmingBlockComp, localX, localY, localZ, false
+                           );
                            return BlockTickStrategy.SLEEP;
                         } else {
-                           TilledSoilBlock soil = commandBuffer1.getComponent(blockRef, TilledSoilBlock.getComponentType());
-                           if (soil != null) {
-                              tickSoil(commandBuffer1, blockComponentChunk1, blockRef, soil);
+                           TilledSoilBlock tilledSoilBlockComp = commandBuffer1.getComponent(blockRef, this.tilledSoilBlockComponentType);
+                           if (tilledSoilBlockComp != null) {
+                              tickSoil(commandBuffer1, blockRef, tilledSoilBlockComp);
                               return BlockTickStrategy.SLEEP;
                            } else {
-                              CoopBlock coop = commandBuffer1.getComponent(blockRef, CoopBlock.getComponentType());
-                              if (coop != null) {
-                                 tickCoop(commandBuffer1, blockComponentChunk1, blockRef, coop);
+                              CoopBlock coopBlockComp = commandBuffer1.getComponent(blockRef, this.coopBlockComponentType);
+                              if (coopBlockComp != null) {
+                                 tickCoop(commandBuffer1, blockRef, coopBlockComp);
                                  return BlockTickStrategy.SLEEP;
                               } else {
                                  return BlockTickStrategy.IGNORED;
@@ -506,122 +637,128 @@ public class FarmingSystems {
          }
       }
 
-      private static void tickSoil(
-         CommandBuffer<ChunkStore> commandBuffer, BlockComponentChunk blockComponentChunk, Ref<ChunkStore> blockRef, TilledSoilBlock soilBlock
-      ) {
-         BlockModule.BlockStateInfo info = commandBuffer.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
+      private static void tickSoil(@Nonnull CommandBuffer<ChunkStore> commandBuffer, @Nonnull Ref<ChunkStore> blockRef, @Nonnull TilledSoilBlock soilBlock) {
+         BlockModule.BlockStateInfo blockStateInfoComponent = commandBuffer.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
 
-         assert info != null;
+         assert blockStateInfoComponent != null;
 
-         int x = ChunkUtil.xFromBlockInColumn(info.getIndex());
-         int y = ChunkUtil.yFromBlockInColumn(info.getIndex());
-         int z = ChunkUtil.zFromBlockInColumn(info.getIndex());
+         int index = blockStateInfoComponent.getIndex();
+         int x = ChunkUtil.xFromBlockInColumn(index);
+         int y = ChunkUtil.yFromBlockInColumn(index);
+         int z = ChunkUtil.zFromBlockInColumn(index);
          if (y < 320) {
-            assert info.getChunkRef() != null;
-
-            BlockChunk blockChunk = commandBuffer.getComponent(info.getChunkRef(), BlockChunk.getComponentType());
-
-            assert blockChunk != null;
-
-            BlockSection blockSection = blockChunk.getSectionAtBlockY(y);
-            boolean hasCrop = FarmingSystems.hasCropAbove(blockChunk, x, y, z);
-            BlockType blockType = BlockType.getAssetMap().getAsset(blockSection.get(x, y, z));
-            Instant currentTime = commandBuffer.getExternalData()
-               .getWorld()
-               .getEntityStore()
-               .getStore()
-               .getResource(WorldTimeResource.getResourceType())
-               .getGameTime();
-            Instant decayTime = soilBlock.getDecayTime();
-            if (soilBlock.isPlanted() && !hasCrop) {
-               if (!FarmingSystems.updateSoilDecayTime(commandBuffer, soilBlock, blockType)) {
-                  return;
-               }
-
-               if (decayTime != null) {
-                  blockSection.scheduleTick(ChunkUtil.indexBlock(x, y, z), decayTime);
-               }
-            } else if (!soilBlock.isPlanted() && !hasCrop) {
-               if (decayTime == null || !decayTime.isAfter(currentTime)) {
-                  assert info.getChunkRef() != null;
-
-                  if (blockType != null && blockType.getFarming() != null && blockType.getFarming().getSoilConfig() != null) {
-                     FarmingData.SoilConfig soilConfig = blockType.getFarming().getSoilConfig();
-                     String targetBlock = soilConfig.getTargetBlock();
-                     if (targetBlock == null) {
-                        return;
-                     } else {
-                        int targetBlockId = BlockType.getAssetMap().getIndex(targetBlock);
-                        if (targetBlockId == Integer.MIN_VALUE) {
-                           return;
-                        } else {
-                           BlockType targetBlockType = BlockType.getAssetMap().getAsset(targetBlockId);
-                           int rotation = blockSection.getRotationIndex(x, y, z);
-                           WorldChunk worldChunk = commandBuffer.getComponent(info.getChunkRef(), WorldChunk.getComponentType());
-                           commandBuffer.run(_store -> worldChunk.setBlock(x, y, z, targetBlockId, targetBlockType, rotation, 0, 0));
+            Ref<ChunkStore> chunkRef = blockStateInfoComponent.getChunkRef();
+            if (chunkRef.isValid()) {
+               BlockChunk blockChunkComponent = commandBuffer.getComponent(chunkRef, BlockChunk.getComponentType());
+               if (blockChunkComponent != null) {
+                  BlockSection blockSection = blockChunkComponent.getSectionAtBlockY(y);
+                  boolean hasCrop = FarmingSystems.hasCropAbove(blockChunkComponent, x, y, z);
+                  int blockId = blockSection.get(x, y, z);
+                  BlockType blockTypeAsset = BlockType.getAssetMap().getAsset(blockId);
+                  if (blockTypeAsset != null) {
+                     Instant currentTime = commandBuffer.getExternalData()
+                        .getWorld()
+                        .getEntityStore()
+                        .getStore()
+                        .getResource(WorldTimeResource.getResourceType())
+                        .getGameTime();
+                     Instant decayTime = soilBlock.getDecayTime();
+                     if (soilBlock.isPlanted() && !hasCrop) {
+                        if (!FarmingSystems.updateSoilDecayTime(commandBuffer, soilBlock, blockTypeAsset)) {
                            return;
                         }
+
+                        if (decayTime != null) {
+                           blockSection.scheduleTick(ChunkUtil.indexBlock(x, y, z), decayTime);
+                        }
+                     } else if (!soilBlock.isPlanted() && !hasCrop) {
+                        if (decayTime == null || !decayTime.isAfter(currentTime)) {
+                           if (blockTypeAsset.getFarming() != null && blockTypeAsset.getFarming().getSoilConfig() != null) {
+                              FarmingData.SoilConfig soilConfig = blockTypeAsset.getFarming().getSoilConfig();
+                              String targetBlock = soilConfig.getTargetBlock();
+                              if (targetBlock == null) {
+                                 return;
+                              } else {
+                                 int targetBlockId = BlockType.getAssetMap().getIndex(targetBlock);
+                                 if (targetBlockId == Integer.MIN_VALUE) {
+                                    return;
+                                 } else {
+                                    BlockType targetBlockType = BlockType.getAssetMap().getAsset(targetBlockId);
+                                    int rotationIndex = blockSection.getRotationIndex(x, y, z);
+                                    WorldChunk worldChunkComponent = commandBuffer.getComponent(chunkRef, WorldChunk.getComponentType());
+
+                                    assert worldChunkComponent != null;
+
+                                    commandBuffer.run(_store -> worldChunkComponent.setBlock(x, y, z, targetBlockId, targetBlockType, rotationIndex, 0, 0));
+                                    return;
+                                 }
+                              }
+                           } else {
+                              return;
+                           }
+                        }
+                     } else if (hasCrop) {
+                        soilBlock.setDecayTime(null);
                      }
-                  } else {
-                     return;
+
+                     String targetBlock = soilBlock.computeBlockType(currentTime, blockTypeAsset);
+                     if (targetBlock != null && !targetBlock.equals(blockTypeAsset.getId())) {
+                        WorldChunk worldChunkComponent = commandBuffer.getComponent(chunkRef, WorldChunk.getComponentType());
+
+                        assert worldChunkComponent != null;
+
+                        int rotationIndex = blockSection.getRotationIndex(x, y, z);
+                        int targetBlockId = BlockType.getAssetMap().getIndex(targetBlock);
+                        BlockType targetBlockType = BlockType.getAssetMap().getAsset(targetBlockId);
+                        commandBuffer.run(_store -> worldChunkComponent.setBlock(x, y, z, targetBlockId, targetBlockType, rotationIndex, 0, 2));
+                     }
+
+                     soilBlock.setPlanted(hasCrop);
                   }
                }
-            } else if (hasCrop) {
-               soilBlock.setDecayTime(null);
             }
-
-            String targetBlock = soilBlock.computeBlockType(currentTime, blockType);
-            if (targetBlock != null && !targetBlock.equals(blockType.getId())) {
-               WorldChunk worldChunk = commandBuffer.getComponent(info.getChunkRef(), WorldChunk.getComponentType());
-               int rotation = blockSection.getRotationIndex(x, y, z);
-               int targetBlockId = BlockType.getAssetMap().getIndex(targetBlock);
-               BlockType targetBlockType = BlockType.getAssetMap().getAsset(targetBlockId);
-               commandBuffer.run(_store -> worldChunk.setBlock(x, y, z, targetBlockId, targetBlockType, rotation, 0, 2));
-            }
-
-            soilBlock.setPlanted(hasCrop);
          }
       }
 
-      private static void tickCoop(
-         CommandBuffer<ChunkStore> commandBuffer, BlockComponentChunk blockComponentChunk, Ref<ChunkStore> blockRef, CoopBlock coopBlock
-      ) {
-         BlockModule.BlockStateInfo info = commandBuffer.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
+      private static void tickCoop(@Nonnull CommandBuffer<ChunkStore> commandBuffer, @Nonnull Ref<ChunkStore> blockRef, @Nonnull CoopBlock coopBlock) {
+         BlockModule.BlockStateInfo blockStateInfoComponent = commandBuffer.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
 
-         assert info != null;
+         assert blockStateInfoComponent != null;
 
          Store<EntityStore> store = commandBuffer.getExternalData().getWorld().getEntityStore().getStore();
          WorldTimeResource worldTimeResource = store.getResource(WorldTimeResource.getResourceType());
          FarmingCoopAsset coopAsset = coopBlock.getCoopAsset();
          if (coopAsset != null) {
-            int x = ChunkUtil.xFromBlockInColumn(info.getIndex());
-            int y = ChunkUtil.yFromBlockInColumn(info.getIndex());
-            int z = ChunkUtil.zFromBlockInColumn(info.getIndex());
-            BlockChunk blockChunk = commandBuffer.getComponent(info.getChunkRef(), BlockChunk.getComponentType());
+            int index = blockStateInfoComponent.getIndex();
+            int x = ChunkUtil.xFromBlockInColumn(index);
+            int y = ChunkUtil.yFromBlockInColumn(index);
+            int z = ChunkUtil.zFromBlockInColumn(index);
+            BlockChunk blockChunkComponent = commandBuffer.getComponent(blockStateInfoComponent.getChunkRef(), BlockChunk.getComponentType());
 
-            assert blockChunk != null;
+            assert blockChunkComponent != null;
 
-            ChunkColumn column = commandBuffer.getComponent(info.getChunkRef(), ChunkColumn.getComponentType());
+            ChunkColumn chunkColumnComponent = commandBuffer.getComponent(blockStateInfoComponent.getChunkRef(), ChunkColumn.getComponentType());
 
-            assert column != null;
+            assert chunkColumnComponent != null;
 
-            Ref<ChunkStore> sectionRef = column.getSection(ChunkUtil.chunkCoordinate(y));
+            Ref<ChunkStore> sectionRef = chunkColumnComponent.getSection(ChunkUtil.chunkCoordinate(y));
 
             assert sectionRef != null;
 
-            BlockSection blockSection = commandBuffer.getComponent(sectionRef, BlockSection.getComponentType());
+            BlockSection blockSectionComponent = commandBuffer.getComponent(sectionRef, BlockSection.getComponentType());
 
-            assert blockSection != null;
+            assert blockSectionComponent != null;
 
-            ChunkSection chunkSection = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
+            ChunkSection chunkSectionComponent = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
 
-            assert chunkSection != null;
+            assert chunkSectionComponent != null;
 
-            int worldX = ChunkUtil.worldCoordFromLocalCoord(chunkSection.getX(), x);
-            int worldY = ChunkUtil.worldCoordFromLocalCoord(chunkSection.getY(), y);
-            int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkSection.getZ(), z);
+            int worldX = ChunkUtil.worldCoordFromLocalCoord(chunkSectionComponent.getX(), x);
+            int worldY = ChunkUtil.worldCoordFromLocalCoord(chunkSectionComponent.getY(), y);
+            int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkSectionComponent.getZ(), z);
             World world = commandBuffer.getExternalData().getWorld();
-            WorldChunk chunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(worldX, worldZ));
+            long chunkIndex = ChunkUtil.indexChunkFromBlock(worldX, worldZ);
+            WorldChunk chunk = world.getChunkIfInMemory(chunkIndex);
             double blockRotation = chunk.getRotation(worldX, worldY, worldZ).yaw().getRadians();
             Vector3d spawnOffset = new Vector3d().assign(coopAsset.getResidentSpawnOffset()).rotateY((float)blockRotation);
             Vector3i coopLocation = new Vector3i(worldX, worldY, worldZ);
@@ -652,15 +789,15 @@ public class FarmingSystems {
 
             Instant nextTickInstant = coopBlock.getNextScheduledTick(worldTimeResource);
             if (nextTickInstant != null) {
-               blockSection.scheduleTick(ChunkUtil.indexBlock(x, y, z), nextTickInstant);
+               blockSectionComponent.scheduleTick(ChunkUtil.indexBlock(x, y, z), nextTickInstant);
             }
          }
       }
 
-      @Nullable
+      @Nonnull
       @Override
       public Query<ChunkStore> getQuery() {
-         return QUERY;
+         return this.query;
       }
    }
 }

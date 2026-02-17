@@ -7,8 +7,10 @@ import com.hypixel.hytale.builtin.crafting.state.BenchState;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.protocol.packets.window.WindowType;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.bench.Bench;
 import com.hypixel.hytale.server.core.asset.type.gameplay.CraftingConfig;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
@@ -17,17 +19,21 @@ import com.hypixel.hytale.server.core.entity.entities.player.windows.MaterialCon
 import com.hypixel.hytale.server.core.entity.entities.player.windows.MaterialExtraResourcesSection;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public abstract class BenchWindow extends BlockWindow implements MaterialContainerWindow {
    private static final float CRAFTING_UPDATE_MIN_PERCENT = 0.05F;
    private static final long CRAFTING_UPDATE_INTERVAL_MS = 500L;
+   @Nonnull
    protected static final String BENCH_UPGRADING = "BenchUpgrading";
    private float lastUpdatePercent;
    private long lastUpdateTimeMs;
    protected final Bench bench;
+   @Nonnull
    protected final BenchState benchState;
+   @Nonnull
    protected final JsonObject windowData = new JsonObject();
    @Nonnull
    private final MaterialExtraResourcesSection extraResourcesSection = new MaterialExtraResourcesSection();
@@ -83,10 +89,22 @@ public abstract class BenchWindow extends BlockWindow implements MaterialContain
 
    @Override
    public void onClose0(@Nonnull Ref<EntityStore> ref, @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
+      World world = componentAccessor.getExternalData().getWorld();
+      this.setBlockInteractionState(this.benchState.getTierStateName(), world);
       CraftingManager craftingManagerComponent = componentAccessor.getComponent(ref, CraftingManager.getComponentType());
       if (craftingManagerComponent != null) {
          if (craftingManagerComponent.clearBench(ref, componentAccessor) && this.bench.getFailedSoundEventIndex() != 0) {
             SoundUtil.playSoundEvent2d(ref, this.bench.getFailedSoundEventIndex(), SoundCategory.UI, componentAccessor);
+         }
+      }
+   }
+
+   public void setBlockInteractionState(@Nonnull String state, @Nonnull World world) {
+      WorldChunk worldChunk = world.getChunk(ChunkUtil.indexChunkFromBlock(this.x, this.z));
+      if (worldChunk != null) {
+         BlockType blockType = worldChunk.getBlockType(this.x, this.y, this.z);
+         if (blockType != null) {
+            worldChunk.setBlockInteractionState(this.x, this.y, this.z, blockType, state, true);
          }
       }
    }

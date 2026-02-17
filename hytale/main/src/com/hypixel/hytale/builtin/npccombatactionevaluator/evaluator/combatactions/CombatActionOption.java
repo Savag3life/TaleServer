@@ -27,9 +27,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public abstract class CombatActionOption extends Option implements JsonAssetWithMap<String, IndexedLookupTableAssetMap<String, CombatActionOption>> {
+   @Nonnull
    public static final AssetCodecMapCodec<String, CombatActionOption> CODEC = new AssetCodecMapCodec<>(
       Codec.STRING, (t, k) -> t.id = k, t -> t.id, (t, data) -> t.extraData = data, t -> t.extraData
    );
+   @Nonnull
    public static final BuilderCodec<CombatActionOption> BASE_CODEC = BuilderCodec.abstractBuilder(CombatActionOption.class, Option.ABSTRACT_CODEC)
       .appendInherited(
          new KeyedCodec<>("Target", CombatActionOption.Target.CODEC),
@@ -51,8 +53,11 @@ public abstract class CombatActionOption extends Option implements JsonAssetWith
       .documentation("An optional range the NPC will try to maintain from the target after executing the combat action.")
       .add()
       .build();
+   @Nonnull
    public static final Codec<String> CHILD_ASSET_CODEC = new ContainedAssetCodec<>(CombatActionOption.class, CODEC);
+   @Nonnull
    public static final Codec<String[]> CHILD_ASSET_CODEC_ARRAY = new ArrayCodec<>(CHILD_ASSET_CODEC, String[]::new);
+   @Nonnull
    public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(CombatActionOption::getAssetStore));
    private static AssetStore<String, CombatActionOption, IndexedLookupTableAssetMap<String, CombatActionOption>> ASSET_STORE;
    protected AssetExtraInfo.Data extraData;
@@ -60,6 +65,7 @@ public abstract class CombatActionOption extends Option implements JsonAssetWith
    protected CombatActionOption.Target actionTarget;
    protected double[] postExecuteDistanceRange;
 
+   @Nonnull
    public static AssetStore<String, CombatActionOption, IndexedLookupTableAssetMap<String, CombatActionOption>> getAssetStore() {
       if (ASSET_STORE == null) {
          ASSET_STORE = AssetRegistry.getAssetStore(CombatActionOption.class);
@@ -161,6 +167,7 @@ public abstract class CombatActionOption extends Option implements JsonAssetWith
       Hostile,
       Friendly;
 
+      @Nonnull
       public static final EnumCodec<CombatActionOption.Target> CODEC = new EnumCodec<>(CombatActionOption.Target.class)
          .documentKey(Self, "Action targets self.")
          .documentKey(Hostile, "Action targets any hostile target.")

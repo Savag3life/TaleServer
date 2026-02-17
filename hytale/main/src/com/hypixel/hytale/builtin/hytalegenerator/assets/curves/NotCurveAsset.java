@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class NotCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<NotCurveAsset> CODEC = BuilderCodec.builder(NotCurveAsset.class, NotCurveAsset::new, CurveAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Curve", CurveAsset.CODEC, true), (t, k) -> t.curveAsset = k, k -> k.curveAsset)
       .add()

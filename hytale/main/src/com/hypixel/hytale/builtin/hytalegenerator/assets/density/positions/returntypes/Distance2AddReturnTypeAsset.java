@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class Distance2AddReturnTypeAsset extends ReturnTypeAsset {
+   @Nonnull
    public static final BuilderCodec<Distance2AddReturnTypeAsset> CODEC = BuilderCodec.builder(
          Distance2AddReturnTypeAsset.class, Distance2AddReturnTypeAsset::new, ReturnTypeAsset.ABSTRACT_CODEC
       )
@@ -16,7 +17,7 @@ public class Distance2AddReturnTypeAsset extends ReturnTypeAsset {
 
    @Nonnull
    @Override
-   public ReturnType build(@Nonnull SeedBox parentSeed, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer workerIndexer) {
+   public ReturnType build(@Nonnull SeedBox parentSeed, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer.Id workerId) {
       return new Distance2AddReturnType();
    }
 }

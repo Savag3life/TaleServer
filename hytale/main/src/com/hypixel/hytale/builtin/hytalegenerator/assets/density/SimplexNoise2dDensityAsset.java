@@ -14,6 +14,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class SimplexNoise2dDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<SimplexNoise2dDensityAsset> CODEC = BuilderCodec.builder(
          SimplexNoise2dDensityAsset.class, SimplexNoise2dDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -53,7 +54,7 @@ public class SimplexNoise2dDensityAsset extends DensityAsset {
             .withNumberOfOctaves(this.octaves)
             .build();
          Noise2dDensity noiseDensity = new Noise2dDensity(noise);
-         Density cacheDensity = new MultiCacheDensity(noiseDensity, argument.workerIndexer.getWorkerCount(), CacheDensityAsset.DEFAULT_CAPACITY);
+         Density cacheDensity = new MultiCacheDensity(noiseDensity, CacheDensityAsset.DEFAULT_CAPACITY);
          return new YOverrideDensity(cacheDensity, 0.0);
       }
    }

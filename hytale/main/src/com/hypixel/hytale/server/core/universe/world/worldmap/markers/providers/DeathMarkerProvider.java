@@ -1,15 +1,15 @@
 package com.hypixel.hytale.server.core.universe.world.worldmap.markers.providers;
 
 import com.hypixel.hytale.math.vector.Transform;
-import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.gameplay.WorldMapConfig;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.data.PlayerDeathPositionData;
 import com.hypixel.hytale.server.core.entity.entities.player.data.PlayerWorldData;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
-import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MapMarkerTracker;
-import com.hypixel.hytale.server.core.util.PositionUtil;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MapMarkerBuilder;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MarkersCollector;
 import javax.annotation.Nonnull;
 
 public class DeathMarkerProvider implements WorldMapManager.MarkerProvider {
@@ -19,32 +19,24 @@ public class DeathMarkerProvider implements WorldMapManager.MarkerProvider {
    }
 
    @Override
-   public void update(@Nonnull World world, @Nonnull MapMarkerTracker tracker, int chunkViewRadius, int playerChunkX, int playerChunkZ) {
+   public void update(@Nonnull World world, @Nonnull Player player, @Nonnull MarkersCollector collector) {
       WorldMapConfig worldMapConfig = world.getGameplayConfig().getWorldMapConfig();
       if (worldMapConfig.isDisplayDeathMarker()) {
-         Player player = tracker.getPlayer();
          PlayerWorldData perWorldData = player.getPlayerConfigData().getPerWorldData(world.getName());
 
          for (PlayerDeathPositionData deathPosition : perWorldData.getDeathPositions()) {
-            addDeathMarker(tracker, playerChunkX, playerChunkZ, deathPosition);
+            addDeathMarker(collector, deathPosition);
          }
       }
    }
 
-   private static void addDeathMarker(@Nonnull MapMarkerTracker tracker, int playerChunkX, int playerChunkZ, @Nonnull PlayerDeathPositionData deathPosition) {
-      String markerId = deathPosition.getMarkerId();
+   private static void addDeathMarker(@Nonnull MarkersCollector collector, @Nonnull PlayerDeathPositionData deathPosition) {
       Transform transform = deathPosition.getTransform();
-      int deathDay = deathPosition.getDay();
-      tracker.trySendMarker(
-         -1,
-         playerChunkX,
-         playerChunkZ,
-         transform.getPosition(),
-         transform.getRotation().getYaw(),
-         markerId,
-         "Death (Day " + deathDay + ")",
-         transform,
-         (id, name, t) -> new MapMarker(id, name, "Death.png", PositionUtil.toTransformPacket(t), null)
-      );
+      if (collector.isInViewDistance(transform)) {
+         int deathDay = deathPosition.getDay();
+         Message name = Message.translation("server.map.markers.death").param("day", deathDay);
+         MapMarkerBuilder builder = new MapMarkerBuilder(deathPosition.getMarkerId(), "Death.png", transform).withName(name);
+         collector.addIgnoreViewDistance(builder.build());
+      }
    }
 }

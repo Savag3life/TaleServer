@@ -8,7 +8,9 @@ import java.time.Instant;
 import javax.annotation.Nonnull;
 
 public abstract class CommonObjectiveHistoryData {
+   @Nonnull
    public static final CodecMapCodec<CommonObjectiveHistoryData> CODEC = new CodecMapCodec<>("Type");
+   @Nonnull
    public static final BuilderCodec<CommonObjectiveHistoryData> BASE_CODEC = BuilderCodec.abstractBuilder(CommonObjectiveHistoryData.class)
       .append(
          new KeyedCodec<>("Id", Codec.STRING),

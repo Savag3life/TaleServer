@@ -8,6 +8,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class ImportedPositionProviderAsset extends PositionProviderAsset {
+   @Nonnull
    public static final BuilderCodec<ImportedPositionProviderAsset> CODEC = BuilderCodec.builder(
          ImportedPositionProviderAsset.class, ImportedPositionProviderAsset::new, PositionProviderAsset.ABSTRACT_CODEC
       )

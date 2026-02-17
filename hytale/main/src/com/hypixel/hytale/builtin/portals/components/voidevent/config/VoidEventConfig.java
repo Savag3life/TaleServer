@@ -9,9 +9,11 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class VoidEventConfig {
+   @Nonnull
    public static final BuilderCodec<VoidEventConfig> CODEC = BuilderCodec.builder(VoidEventConfig.class, VoidEventConfig::new)
       .append(new KeyedCodec<>("DurationSeconds", Codec.INTEGER), (config, o) -> config.durationSeconds = o, config -> config.durationSeconds)
       .documentation(

@@ -12,6 +12,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 public class BountyObjectiveTaskAsset extends ObjectiveTaskAsset {
+   @Nonnull
    public static final BuilderCodec<BountyObjectiveTaskAsset> CODEC = BuilderCodec.builder(
          BountyObjectiveTaskAsset.class, BountyObjectiveTaskAsset::new, ObjectiveTaskAsset.BASE_CODEC
       )

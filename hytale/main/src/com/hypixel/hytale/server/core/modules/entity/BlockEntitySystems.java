@@ -16,8 +16,7 @@ import com.hypixel.hytale.component.system.HolderSystem;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.shape.Box;
-import com.hypixel.hytale.protocol.ComponentUpdate;
-import com.hypixel.hytale.protocol.ComponentUpdateType;
+import com.hypixel.hytale.protocol.BlockUpdate;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.BlockEntity;
 import com.hypixel.hytale.server.core.modules.entity.component.BoundingBox;
@@ -136,15 +135,12 @@ public class BlockEntitySystems {
       private static void queueUpdatesFor(
          Ref<EntityStore> ref, @Nonnull BlockEntity entity, @Nonnull Map<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> visibleTo, float entityScale
       ) {
-         ComponentUpdate update = new ComponentUpdate();
-         update.type = ComponentUpdateType.Block;
          String key = entity.getBlockTypeKey();
          int index = BlockType.getAssetMap().getIndex(key);
          if (index == Integer.MIN_VALUE) {
             throw new IllegalArgumentException("Unknown key! " + key);
          } else {
-            update.blockId = index;
-            update.entityScale = entityScale;
+            BlockUpdate update = new BlockUpdate(index, entityScale);
 
             for (EntityTrackerSystems.EntityViewer viewer : visibleTo.values()) {
                viewer.queueUpdate(ref, update);

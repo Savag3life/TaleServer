@@ -9,27 +9,34 @@ public class AnchorDensity extends Density {
    @Nullable
    private Density input;
    private final boolean isReversed;
+   @Nonnull
+   private final Vector3d rChildPosition;
+   @Nonnull
+   private final Density.Context rChildContext;
 
    public AnchorDensity(Density input, boolean isReversed) {
       this.input = input;
       this.isReversed = isReversed;
+      this.rChildPosition = new Vector3d();
+      this.rChildContext = new Density.Context();
    }
 
    @Override
    public double process(@Nonnull Density.Context context) {
-      Vector3d anchor = context.densityAnchor;
-      if (anchor == null) {
+      if (context.densityAnchor == null) {
          return this.input.process(context);
-      } else if (this.isReversed) {
-         Vector3d childPosition = new Vector3d(context.position.x + anchor.x, context.position.y + anchor.y, context.position.z + anchor.z);
-         Density.Context childContext = new Density.Context(context);
-         childContext.position = childPosition;
-         return this.input.process(childContext);
       } else {
-         Vector3d childPosition = new Vector3d(context.position.x - anchor.x, context.position.y - anchor.y, context.position.z - anchor.z);
-         Density.Context childContext = new Density.Context(context);
-         childContext.position = childPosition;
-         return this.input.process(childContext);
+         if (this.isReversed) {
+            this.rChildPosition
+               .assign(context.position.x + context.densityAnchor.x, context.position.y + context.densityAnchor.y, context.position.z + context.densityAnchor.z);
+         } else {
+            this.rChildPosition
+               .assign(context.position.x - context.densityAnchor.x, context.position.y - context.densityAnchor.y, context.position.z - context.densityAnchor.z);
+         }
+
+         this.rChildContext.assign(context);
+         this.rChildContext.position = this.rChildPosition;
+         return this.input.process(this.rChildContext);
       }
    }
 

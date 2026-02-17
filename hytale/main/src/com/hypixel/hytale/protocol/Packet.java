@@ -6,6 +6,8 @@ import javax.annotation.Nonnull;
 public interface Packet {
    int getId();
 
+   NetworkChannel getChannel();
+
    void serialize(@Nonnull ByteBuf var1);
 
    int computeSize();

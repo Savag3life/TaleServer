@@ -30,39 +30,42 @@ public class SensorHasTask extends SensorBase {
    public boolean matches(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, double dt, @Nonnull Store<EntityStore> store) {
       if (!super.matches(ref, role, dt, store)) {
          return false;
-      } else {
-         Ref<EntityStore> target = role.getStateSupport().getInteractionIterationTarget();
-         if (target == null) {
-            return false;
-         } else {
-            Archetype<EntityStore> targetArchetype = store.getArchetype(target);
+      } else if (this.tasksById != null && this.tasksById.length != 0) {
+         Ref<EntityStore> targetRef = role.getStateSupport().getInteractionIterationTarget();
+         if (targetRef != null && targetRef.isValid()) {
+            Archetype<EntityStore> targetArchetype = store.getArchetype(targetRef);
             if (targetArchetype.contains(DeathComponent.getComponentType())) {
                return false;
             } else {
-               UUIDComponent targetUuidComponent = store.getComponent(target, UUIDComponent.getComponentType());
+               UUIDComponent targetUuidComponent = store.getComponent(targetRef, UUIDComponent.getComponentType());
+               if (targetUuidComponent == null) {
+                  return false;
+               } else {
+                  UUID targetUuid = targetUuidComponent.getUuid();
+                  UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
+                  if (uuidComponent == null) {
+                     return false;
+                  } else {
+                     UUID uuid = uuidComponent.getUuid();
+                     EntitySupport entitySupport = role.getEntitySupport();
+                     boolean match = false;
 
-               assert targetUuidComponent != null;
+                     for (String taskById : this.tasksById) {
+                        if (NPCObjectivesPlugin.hasTask(targetUuid, uuid, taskById)) {
+                           match = true;
+                           entitySupport.addTargetPlayerActiveTask(taskById);
+                        }
+                     }
 
-               UUID targetUuid = targetUuidComponent.getUuid();
-               UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
-
-               assert uuidComponent != null;
-
-               UUID uuid = uuidComponent.getUuid();
-               NPCObjectivesPlugin objectiveSystem = NPCObjectivesPlugin.get();
-               EntitySupport entitySupport = role.getEntitySupport();
-               boolean match = false;
-
-               for (String taskById : this.tasksById) {
-                  if (NPCObjectivesPlugin.hasTask(targetUuid, uuid, taskById)) {
-                     match = true;
-                     entitySupport.addTargetPlayerActiveTask(taskById);
+                     return match;
                   }
                }
-
-               return match;
             }
+         } else {
+            return false;
          }
+      } else {
+         return false;
       }
    }
 

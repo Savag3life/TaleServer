@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class QueuePropAsset extends PropAsset {
+   @Nonnull
    public static final BuilderCodec<QueuePropAsset> CODEC = BuilderCodec.builder(QueuePropAsset.class, QueuePropAsset::new, PropAsset.ABSTRACT_CODEC)
       .append(
          new KeyedCodec<>("Queue", new ArrayCodec<>(PropAsset.CODEC, PropAsset[]::new), true), (asset, v) -> asset.propAssets = v, asset -> asset.propAssets

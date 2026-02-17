@@ -8,8 +8,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.protocol.ComponentUpdate;
-import com.hypixel.hytale.protocol.ComponentUpdateType;
+import com.hypixel.hytale.protocol.PredictionUpdate;
 import com.hypixel.hytale.server.core.modules.entity.tracker.EntityTrackerSystems;
 import com.hypixel.hytale.server.core.modules.projectile.component.PredictedProjectile;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -70,9 +69,7 @@ public class PredictedProjectileSystems {
          @Nonnull PredictedProjectile predictedProjectile,
          @Nonnull Map<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> visibleTo
       ) {
-         ComponentUpdate update = new ComponentUpdate();
-         update.type = ComponentUpdateType.Prediction;
-         update.predictionId = predictedProjectile.getUuid();
+         PredictionUpdate update = new PredictionUpdate(predictedProjectile.getUuid());
 
          for (Entry<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> entry : visibleTo.entrySet()) {
             entry.getValue().queueUpdate(ref, update);

@@ -8,18 +8,24 @@ public class ZOverrideDensity extends Density {
    @Nonnull
    private Density input;
    private final double value;
+   @Nonnull
+   private final Density.Context rChildContext;
+   @Nonnull
+   private final Vector3d rChildPosition;
 
    public ZOverrideDensity(@Nonnull Density input, double value) {
       this.input = input;
       this.value = value;
+      this.rChildContext = new Density.Context();
+      this.rChildPosition = new Vector3d();
    }
 
    @Override
    public double process(@Nonnull Density.Context context) {
-      Vector3d childPosition = new Vector3d(context.position.x, context.position.y, this.value);
-      Density.Context childContext = new Density.Context(context);
-      childContext.position = childPosition;
-      return this.input.process(childContext);
+      this.rChildPosition.assign(context.position.x, context.position.y, this.value);
+      this.rChildContext.assign(context);
+      this.rChildContext.position = this.rChildPosition;
+      return this.input.process(this.rChildContext);
    }
 
    @Override

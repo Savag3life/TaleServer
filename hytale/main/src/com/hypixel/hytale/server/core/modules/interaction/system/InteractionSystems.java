@@ -15,9 +15,9 @@ import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.protocol.ComponentUpdate;
 import com.hypixel.hytale.protocol.ComponentUpdateType;
 import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.protocol.InteractionsUpdate;
 import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChain;
 import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChains;
 import com.hypixel.hytale.server.core.entity.InteractionManager;
@@ -241,16 +241,13 @@ public class InteractionSystems {
       private static void queueUpdatesFor(
          @Nonnull Ref<EntityStore> ref, @Nonnull Map<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> visibleTo, @Nonnull Interactions component
       ) {
-         ComponentUpdate componentUpdate = new ComponentUpdate();
-         componentUpdate.type = ComponentUpdateType.Interactions;
          Object2IntOpenHashMap<InteractionType> interactions = new Object2IntOpenHashMap();
 
          for (Entry<InteractionType, String> entry : component.getInteractions().entrySet()) {
             interactions.put(entry.getKey(), RootInteraction.getRootInteractionIdOrUnknown(entry.getValue()));
          }
 
-         componentUpdate.interactions = interactions;
-         componentUpdate.interactionHint = component.getInteractionHint();
+         InteractionsUpdate componentUpdate = new InteractionsUpdate(interactions, component.getInteractionHint());
 
          for (EntityTrackerSystems.EntityViewer viewer : visibleTo.values()) {
             viewer.queueUpdate(ref, componentUpdate);

@@ -34,11 +34,6 @@ public class PortalType implements JsonAssetWithMap<String, DefaultAssetMap<Stri
       )
       .documentation("The qualitative description of the portal.")
       .add()
-      .<PortalSpawn>append(
-         new KeyedCodec<>("PlayerSpawn", PortalSpawn.CODEC), (portalType, o) -> portalType.portalSpawn = o, portalType -> portalType.portalSpawn
-      )
-      .documentation("If set, overrides the Instance's SpawnProvider with the portal's spawning system.")
-      .add()
       .<String[]>append(
          new KeyedCodec<>("CursedItems", Codec.STRING_ARRAY),
          (portalType, o) -> portalType.cursedItems = o == null ? Collections.emptySet() : Set.of(o),
@@ -65,7 +60,6 @@ public class PortalType implements JsonAssetWithMap<String, DefaultAssetMap<Stri
    private PortalDescription description;
    private String gameplayConfig = "Portal";
    private boolean voidInvasionEnabled = false;
-   private PortalSpawn portalSpawn;
    private Set<String> cursedItems = Collections.emptySet();
 
    public static AssetStore<String, PortalType, DefaultAssetMap<String, PortalType>> getAssetStore() {
@@ -94,11 +88,6 @@ public class PortalType implements JsonAssetWithMap<String, DefaultAssetMap<Stri
 
    public PortalDescription getDescription() {
       return this.description;
-   }
-
-   @Nullable
-   public PortalSpawn getPortalSpawn() {
-      return this.portalSpawn;
    }
 
    public Set<String> getCursedItems() {

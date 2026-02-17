@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import javax.annotation.Nonnull;
 
 public final class ItemObjectiveRewardHistoryData extends ObjectiveRewardHistoryData {
+   @Nonnull
    public static final BuilderCodec<ItemObjectiveRewardHistoryData> CODEC = BuilderCodec.builder(
          ItemObjectiveRewardHistoryData.class, ItemObjectiveRewardHistoryData::new, BASE_CODEC
       )

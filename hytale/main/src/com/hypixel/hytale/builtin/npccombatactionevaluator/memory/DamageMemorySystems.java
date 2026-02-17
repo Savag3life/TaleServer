@@ -15,11 +15,12 @@ import javax.annotation.Nullable;
 
 public class DamageMemorySystems {
    public static class CollectDamage extends DamageEventSystem {
+      @Nonnull
       private final ComponentType<EntityStore, DamageMemory> damageMemoryComponentType;
       @Nonnull
       private final Query<EntityStore> query;
 
-      public CollectDamage(ComponentType<EntityStore, DamageMemory> damageMemoryComponentType) {
+      public CollectDamage(@Nonnull ComponentType<EntityStore, DamageMemory> damageMemoryComponentType) {
          this.damageMemoryComponentType = damageMemoryComponentType;
          this.query = damageMemoryComponentType;
       }
@@ -37,8 +38,11 @@ public class DamageMemorySystems {
          @Nonnull CommandBuffer<EntityStore> commandBuffer,
          @Nonnull Damage damage
       ) {
-         DamageMemory memory = archetypeChunk.getComponent(index, this.damageMemoryComponentType);
-         memory.addDamage(damage.getAmount());
+         DamageMemory damageMemoryComponent = archetypeChunk.getComponent(index, this.damageMemoryComponentType);
+
+         assert damageMemoryComponent != null;
+
+         damageMemoryComponent.addDamage(damage.getAmount());
       }
 
       @Nullable

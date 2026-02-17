@@ -13,6 +13,7 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import javax.annotation.Nonnull;
 
 public class BlockMaskEntryAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, BlockMaskEntryAsset>>, Cleanable {
+   @Nonnull
    public static final AssetBuilderCodec<String, BlockMaskEntryAsset> CODEC = AssetBuilderCodec.builder(
          BlockMaskEntryAsset.class,
          BlockMaskEntryAsset::new,
@@ -35,10 +36,12 @@ public class BlockMaskEntryAsset implements JsonAssetWithMap<String, DefaultAsse
    protected BlockMaskEntryAsset() {
    }
 
+   @Nonnull
    public MaterialSet getPropBlockSet(@Nonnull MaterialCache materialCache) {
       return this.propBlockSet.build(materialCache);
    }
 
+   @Nonnull
    public MaterialSet getReplacesBlockSet(@Nonnull MaterialCache materialCache) {
       return this.replacesBlockSet.build(materialCache);
    }

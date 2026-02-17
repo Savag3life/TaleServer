@@ -8,11 +8,14 @@ import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.npc.role.RoleDebugFlags;
+import com.hypixel.hytale.server.npc.role.support.DebugSupport;
+import java.util.EnumSet;
 import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class FlockMembership implements Component<EntityStore> {
+public class FlockMembership implements Component<EntityStore>, DebugSupport.DebugFlagsChangeListener {
    public static final int VERSION = 5;
    public static final BuilderCodec<FlockMembership> CODEC = BuilderCodec.builder(FlockMembership.class, FlockMembership::new)
       .legacyVersioned()
@@ -31,6 +34,8 @@ public class FlockMembership implements Component<EntityStore> {
    private FlockMembership.Type membershipType;
    @Nullable
    private Ref<EntityStore> flockRef;
+   private transient boolean wasVisFlock;
+   private transient boolean listenerRegistered;
 
    public static ComponentType<EntityStore, FlockMembership> getComponentType() {
       return FlockPlugin.get().getFlockMembershipComponentType();
@@ -49,7 +54,7 @@ public class FlockMembership implements Component<EntityStore> {
       return this.flockRef;
    }
 
-   public void setFlockRef(Ref<EntityStore> flockRef) {
+   public void setFlockRef(@Nullable Ref<EntityStore> flockRef) {
       this.flockRef = flockRef;
    }
 
@@ -65,13 +70,52 @@ public class FlockMembership implements Component<EntityStore> {
       this.flockRef = null;
    }
 
+   public void registerAsDebugListener(@Nonnull DebugSupport debugSupport, @Nonnull Flock flock) {
+      if (!this.listenerRegistered) {
+         this.wasVisFlock = debugSupport.isDebugFlagSet(RoleDebugFlags.VisFlock);
+         debugSupport.registerDebugFlagsListener(this);
+         this.listenerRegistered = true;
+         if (this.wasVisFlock) {
+            flock.incrementVisFlockMemberCount();
+         }
+      }
+   }
+
+   public void unregisterAsDebugListener(@Nonnull DebugSupport debugSupport, @Nonnull Flock flock) {
+      if (this.listenerRegistered) {
+         debugSupport.removeDebugFlagsListener(this);
+         this.listenerRegistered = false;
+         if (this.wasVisFlock) {
+            flock.decrementVisFlockMemberCount();
+         }
+      }
+   }
+
+   @Override
+   public void onDebugFlagsChanged(EnumSet<RoleDebugFlags> newFlags) {
+      boolean isVisFlock = newFlags.contains(RoleDebugFlags.VisFlock);
+      if (isVisFlock != this.wasVisFlock) {
+         this.wasVisFlock = isVisFlock;
+         if (this.flockRef != null && this.flockRef.isValid()) {
+            Flock flock = this.flockRef.getStore().getComponent(this.flockRef, Flock.getComponentType());
+            if (flock != null) {
+               if (isVisFlock) {
+                  flock.incrementVisFlockMemberCount();
+               } else {
+                  flock.decrementVisFlockMemberCount();
+               }
+            }
+         }
+      }
+   }
+
    @Nonnull
    @Override
    public Component<EntityStore> clone() {
       FlockMembership membership = new FlockMembership();
-      membership.setFlockId(this.flockId);
-      membership.setFlockRef(this.flockRef);
-      membership.setMembershipType(this.membershipType);
+      membership.flockId = this.flockId;
+      membership.flockRef = this.flockRef;
+      membership.membershipType = this.membershipType;
       return membership;
    }
 

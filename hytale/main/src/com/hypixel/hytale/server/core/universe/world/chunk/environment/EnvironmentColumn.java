@@ -11,9 +11,9 @@ public class EnvironmentColumn {
    public static final int MIN = Integer.MIN_VALUE;
    public static final int MAX = Integer.MAX_VALUE;
    @Nonnull
-   private final IntArrayList maxYs;
+   private IntArrayList maxYs;
    @Nonnull
-   private final IntArrayList values;
+   private IntArrayList values;
 
    public EnvironmentColumn(@Nonnull int[] maxYs, @Nonnull int[] values) {
       this(new IntArrayList(maxYs), new IntArrayList(values));
@@ -164,6 +164,13 @@ public class EnvironmentColumn {
       for (int y = fromY; y <= toY; y++) {
          this.set(y, value);
       }
+   }
+
+   public void resetTo(@Nonnull int[] maxYs, @Nonnull int[] values) {
+      assert maxYs.length == values.length - 1;
+
+      this.maxYs = new IntArrayList(maxYs);
+      this.values = new IntArrayList(values);
    }
 
    public void serialize(@Nonnull ByteBuf buf, @Nonnull IntObjectConsumer<ByteBuf> valueSerializer) {

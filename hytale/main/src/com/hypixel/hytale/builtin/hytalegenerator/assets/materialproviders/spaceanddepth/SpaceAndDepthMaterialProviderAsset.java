@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class SpaceAndDepthMaterialProviderAsset extends MaterialProviderAsset {
+   @Nonnull
    public static final BuilderCodec<SpaceAndDepthMaterialProviderAsset> CODEC = BuilderCodec.builder(
          SpaceAndDepthMaterialProviderAsset.class, SpaceAndDepthMaterialProviderAsset::new, MaterialProviderAsset.ABSTRACT_CODEC
       )

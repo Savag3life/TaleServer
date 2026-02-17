@@ -11,6 +11,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class SmoothClampDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<SmoothClampDensityAsset> CODEC = BuilderCodec.builder(
          SmoothClampDensityAsset.class, SmoothClampDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )

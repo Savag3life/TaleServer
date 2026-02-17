@@ -15,10 +15,15 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 public class NTestTerrainStage implements NStage {
+   @Nonnull
    private static final Class<NVoxelBuffer> bufferClass = NVoxelBuffer.class;
+   @Nonnull
    private static final Class<SolidMaterial> solidMaterialClass = SolidMaterial.class;
+   @Nonnull
    private final NParametrizedBufferType outputBufferType;
+   @Nonnull
    private final SolidMaterial ground;
+   @Nonnull
    private final SolidMaterial empty;
 
    public NTestTerrainStage(@Nonnull NBufferType outputBufferType, @Nonnull SolidMaterial groundMaterial, @Nonnull SolidMaterial emptyMaterial) {

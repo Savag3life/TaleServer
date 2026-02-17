@@ -2,7 +2,7 @@ package com.hypixel.hytale.server.core.asset.type.environment;
 
 import com.hypixel.hytale.assetstore.AssetUpdateQuery;
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateEnvironments;
 import com.hypixel.hytale.server.core.asset.packet.AssetPacketGenerator;
@@ -15,7 +15,7 @@ import javax.annotation.Nonnull;
 
 public class EnvironmentPacketGenerator extends AssetPacketGenerator<String, Environment, IndexedLookupTableAssetMap<String, Environment>> {
    @Nonnull
-   public Packet generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, Environment> assetMap, @Nonnull Map<String, Environment> assets) {
+   public ToClientPacket generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, Environment> assetMap, @Nonnull Map<String, Environment> assets) {
       Map<String, Environment> assetsFromMap = assetMap.getAssetMap();
       if (assets.size() != assetsFromMap.size()) {
          throw new UnsupportedOperationException("Environments can not handle partial init packets!!!");
@@ -41,7 +41,7 @@ public class EnvironmentPacketGenerator extends AssetPacketGenerator<String, Env
    }
 
    @Nonnull
-   public Packet generateUpdatePacket(
+   public ToClientPacket generateUpdatePacket(
       @Nonnull IndexedLookupTableAssetMap<String, Environment> assetMap, @Nonnull Map<String, Environment> loadedAssets, @Nonnull AssetUpdateQuery query
    ) {
       UpdateEnvironments packet = new UpdateEnvironments();
@@ -64,7 +64,7 @@ public class EnvironmentPacketGenerator extends AssetPacketGenerator<String, Env
    }
 
    @Nonnull
-   public Packet generateRemovePacket(
+   public ToClientPacket generateRemovePacket(
       @Nonnull IndexedLookupTableAssetMap<String, Environment> assetMap, @Nonnull Set<String> removed, @Nonnull AssetUpdateQuery query
    ) {
       UpdateEnvironments packet = new UpdateEnvironments();

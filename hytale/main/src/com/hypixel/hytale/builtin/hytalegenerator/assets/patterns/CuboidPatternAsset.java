@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class CuboidPatternAsset extends PatternAsset {
+   @Nonnull
    public static final BuilderCodec<CuboidPatternAsset> CODEC = BuilderCodec.builder(
          CuboidPatternAsset.class, CuboidPatternAsset::new, PatternAsset.ABSTRACT_CODEC
       )

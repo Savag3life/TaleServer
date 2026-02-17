@@ -52,6 +52,7 @@ import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.transaction.ItemStackSlotTransaction;
+import com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction;
 import com.hypixel.hytale.server.core.io.PacketHandler;
 import com.hypixel.hytale.server.core.modules.collision.CollisionModule;
 import com.hypixel.hytale.server.core.modules.collision.CollisionResult;
@@ -207,7 +208,7 @@ public class Player extends LivingEntity implements CommandSender, PermissionHol
                   Store<EntityStore> store = ref.getStore();
                   ChunkTracker tracker = store.getComponent(ref, ChunkTracker.getComponentType());
                   if (tracker != null) {
-                     tracker.clear();
+                     tracker.unloadAll(this.playerRef);
                   }
 
                   this.playerRef.removeFromStore();
@@ -219,7 +220,7 @@ public class Player extends LivingEntity implements CommandSender, PermissionHol
                      Store<EntityStore> storex = ref.getStore();
                      ChunkTracker trackerx = storex.getComponent(ref, ChunkTracker.getComponentType());
                      if (trackerx != null) {
-                        trackerx.clear();
+                        trackerx.unloadAll(this.playerRef);
                      }
 
                      this.playerRef.removeFromStore();
@@ -896,6 +897,16 @@ public class Player extends LivingEntity implements CommandSender, PermissionHol
             }
          }
       }
+   }
+
+   @Nonnull
+   public ItemStackTransaction giveItem(@Nonnull ItemStack stack, @Nonnull Ref<EntityStore> ref, @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
+      PlayerSettings playerSettings = componentAccessor.getComponent(ref, PlayerSettings.getComponentType());
+      if (playerSettings == null) {
+         playerSettings = PlayerSettings.defaults();
+      }
+
+      return this.getInventory().getContainerForItemPickup(stack.getItem(), playerSettings).addItemStack(stack);
    }
 
    @Override

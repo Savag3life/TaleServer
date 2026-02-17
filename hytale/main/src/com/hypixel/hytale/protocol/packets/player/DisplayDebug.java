@@ -1,7 +1,9 @@
 package com.hypixel.hytale.protocol.packets.player;
 
 import com.hypixel.hytale.protocol.DebugShape;
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.Vector3f;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
@@ -12,14 +14,14 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class DisplayDebug implements Packet {
+public class DisplayDebug implements Packet, ToClientPacket {
    public static final int PACKET_ID = 114;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
-   public static final int FIXED_BLOCK_SIZE = 19;
+   public static final int FIXED_BLOCK_SIZE = 23;
    public static final int VARIABLE_FIELD_COUNT = 2;
-   public static final int VARIABLE_BLOCK_START = 27;
-   public static final int MAX_SIZE = 32768037;
+   public static final int VARIABLE_BLOCK_START = 31;
+   public static final int MAX_SIZE = 32768041;
    @Nonnull
    public DebugShape shape = DebugShape.Sphere;
    @Nullable
@@ -30,17 +32,29 @@ public class DisplayDebug implements Packet {
    public boolean fade;
    @Nullable
    public float[] frustumProjection;
+   public float opacity;
 
    @Override
    public int getId() {
       return 114;
    }
 
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
+   }
+
    public DisplayDebug() {
    }
 
    public DisplayDebug(
-      @Nonnull DebugShape shape, @Nullable float[] matrix, @Nullable Vector3f color, float time, boolean fade, @Nullable float[] frustumProjection
+      @Nonnull DebugShape shape,
+      @Nullable float[] matrix,
+      @Nullable Vector3f color,
+      float time,
+      boolean fade,
+      @Nullable float[] frustumProjection,
+      float opacity
    ) {
       this.shape = shape;
       this.matrix = matrix;
@@ -48,6 +62,7 @@ public class DisplayDebug implements Packet {
       this.time = time;
       this.fade = fade;
       this.frustumProjection = frustumProjection;
+      this.opacity = opacity;
    }
 
    public DisplayDebug(@Nonnull DisplayDebug other) {
@@ -57,6 +72,7 @@ public class DisplayDebug implements Packet {
       this.time = other.time;
       this.fade = other.fade;
       this.frustumProjection = other.frustumProjection;
+      this.opacity = other.opacity;
    }
 
    @Nonnull
@@ -70,8 +86,9 @@ public class DisplayDebug implements Packet {
 
       obj.time = buf.getFloatLE(offset + 14);
       obj.fade = buf.getByte(offset + 18) != 0;
+      obj.opacity = buf.getFloatLE(offset + 19);
       if ((nullBits & 2) != 0) {
-         int varPos0 = offset + 27 + buf.getIntLE(offset + 19);
+         int varPos0 = offset + 31 + buf.getIntLE(offset + 23);
          int matrixCount = VarInt.peek(buf, varPos0);
          if (matrixCount < 0) {
             throw ProtocolException.negativeLength("Matrix", matrixCount);
@@ -94,7 +111,7 @@ public class DisplayDebug implements Packet {
       }
 
       if ((nullBits & 4) != 0) {
-         int varPos1 = offset + 27 + buf.getIntLE(offset + 23);
+         int varPos1 = offset + 31 + buf.getIntLE(offset + 27);
          int frustumProjectionCount = VarInt.peek(buf, varPos1);
          if (frustumProjectionCount < 0) {
             throw ProtocolException.negativeLength("FrustumProjection", frustumProjectionCount);
@@ -121,10 +138,10 @@ public class DisplayDebug implements Packet {
 
    public static int computeBytesConsumed(@Nonnull ByteBuf buf, int offset) {
       byte nullBits = buf.getByte(offset);
-      int maxEnd = 27;
+      int maxEnd = 31;
       if ((nullBits & 2) != 0) {
-         int fieldOffset0 = buf.getIntLE(offset + 19);
-         int pos0 = offset + 27 + fieldOffset0;
+         int fieldOffset0 = buf.getIntLE(offset + 23);
+         int pos0 = offset + 31 + fieldOffset0;
          int arrLen = VarInt.peek(buf, pos0);
          pos0 += VarInt.length(buf, pos0) + arrLen * 4;
          if (pos0 - offset > maxEnd) {
@@ -133,8 +150,8 @@ public class DisplayDebug implements Packet {
       }
 
       if ((nullBits & 4) != 0) {
-         int fieldOffset1 = buf.getIntLE(offset + 23);
-         int pos1 = offset + 27 + fieldOffset1;
+         int fieldOffset1 = buf.getIntLE(offset + 27);
+         int pos1 = offset + 31 + fieldOffset1;
          int arrLen = VarInt.peek(buf, pos1);
          pos1 += VarInt.length(buf, pos1) + arrLen * 4;
          if (pos1 - offset > maxEnd) {
@@ -171,6 +188,7 @@ public class DisplayDebug implements Packet {
 
       buf.writeFloatLE(this.time);
       buf.writeByte(this.fade ? 1 : 0);
+      buf.writeFloatLE(this.opacity);
       int matrixOffsetSlot = buf.writerIndex();
       buf.writeIntLE(0);
       int frustumProjectionOffsetSlot = buf.writerIndex();
@@ -209,7 +227,7 @@ public class DisplayDebug implements Packet {
 
    @Override
    public int computeSize() {
-      int size = 27;
+      int size = 31;
       if (this.matrix != null) {
          size += VarInt.size(this.matrix.length) + this.matrix.length * 4;
       }
@@ -222,17 +240,17 @@ public class DisplayDebug implements Packet {
    }
 
    public static ValidationResult validateStructure(@Nonnull ByteBuf buffer, int offset) {
-      if (buffer.readableBytes() - offset < 27) {
-         return ValidationResult.error("Buffer too small: expected at least 27 bytes");
+      if (buffer.readableBytes() - offset < 31) {
+         return ValidationResult.error("Buffer too small: expected at least 31 bytes");
       } else {
          byte nullBits = buffer.getByte(offset);
          if ((nullBits & 2) != 0) {
-            int matrixOffset = buffer.getIntLE(offset + 19);
+            int matrixOffset = buffer.getIntLE(offset + 23);
             if (matrixOffset < 0) {
                return ValidationResult.error("Invalid offset for Matrix");
             }
 
-            int pos = offset + 27 + matrixOffset;
+            int pos = offset + 31 + matrixOffset;
             if (pos >= buffer.writerIndex()) {
                return ValidationResult.error("Offset out of bounds for Matrix");
             }
@@ -254,12 +272,12 @@ public class DisplayDebug implements Packet {
          }
 
          if ((nullBits & 4) != 0) {
-            int frustumProjectionOffset = buffer.getIntLE(offset + 23);
+            int frustumProjectionOffset = buffer.getIntLE(offset + 27);
             if (frustumProjectionOffset < 0) {
                return ValidationResult.error("Invalid offset for FrustumProjection");
             }
 
-            int posx = offset + 27 + frustumProjectionOffset;
+            int posx = offset + 31 + frustumProjectionOffset;
             if (posx >= buffer.writerIndex()) {
                return ValidationResult.error("Offset out of bounds for FrustumProjection");
             }
@@ -292,6 +310,7 @@ public class DisplayDebug implements Packet {
       copy.time = this.time;
       copy.fade = this.fade;
       copy.frustumProjection = this.frustumProjection != null ? Arrays.copyOf(this.frustumProjection, this.frustumProjection.length) : null;
+      copy.opacity = this.opacity;
       return copy;
    }
 
@@ -307,7 +326,8 @@ public class DisplayDebug implements Packet {
                && Objects.equals(this.color, other.color)
                && this.time == other.time
                && this.fade == other.fade
-               && Arrays.equals(this.frustumProjection, other.frustumProjection);
+               && Arrays.equals(this.frustumProjection, other.frustumProjection)
+               && this.opacity == other.opacity;
       }
    }
 
@@ -319,6 +339,7 @@ public class DisplayDebug implements Packet {
       result = 31 * result + Objects.hashCode(this.color);
       result = 31 * result + Float.hashCode(this.time);
       result = 31 * result + Boolean.hashCode(this.fade);
-      return 31 * result + Arrays.hashCode(this.frustumProjection);
+      result = 31 * result + Arrays.hashCode(this.frustumProjection);
+      return 31 * result + Float.hashCode(this.opacity);
    }
 }

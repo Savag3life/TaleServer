@@ -7,6 +7,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class MinDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<MinDensityAsset> CODEC = BuilderCodec.builder(MinDensityAsset.class, MinDensityAsset::new, DensityAsset.ABSTRACT_CODEC)
       .build();
 

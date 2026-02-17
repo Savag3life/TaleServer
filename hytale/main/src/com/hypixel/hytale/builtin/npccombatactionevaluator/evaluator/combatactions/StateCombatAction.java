@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 
 public class StateCombatAction extends CombatActionOption {
+   @Nonnull
    public static final BuilderCodec<StateCombatAction> CODEC = BuilderCodec.builder(
          StateCombatAction.class, StateCombatAction::new, CombatActionOption.BASE_CODEC
       )
@@ -46,7 +47,7 @@ public class StateCombatAction extends CombatActionOption {
    public void execute(
       int index,
       @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
-      CommandBuffer<EntityStore> commandBuffer,
+      @Nonnull CommandBuffer<EntityStore> commandBuffer,
       @Nonnull Role role,
       @Nonnull CombatActionEvaluator evaluator,
       ValueStore valueStore

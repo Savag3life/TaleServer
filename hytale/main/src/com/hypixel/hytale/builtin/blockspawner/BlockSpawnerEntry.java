@@ -35,6 +35,7 @@ public class BlockSpawnerEntry implements IWeightedElement {
       )
       .add()
       .build();
+   @Nonnull
    public static final BlockSpawnerEntry[] EMPTY_ARRAY = new BlockSpawnerEntry[0];
    private String blockName;
    private Holder<ChunkStore> blockComponents;
@@ -63,6 +64,7 @@ public class BlockSpawnerEntry implements IWeightedElement {
       RANDOM,
       INHERIT;
 
+      @Nonnull
       public static final Codec<BlockSpawnerEntry.RotationMode> CODEC = new EnumCodec<>(BlockSpawnerEntry.RotationMode.class);
    }
 }

@@ -16,6 +16,7 @@ import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import javax.annotation.Nonnull;
 
 public class DensityPatternAsset extends PatternAsset {
+   @Nonnull
    public static final BuilderCodec<DensityPatternAsset> CODEC = BuilderCodec.builder(
          DensityPatternAsset.class, DensityPatternAsset::new, PatternAsset.ABSTRACT_CODEC
       )
@@ -54,6 +55,7 @@ public class DensityPatternAsset extends PatternAsset {
    }
 
    public static class DelimiterAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, DensityPatternAsset.DelimiterAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, DensityPatternAsset.DelimiterAsset> CODEC = AssetBuilderCodec.builder(
             DensityPatternAsset.DelimiterAsset.class,
             DensityPatternAsset.DelimiterAsset::new,

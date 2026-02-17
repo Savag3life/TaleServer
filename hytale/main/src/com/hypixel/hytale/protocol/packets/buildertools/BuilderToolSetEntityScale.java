@@ -1,12 +1,14 @@
 package com.hypixel.hytale.protocol.packets.buildertools;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
-public class BuilderToolSetEntityScale implements Packet {
+public class BuilderToolSetEntityScale implements Packet, ToServerPacket {
    public static final int PACKET_ID = 420;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 0;
@@ -20,6 +22,11 @@ public class BuilderToolSetEntityScale implements Packet {
    @Override
    public int getId() {
       return 420;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public BuilderToolSetEntityScale() {

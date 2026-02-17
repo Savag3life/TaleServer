@@ -88,7 +88,7 @@ public class SpawnMarkersCommand extends AbstractCommandCollection {
             if (spawnMarkerRef != null && spawnMarkerRef.isValid()) {
                context.sendMessage(Message.translation("server.commands.spawning.markers.add.added").param("markerId", marker.getId()));
             } else {
-               context.sendMessage(Message.translation("server.commands.markers.add.failed").param("markerId", marker.getId()));
+               context.sendMessage(Message.translation("server.commands.spawning.markers.add.failed").param("markerId", marker.getId()));
             }
          }
       }

@@ -1,5 +1,6 @@
 package com.hypixel.hytale.builtin.buildertools.scriptedbrushes.operations.sequential;
 
+import com.hypixel.hytale.builtin.buildertools.BuilderToolsPlugin;
 import com.hypixel.hytale.builtin.buildertools.scriptedbrushes.BrushConfig;
 import com.hypixel.hytale.builtin.buildertools.scriptedbrushes.BrushConfigCommandExecutor;
 import com.hypixel.hytale.builtin.buildertools.scriptedbrushes.BrushConfigEditStore;
@@ -9,13 +10,18 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.buildertool.config.BuilderTool;
 import com.hypixel.hytale.server.core.codec.LayerEntryCodec;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.prefab.selection.mask.BlockPattern;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import it.unimi.dsi.fastutil.Pair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,58 +57,50 @@ public class LayerOperation extends SequenceBrushOperation {
       int z,
       ComponentAccessor<EntityStore> componentAccessor
    ) {
-      int maxDepth = 0;
+      Player playerComponent = componentAccessor.getComponent(ref, Player.getComponentType());
 
-      for (LayerEntryCodec entry : this.layerArgs) {
-         maxDepth += entry.getDepth();
-      }
+      assert playerComponent != null;
 
+      PlayerRef playerRefComponent = componentAccessor.getComponent(ref, PlayerRef.getComponentType());
+
+      assert playerRefComponent != null;
+
+      BuilderToolsPlugin.BuilderState builderState = BuilderToolsPlugin.getState(playerComponent, playerRefComponent);
       if (edit.getBlock(x, y, z) <= 0) {
          return true;
       } else {
          Map<String, Object> toolArgs = this.getToolArgs(ref, componentAccessor);
+         List<Pair<Integer, String>> layers = new ArrayList<>();
+         int maxDepth = 0;
 
-         for (int depth = 0; depth < maxDepth; depth++) {
-            if (edit.getBlock(x, y + depth + 1, z) <= 0) {
-               int depthTestingAt = 0;
-
-               for (LayerEntryCodec entry : this.layerArgs) {
-                  depthTestingAt += entry.getDepth();
-                  if (depth < depthTestingAt) {
-                     if (entry.isSkip()) {
-                        return true;
-                     }
-
-                     int blockId = this.resolveBlockId(entry, toolArgs, brushConfig);
-                     if (blockId >= 0) {
-                        edit.setBlock(x, y, z, blockId);
-                     }
-
-                     return true;
-                  }
-               }
+         for (LayerEntryCodec layer : this.layerArgs) {
+            if (!layer.isSkip()) {
+               maxDepth += layer.getDepth();
+               layers.add(Pair.of(layer.getDepth(), this.resolveBlockPattern(layer, toolArgs, brushConfig)));
             }
          }
 
+         BlockAccessor chunk = edit.getAccessor().getChunk(ChunkUtil.indexChunkFromBlock(x, z));
+         builderState.layer(x, y, z, layers, maxDepth, Vector3i.DOWN, (WorldChunk)chunk, edit.getBefore(), edit.getAfter());
          return true;
       }
    }
 
-   private int resolveBlockId(LayerEntryCodec entry, @Nullable Map<String, Object> toolArgs, BrushConfig brushConfig) {
+   private String resolveBlockPattern(LayerEntryCodec entry, @Nullable Map<String, Object> toolArgs, BrushConfig brushConfig) {
       if (entry.isUseToolArg()) {
          if (toolArgs != null && toolArgs.containsKey(entry.getMaterial())) {
             if (toolArgs.get(entry.getMaterial()) instanceof BlockPattern blockPattern) {
-               return blockPattern.nextBlock(brushConfig.getRandom());
+               return blockPattern.toString();
             } else {
                brushConfig.setErrorFlag("Layer: Tool arg '" + entry.getMaterial() + "' is not a Block type");
-               return -1;
+               return "";
             }
          } else {
             brushConfig.setErrorFlag("Layer: Tool arg '" + entry.getMaterial() + "' not found");
-            return -1;
+            return "";
          }
       } else {
-         return BlockType.getAssetMap().getIndex(entry.getMaterial());
+         return entry.getMaterial();
       }
    }
 

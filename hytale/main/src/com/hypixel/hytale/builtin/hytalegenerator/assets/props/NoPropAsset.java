@@ -13,14 +13,17 @@ import javax.annotation.Nonnull;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 public class NoPropAsset extends PropAsset {
+   @Nonnull
    public static final BuilderCodec<NoPropAsset> CODEC = BuilderCodec.builder(NoPropAsset.class, NoPropAsset::new, PropAsset.ABSTRACT_CODEC).build();
 
    @Nonnull
    @Override
    public Prop build(@Nonnull PropAsset.Argument argument) {
       return new Prop() {
+         @Nonnull
          final Bounds3i emptyBounds_voxelGrid = new Bounds3i();
 
+         @Nonnull
          @Override
          public ScanResult scan(@Nonnull Vector3i position, @Nonnull VoxelSpace<Material> materialSpace, @Nonnull WorkerIndexer.Id id) {
             return ScanResult.noScanResult();
@@ -30,6 +33,7 @@ public class NoPropAsset extends PropAsset {
          public void place(@Nonnull Prop.Context context) {
          }
 
+         @Nonnull
          @Override
          public ContextDependency getContextDependency() {
             return ContextDependency.EMPTY;

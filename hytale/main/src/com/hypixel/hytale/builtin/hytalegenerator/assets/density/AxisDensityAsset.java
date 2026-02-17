@@ -13,6 +13,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class AxisDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<AxisDensityAsset> CODEC = BuilderCodec.builder(AxisDensityAsset.class, AxisDensityAsset::new, DensityAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Curve", CurveAsset.CODEC, true), (t, k) -> t.distanceCurveAsset = k, k -> k.distanceCurveAsset)
       .add()

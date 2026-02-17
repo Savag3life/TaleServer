@@ -6,6 +6,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.universe.world.World;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class SearchCone implements SpatialQuery {
@@ -27,8 +28,9 @@ public class SearchCone implements SpatialQuery {
       this.attempts = attempts;
    }
 
+   @Nonnull
    @Override
-   public Stream<Vector3d> createCandidates(World world, Vector3d origin, @Nullable SpatialQueryDebug debug) {
+   public Stream<Vector3d> createCandidates(@Nonnull World world, @Nonnull Vector3d origin, @Nullable SpatialQueryDebug debug) {
       if (debug != null) {
          String radiusFmt = this.minRadius == this.maxRadius
             ? String.format("%.1f", this.minRadius)
@@ -39,18 +41,18 @@ public class SearchCone implements SpatialQuery {
                + " radius cone (max "
                + String.format("%.1f", this.maxDegrees)
                + "°) in direction "
-               + debug.fmt(this.direction)
+               + SpatialQueryDebug.fmt(this.direction)
                + " from "
-               + debug.fmt(origin)
+               + SpatialQueryDebug.fmt(origin)
                + ":"
          );
       }
 
       double maxRadians = Math.toRadians(this.maxDegrees);
       return Stream.<Vector3d>generate(() -> {
-         ThreadLocalRandom rand = ThreadLocalRandom.current();
-         double distance = this.minRadius + rand.nextDouble() * (this.maxRadius - this.minRadius);
-         double yawOffset = (rand.nextDouble() - 0.5) * maxRadians;
+         ThreadLocalRandom random = ThreadLocalRandom.current();
+         double distance = this.minRadius + random.nextDouble() * (this.maxRadius - this.minRadius);
+         double yawOffset = (random.nextDouble() - 0.5) * maxRadians;
          Vector3d dir = this.direction.clone().rotateY((float)yawOffset).setLength(distance);
          return dir.add(origin);
       }).limit(this.attempts);

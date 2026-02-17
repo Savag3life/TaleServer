@@ -12,7 +12,9 @@ import javax.annotation.Nonnull;
 public class ContextDependency {
    @Nonnull
    public static ContextDependency EMPTY = new ContextDependency(new Vector3i(), new Vector3i());
+   @Nonnull
    private final Vector3i readRange;
+   @Nonnull
    private final Vector3i writeRange;
    private Vector3i trashRange;
    private Vector3i externalDependencyRange;
@@ -174,6 +176,7 @@ public class ContextDependency {
       return new ContextDependency(rangeFromBounds(readBounds), rangeFromBounds(writeBounds));
    }
 
+   @Nonnull
    private static Vector3i rangeFromBounds(@Nonnull Bounds3i readBounds) {
       Vector3i readRange = new Vector3i();
       readRange.x = Math.max(Math.abs(readBounds.min.x), Math.abs(readBounds.max.x - 1));

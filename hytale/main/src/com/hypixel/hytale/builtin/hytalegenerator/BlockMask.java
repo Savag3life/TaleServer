@@ -8,7 +8,9 @@ import javax.annotation.Nonnull;
 public class BlockMask {
    private MaterialSet skippedBlocks = new MaterialSet();
    private MaterialSet defaultMask = new MaterialSet();
+   @Nonnull
    private final List<MaterialSet> sourceBlocks = new ArrayList<>(0);
+   @Nonnull
    private final List<MaterialSet> destinationBlocks = new ArrayList<>(0);
 
    public boolean canPlace(@Nonnull Material material) {
@@ -19,7 +21,7 @@ public class BlockMask {
       return !this.skippedBlocks.test(materialHash);
    }
 
-   public boolean canReplace(Material source, Material destination) {
+   public boolean canReplace(@Nonnull Material source, @Nonnull Material destination) {
       return this.canReplace(source.hashMaterialIds(), destination.hashMaterialIds());
    }
 

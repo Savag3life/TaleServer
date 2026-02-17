@@ -1,7 +1,7 @@
 package com.hypixel.hytale.server.core.asset.type.item;
 
 import com.hypixel.hytale.assetstore.map.DefaultAssetMap;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateResourceTypes;
 import com.hypixel.hytale.server.core.asset.packet.DefaultAssetPacketGenerator;
@@ -15,7 +15,7 @@ import javax.annotation.Nonnull;
 public class ResourceTypePacketGenerator extends DefaultAssetPacketGenerator<String, ResourceType> {
    @Nonnull
    @Override
-   public Packet generateInitPacket(@Nonnull DefaultAssetMap<String, ResourceType> assetMap, @Nonnull Map<String, ResourceType> assets) {
+   public ToClientPacket generateInitPacket(@Nonnull DefaultAssetMap<String, ResourceType> assetMap, @Nonnull Map<String, ResourceType> assets) {
       Map<String, ResourceType> assetsFromMap = assetMap.getAssetMap();
       if (assets.size() != assetsFromMap.size()) {
          throw new UnsupportedOperationException("Resource types can not handle partial init packets!!!");
@@ -34,7 +34,7 @@ public class ResourceTypePacketGenerator extends DefaultAssetPacketGenerator<Str
 
    @Nonnull
    @Override
-   public Packet generateUpdatePacket(@Nonnull Map<String, ResourceType> loadedAssets) {
+   public ToClientPacket generateUpdatePacket(@Nonnull Map<String, ResourceType> loadedAssets) {
       UpdateResourceTypes packet = new UpdateResourceTypes();
       packet.type = UpdateType.AddOrUpdate;
       packet.resourceTypes = new Object2ObjectOpenHashMap();
@@ -48,7 +48,7 @@ public class ResourceTypePacketGenerator extends DefaultAssetPacketGenerator<Str
 
    @Nonnull
    @Override
-   public Packet generateRemovePacket(@Nonnull Set<String> removed) {
+   public ToClientPacket generateRemovePacket(@Nonnull Set<String> removed) {
       UpdateResourceTypes packet = new UpdateResourceTypes();
       packet.type = UpdateType.Remove;
       packet.resourceTypes = new Object2ObjectOpenHashMap();

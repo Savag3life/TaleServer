@@ -13,7 +13,7 @@ import javax.annotation.Nullable;
 @Deprecated(forRemoval = true)
 public class FarmingBlockState implements Component<ChunkStore> {
    @Nonnull
-   public static BuilderCodec<FarmingBlockState> CODEC = BuilderCodec.builder(FarmingBlockState.class, FarmingBlockState::new)
+   public static final BuilderCodec<FarmingBlockState> CODEC = BuilderCodec.builder(FarmingBlockState.class, FarmingBlockState::new)
       .append(new KeyedCodec<>("BaseCrop", Codec.STRING), (state, crop) -> state.baseCrop = crop, state -> state.baseCrop)
       .add()
       .append(new KeyedCodec<>("StageStart", Codec.INSTANT), (state, start) -> state.stageStart = start, state -> state.stageStart)

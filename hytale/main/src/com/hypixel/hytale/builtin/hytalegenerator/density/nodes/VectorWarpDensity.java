@@ -13,12 +13,18 @@ public class VectorWarpDensity extends Density {
    private final double warpFactor;
    @Nonnull
    private final Vector3d warpVector;
+   @Nonnull
+   private final Vector3d rSamplePoint;
+   @Nonnull
+   private final Density.Context rChildContext;
 
    public VectorWarpDensity(@Nonnull Density input, @Nonnull Density warpInput, double warpFactor, @Nonnull Vector3d warpVector) {
       this.input = input;
       this.warpInput = warpInput;
       this.warpFactor = warpFactor;
       this.warpVector = warpVector;
+      this.rSamplePoint = new Vector3d();
+      this.rChildContext = new Density.Context();
    }
 
    @Override
@@ -30,13 +36,13 @@ public class VectorWarpDensity extends Density {
       } else {
          double warp = this.warpInput.process(context);
          warp *= this.warpFactor;
-         Vector3d samplePoint = this.warpVector.clone();
-         samplePoint.setLength(1.0);
-         samplePoint.scale(warp);
-         samplePoint.add(context.position);
-         Density.Context childContext = new Density.Context(context);
-         childContext.position = samplePoint;
-         return this.input.process(childContext);
+         this.rSamplePoint.assign(this.warpVector);
+         this.rSamplePoint.setLength(1.0);
+         this.rSamplePoint.scale(warp);
+         this.rSamplePoint.add(context.position);
+         this.rChildContext.assign(context);
+         this.rChildContext.position = this.rSamplePoint;
+         return this.input.process(this.rChildContext);
       }
    }
 

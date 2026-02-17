@@ -11,6 +11,7 @@ import com.hypixel.hytale.protocol.MovementStates;
 import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
 import com.hypixel.hytale.server.core.inventory.Inventory;
+import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.modules.entity.component.ActiveAnimationComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -48,6 +49,7 @@ public class RoleDebugDisplay {
    protected boolean debugDisplaySpeed;
    protected boolean debugDisplayInternalId;
    protected boolean debugDisplayName;
+   protected boolean debugVisMarkedTargets;
    @Nonnull
    protected StringBuilder debugDisplay = new StringBuilder(20);
 
@@ -233,6 +235,24 @@ public class RoleDebugDisplay {
          this.debugDisplay.append(" SPD:").append(MathUtil.round(velocityComponent.getSpeed(), 1));
       }
 
+      if (this.debugVisMarkedTargets) {
+         MarkedEntitySupport markedEntitySupport = role.getMarkedEntitySupport();
+         Ref<EntityStore>[] entityTargets = markedEntitySupport.getEntityTargets();
+
+         for (int slotIndex = 0; slotIndex < entityTargets.length; slotIndex++) {
+            Ref<EntityStore> targetRef = entityTargets[slotIndex];
+            if (targetRef != null && targetRef.isValid()) {
+               String colorName = DebugUtils.INDEXED_COLOR_NAMES[slotIndex % DebugUtils.INDEXED_COLOR_NAMES.length];
+               String slotName = markedEntitySupport.getSlotName(slotIndex);
+               if (!this.debugDisplay.isEmpty()) {
+                  this.debugDisplay.append(' ');
+               }
+
+               this.debugDisplay.append(colorName).append('(').append(slotName).append(')');
+            }
+         }
+      }
+
       if (!this.debugDisplay.isEmpty()) {
          Nameplate nameplateComponent = archetypeChunk.getComponent(index, Nameplate.getComponentType());
          if (nameplateComponent != null) {
@@ -247,7 +267,7 @@ public class RoleDebugDisplay {
    }
 
    @Nullable
-   public static RoleDebugDisplay create(@Nonnull EnumSet<RoleDebugFlags> debugFlags) {
+   public static RoleDebugDisplay create(@Nonnull EnumSet<RoleDebugFlags> debugFlags, @Nullable RoleDebugDisplay existingDisplay) {
       boolean debugDisplayState = debugFlags.contains(RoleDebugFlags.DisplayState);
       boolean debugDisplayTime = debugFlags.contains(RoleDebugFlags.DisplayTime);
       boolean debugDisplayFlock = debugFlags.contains(RoleDebugFlags.DisplayFlock);
@@ -262,6 +282,7 @@ public class RoleDebugDisplay {
       boolean debugDisplaySpeed = debugFlags.contains(RoleDebugFlags.DisplaySpeed);
       boolean debugDisplayName = debugFlags.contains(RoleDebugFlags.DisplayName);
       boolean debugDisplayInternalId = debugFlags.contains(RoleDebugFlags.DisplayInternalId);
+      boolean debugVisMarkedTargets = debugFlags.contains(RoleDebugFlags.VisMarkedTargets);
       if (!debugDisplayInternalId
          && !debugDisplayState
          && !debugDisplayFlock
@@ -275,10 +296,11 @@ public class RoleDebugDisplay {
          && !debugDisplayHP
          && !debugDisplaySpeed
          && !debugDisplayName
-         && !debugDisplayStamina) {
+         && !debugDisplayStamina
+         && !debugVisMarkedTargets) {
          return null;
       } else {
-         RoleDebugDisplay debugDisplay = new RoleDebugDisplay();
+         RoleDebugDisplay debugDisplay = existingDisplay != null ? existingDisplay : new RoleDebugDisplay();
          debugDisplay.debugDisplayState = debugDisplayState;
          debugDisplay.debugDisplayTime = debugDisplayTime;
          debugDisplay.debugDisplayFlock = debugDisplayFlock;
@@ -293,6 +315,7 @@ public class RoleDebugDisplay {
          debugDisplay.debugDisplaySpeed = debugDisplaySpeed;
          debugDisplay.debugDisplayInternalId = debugDisplayInternalId;
          debugDisplay.debugDisplayName = debugDisplayName;
+         debugDisplay.debugVisMarkedTargets = debugVisMarkedTargets;
          return debugDisplay;
       }
    }

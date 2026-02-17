@@ -66,7 +66,7 @@ public class GiveCommand extends AbstractPlayerCommand {
       }
 
       ItemStack stack = new ItemStack(item.getId(), quantity, metadata).withDurability(durability);
-      ItemStackTransaction transaction = playerComponent.getInventory().getCombinedHotbarFirst().addItemStack(stack);
+      ItemStackTransaction transaction = playerComponent.giveItem(stack, ref, store);
       ItemStack remainder = transaction.getRemainder();
       Message itemNameMessage = Message.translation(item.getTranslationKey());
       if (remainder != null && !remainder.isEmpty()) {
@@ -132,7 +132,7 @@ public class GiveCommand extends AbstractPlayerCommand {
                      }
 
                      ItemStack stack = new ItemStack(item.getId(), quantity, metadata).withDurability(durability);
-                     ItemStackTransaction transaction = playerComponent.getInventory().getCombinedHotbarFirst().addItemStack(stack);
+                     ItemStackTransaction transaction = playerComponent.giveItem(stack, ref, store);
                      ItemStack remainder = transaction.getRemainder();
                      Message itemNameMessage = Message.translation(item.getTranslationKey());
                      if (remainder != null && !remainder.isEmpty()) {

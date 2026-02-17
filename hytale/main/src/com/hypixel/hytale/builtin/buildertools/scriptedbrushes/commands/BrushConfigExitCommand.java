@@ -13,7 +13,7 @@ import javax.annotation.Nonnull;
 
 public class BrushConfigExitCommand extends AbstractPlayerCommand {
    public BrushConfigExitCommand() {
-      super("exit", "Exit a running debug state or stop an incomplete execution");
+      super("exit", "server.commands.scriptedbrushes.exit.desc");
    }
 
    @Override

@@ -1,6 +1,7 @@
 package com.hypixel.hytale.builtin.instances.removal;
 
 import com.hypixel.hytale.builtin.instances.config.InstanceWorldConfig;
+import com.hypixel.hytale.common.util.CompletableFutureUtil;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.RunWhenPausedSystem;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
@@ -13,10 +14,10 @@ import javax.annotation.Nonnull;
 public class RemovalSystem extends TickingSystem<ChunkStore> implements RunWhenPausedSystem<ChunkStore> {
    @Override
    public void tick(float dt, int systemIndex, @Nonnull Store<ChunkStore> store) {
-      InstanceDataResource data = store.getResource(InstanceDataResource.getResourceType());
-      if (!data.isRemoving() && shouldRemoveWorld(store)) {
-         data.setRemoving(true);
-         CompletableFuture.runAsync(() -> Universe.get().removeWorld(store.getExternalData().getWorld().getName()));
+      InstanceDataResource instanceDataResource = store.getResource(InstanceDataResource.getResourceType());
+      if (!instanceDataResource.isRemoving() && shouldRemoveWorld(store)) {
+         instanceDataResource.setRemoving(true);
+         CompletableFutureUtil._catch(CompletableFuture.runAsync(() -> Universe.get().removeWorld(store.getExternalData().getWorld().getName())));
       }
    }
 

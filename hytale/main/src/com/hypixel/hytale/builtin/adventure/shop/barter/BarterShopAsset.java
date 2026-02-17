@@ -16,6 +16,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class BarterShopAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, BarterShopAsset>> {
+   @Nonnull
    public static final AssetBuilderCodec<String, BarterShopAsset> CODEC = AssetBuilderCodec.builder(
          BarterShopAsset.class,
          BarterShopAsset::new,
@@ -39,6 +40,7 @@ public class BarterShopAsset implements JsonAssetWithMap<String, DefaultAssetMap
       )
       .addField(new KeyedCodec<>("RestockHour", Codec.INTEGER, true), (asset, hour) -> asset.restockHour = hour, asset -> asset.restockHour)
       .build();
+   @Nonnull
    public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(BarterShopAsset::getAssetStore));
    private static AssetStore<String, BarterShopAsset, DefaultAssetMap<String, BarterShopAsset>> ASSET_STORE;
    protected AssetExtraInfo.Data extraData;
@@ -48,8 +50,10 @@ public class BarterShopAsset implements JsonAssetWithMap<String, DefaultAssetMap
    protected RefreshInterval refreshInterval;
    protected BarterTrade[] trades;
    protected TradeSlot[] tradeSlots;
+   @Nullable
    protected Integer restockHour;
 
+   @Nonnull
    public static AssetStore<String, BarterShopAsset, DefaultAssetMap<String, BarterShopAsset>> getAssetStore() {
       if (ASSET_STORE == null) {
          ASSET_STORE = AssetRegistry.getAssetStore(BarterShopAsset.class);

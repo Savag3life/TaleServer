@@ -21,6 +21,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class NeighbourBlockTagsLocationCondition extends WorldLocationCondition {
+   @Nonnull
    public static final BuilderCodec<NeighbourBlockTagsLocationCondition> CODEC = BuilderCodec.builder(
          NeighbourBlockTagsLocationCondition.class, NeighbourBlockTagsLocationCondition::new, WorldLocationCondition.BASE_CODEC
       )
@@ -53,11 +54,12 @@ public class NeighbourBlockTagsLocationCondition extends WorldLocationCondition 
    protected IntRange support = new IntRange(1, 4);
 
    @Override
-   public boolean test(World world, int worldX, int worldY, int worldZ) {
+   public boolean test(@Nonnull World world, int worldX, int worldY, int worldZ) {
       if (worldY <= 0) {
          return false;
       } else {
-         WorldChunk worldChunk = world.getNonTickingChunk(ChunkUtil.indexChunkFromBlock(worldX, worldZ));
+         long chunkIndex = ChunkUtil.indexChunkFromBlock(worldX, worldZ);
+         WorldChunk worldChunk = world.getNonTickingChunk(chunkIndex);
          if (worldChunk == null) {
             return false;
          } else if (this.neighbourDirection == NeighbourBlockTagsLocationCondition.NeighbourDirection.SIDEWAYS) {
@@ -95,15 +97,24 @@ public class NeighbourBlockTagsLocationCondition extends WorldLocationCondition 
       }
    }
 
-   private boolean checkBlockHasTag(int x, int y, int z, @Nonnull BlockAccessor worldChunk) {
-      int blockIndex = worldChunk.getBlock(x, y, z);
-      TagPattern tagPattern = TagPattern.getAssetMap().getAsset(this.tagPatternId);
-      if (tagPattern != null) {
-         AssetExtraInfo.Data data = BlockType.getAssetMap().getAsset(blockIndex).getData();
-         return data == null ? false : tagPattern.test(data.getTags());
-      } else {
-         HytaleLogger.getLogger().at(Level.WARNING).log("No TagPattern asset found for id: " + this.tagPatternId);
+   private boolean checkBlockHasTag(int x, int y, int z, @Nullable BlockAccessor worldChunk) {
+      if (worldChunk == null) {
          return false;
+      } else {
+         int blockIndex = worldChunk.getBlock(x, y, z);
+         TagPattern tagPattern = TagPattern.getAssetMap().getAsset(this.tagPatternId);
+         if (tagPattern != null) {
+            BlockType blockType = BlockType.getAssetMap().getAsset(blockIndex);
+            if (blockType == null) {
+               return false;
+            } else {
+               AssetExtraInfo.Data data = blockType.getData();
+               return data == null ? false : tagPattern.test(data.getTags());
+            }
+         } else {
+            HytaleLogger.getLogger().at(Level.WARNING).log("No TagPattern asset found for id: " + this.tagPatternId);
+            return false;
+         }
       }
    }
 
@@ -145,7 +156,7 @@ public class NeighbourBlockTagsLocationCondition extends WorldLocationCondition 
          + super.toString();
    }
 
-   private static enum NeighbourDirection {
+   protected static enum NeighbourDirection {
       ABOVE,
       BELOW,
       SIDEWAYS;

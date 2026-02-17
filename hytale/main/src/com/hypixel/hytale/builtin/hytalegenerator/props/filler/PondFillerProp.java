@@ -24,14 +24,23 @@ public class PondFillerProp extends Prop {
    private static final int LEAKS = 16;
    private static final int SOLID = 256;
    private static final int STACKED = 4096;
+   @Nonnull
    private final Vector3i boundingMin;
+   @Nonnull
    private final Vector3i boundingMax;
+   @Nonnull
    private final MaterialProvider<Material> filledMaterialProvider;
+   @Nonnull
    private final MaterialSet solidSet;
+   @Nonnull
    private final Scanner scanner;
+   @Nonnull
    private final Pattern pattern;
+   @Nonnull
    private final ContextDependency contextDependency;
+   @Nonnull
    private final Bounds3i readBounds_voxelGrid;
+   @Nonnull
    private final Bounds3i writeBounds_voxelGrid;
 
    public PondFillerProp(
@@ -57,6 +66,7 @@ public class PondFillerProp extends Prop {
       this.writeBounds_voxelGrid = this.contextDependency.getWriteBounds_voxelGrid();
    }
 
+   @Nonnull
    public FillerPropScanResult scan(@Nonnull Vector3i position, @Nonnull VoxelSpace<Material> materialSpace, @Nonnull WorkerIndexer.Id id) {
       Scanner.Context scannerContext = new Scanner.Context(position, this.pattern, materialSpace, id);
       List<Vector3i> scanResults = this.scanner.scan(scannerContext);
@@ -75,6 +85,7 @@ public class PondFillerProp extends Prop {
       }
    }
 
+   @Nonnull
    private List<Vector3i> renderFluidBlocks(@Nonnull Vector3i origin, @Nonnull VoxelSpace<Material> materialSpace) {
       Vector3i min = this.boundingMin.clone().add(origin);
       Vector3i max = this.boundingMax.clone().add(origin);
@@ -207,9 +218,7 @@ public class PondFillerProp extends Prop {
       if (fluidBlocks != null) {
          for (Vector3i position : fluidBlocks) {
             if (context.materialSpace.isInsideSpace(position.x, position.y, position.z)) {
-               MaterialProvider.Context materialsContext = new MaterialProvider.Context(
-                  position, 0.0, 0, 0, 0, 0, context.workerId, null, context.distanceFromBiomeEdge
-               );
+               MaterialProvider.Context materialsContext = new MaterialProvider.Context(position, 0.0, 0, 0, 0, 0, null, context.distanceFromBiomeEdge);
                Material material = this.filledMaterialProvider.getVoxelTypeAt(materialsContext);
                if (material != null) {
                   context.materialSpace.set(material, position.x, position.y, position.z);
@@ -219,6 +228,7 @@ public class PondFillerProp extends Prop {
       }
    }
 
+   @Nonnull
    @Override
    public ContextDependency getContextDependency() {
       return this.contextDependency.clone();

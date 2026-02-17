@@ -25,41 +25,42 @@ public class ActionCompleteTask extends ActionPlayAnimation {
 
    @Override
    public boolean canExecute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store) {
-      Ref<EntityStore> target = role.getStateSupport().getInteractionIterationTarget();
-      boolean targetExists = target != null && !store.getArchetype(target).contains(DeathComponent.getComponentType());
+      Ref<EntityStore> targetRef = role.getStateSupport().getInteractionIterationTarget();
+      boolean targetExists = targetRef != null && targetRef.isValid() && !store.getArchetype(targetRef).contains(DeathComponent.getComponentType());
       return super.canExecute(ref, role, sensorInfo, dt, store) && targetExists;
    }
 
    @Override
    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store) {
       UUIDComponent parentUuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
-
-      assert parentUuidComponent != null;
-
-      Ref<EntityStore> targetPlayerReference = role.getStateSupport().getInteractionIterationTarget();
-      if (targetPlayerReference == null) {
+      if (parentUuidComponent == null) {
          return false;
       } else {
-         PlayerRef targetPlayerRefComponent = store.getComponent(targetPlayerReference, PlayerRef.getComponentType());
-         if (targetPlayerRefComponent == null) {
+         Ref<EntityStore> targetPlayerReference = role.getStateSupport().getInteractionIterationTarget();
+         if (targetPlayerReference == null) {
             return false;
          } else {
-            List<String> activeTasks = role.getEntitySupport().getTargetPlayerActiveTasks();
-            String animation = null;
-            if (activeTasks != null) {
-               for (int i = 0; i < activeTasks.size(); i++) {
-                  animation = NPCObjectivesPlugin.updateTaskCompletion(
-                     store, targetPlayerReference, targetPlayerRefComponent, parentUuidComponent.getUuid(), activeTasks.get(i)
-                  );
+            PlayerRef targetPlayerRefComponent = store.getComponent(targetPlayerReference, PlayerRef.getComponentType());
+            if (targetPlayerRefComponent == null) {
+               return false;
+            } else {
+               List<String> activeTasks = role.getEntitySupport().getTargetPlayerActiveTasks();
+               String animation = null;
+               if (activeTasks != null) {
+                  for (int i = 0; i < activeTasks.size(); i++) {
+                     animation = NPCObjectivesPlugin.updateTaskCompletion(
+                        store, targetPlayerReference, targetPlayerRefComponent, parentUuidComponent.getUuid(), activeTasks.get(i)
+                     );
+                  }
                }
-            }
 
-            if (this.playAnimation && animation != null) {
-               this.setAnimationId(animation);
-               super.execute(ref, role, sensorInfo, dt, store);
-            }
+               if (this.playAnimation && animation != null) {
+                  this.setAnimationId(animation);
+                  super.execute(ref, role, sensorInfo, dt, store);
+               }
 
-            return true;
+               return true;
+            }
          }
       }
    }

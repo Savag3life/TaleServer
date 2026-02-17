@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
 
 public class ActionCombatAbility extends ActionBase {
    protected static final ComponentType<EntityStore, CombatActionEvaluator> COMPONENT_TYPE = CombatActionEvaluator.getComponentType();
+   @Nonnull
    protected static final ComponentType<EntityStore, TransformComponent> TRANSFORM_COMPONENT_TYPE = TransformComponent.getComponentType();
    protected static final float POSITIONING_ANGLE_THRESHOLD = 0.08726646F;
    protected final int id;

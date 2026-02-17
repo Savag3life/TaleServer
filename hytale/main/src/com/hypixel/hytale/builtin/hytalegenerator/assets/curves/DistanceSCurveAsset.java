@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class DistanceSCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<DistanceSCurveAsset> CODEC = BuilderCodec.builder(
          DistanceSCurveAsset.class, DistanceSCurveAsset::new, CurveAsset.ABSTRACT_CODEC
       )

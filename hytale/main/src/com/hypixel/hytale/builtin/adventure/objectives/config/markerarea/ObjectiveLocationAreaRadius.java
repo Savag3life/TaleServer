@@ -18,6 +18,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 public class ObjectiveLocationAreaRadius extends ObjectiveLocationMarkerArea {
+   @Nonnull
    public static final BuilderCodec<ObjectiveLocationAreaRadius> CODEC = BuilderCodec.builder(
          ObjectiveLocationAreaRadius.class, ObjectiveLocationAreaRadius::new
       )

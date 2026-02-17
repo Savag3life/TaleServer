@@ -180,11 +180,25 @@ public class ModelAsset implements JsonAssetWithMap<String, DefaultAssetMap<Stri
          (o, p) -> o.detailBoxes = p.detailBoxes
       )
       .add()
-      .<Double>appendInherited(
+      .appendInherited(
          new KeyedCodec<>("CrouchOffset", Codec.DOUBLE),
          (model, d) -> model.crouchOffset = d.floatValue(),
          model -> (double)model.crouchOffset,
          (model, parent) -> model.crouchOffset = parent.crouchOffset
+      )
+      .add()
+      .appendInherited(
+         new KeyedCodec<>("SittingOffset", Codec.DOUBLE),
+         (model, d) -> model.sittingOffset = d.floatValue(),
+         model -> (double)model.sittingOffset,
+         (model, parent) -> model.sittingOffset = parent.sittingOffset
+      )
+      .add()
+      .<Double>appendInherited(
+         new KeyedCodec<>("SleepingOffset", Codec.DOUBLE),
+         (model, d) -> model.sleepingOffset = d.floatValue(),
+         model -> (double)model.sleepingOffset,
+         (model, parent) -> model.sleepingOffset = parent.sleepingOffset
       )
       .metadata(new UIEditorSectionStart("Camera"))
       .add()
@@ -296,6 +310,8 @@ public class ModelAsset implements JsonAssetWithMap<String, DefaultAssetMap<Stri
    protected String gradientId;
    protected float eyeHeight;
    protected float crouchOffset;
+   protected float sittingOffset;
+   protected float sleepingOffset;
    protected Map<String, ModelAsset.AnimationSet> animationSetMap = Collections.emptyMap();
    protected CameraSettings camera;
    protected Box boundingBox;
@@ -353,6 +369,14 @@ public class ModelAsset implements JsonAssetWithMap<String, DefaultAssetMap<Stri
 
    public float getCrouchOffset() {
       return this.crouchOffset;
+   }
+
+   public float getSittingOffset() {
+      return this.sittingOffset;
+   }
+
+   public float getSleepingOffset() {
+      return this.sleepingOffset;
    }
 
    public Map<String, ModelAsset.AnimationSet> getAnimationSetMap() {
@@ -485,6 +509,10 @@ public class ModelAsset implements JsonAssetWithMap<String, DefaultAssetMap<Stri
          + this.eyeHeight
          + ", crouchOffset="
          + this.crouchOffset
+         + ", sittingOffset="
+         + this.sittingOffset
+         + ", sleepingOffset="
+         + this.sleepingOffset
          + ", animationSetMap="
          + this.animationSetMap
          + ", camera="

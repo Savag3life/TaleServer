@@ -32,13 +32,19 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public abstract class DensityAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, DensityAsset>>, Cleanable {
+   @Nonnull
    private static final DensityAsset[] EMPTY_INPUTS = new DensityAsset[0];
+   @Nonnull
    public static final AssetCodecMapCodec<String, DensityAsset> CODEC = new AssetCodecMapCodec<>(
       Codec.STRING, (t, k) -> t.id = k, t -> t.id, (t, data) -> t.data = data, t -> t.data
    );
+   @Nonnull
    private static final Map<String, DensityAsset.Exported> exportedNodes = new ConcurrentHashMap<>();
+   @Nonnull
    public static final Codec<String> CHILD_ASSET_CODEC = new ContainedAssetCodec<>(DensityAsset.class, CODEC);
+   @Nonnull
    public static final Codec<String[]> CHILD_ASSET_CODEC_ARRAY = new ArrayCodec<>(CHILD_ASSET_CODEC, String[]::new);
+   @Nonnull
    public static final BuilderCodec<DensityAsset> ABSTRACT_CODEC = BuilderCodec.abstractBuilder(DensityAsset.class)
       .append(new KeyedCodec<>("Inputs", new ArrayCodec<>(CODEC, DensityAsset[]::new), true), (t, k) -> t.inputs = k, t -> t.inputs)
       .add()
@@ -52,14 +58,14 @@ public abstract class DensityAsset implements JsonAssetWithMap<String, DefaultAs
                LoggerUtil.getLogger().warning("Duplicate export name for asset: " + asset.exportName);
             }
 
-            DensityAsset.Exported exported = new DensityAsset.Exported();
-            exported.asset = asset;
+            boolean isSingleInstance;
             if (asset instanceof ExportedDensityAsset exportedAsset) {
-               exported.singleInstance = exportedAsset.isSingleInstance();
+               isSingleInstance = exportedAsset.isSingleInstance();
             } else {
-               exported.singleInstance = false;
+               isSingleInstance = false;
             }
 
+            DensityAsset.Exported exported = new DensityAsset.Exported(isSingleInstance, asset);
             exportedNodes.put(asset.exportName, exported);
             LoggerUtil.getLogger().fine("Registered imported node asset with name '" + asset.exportName + "' with asset id '" + asset.id);
          }
@@ -163,71 +169,78 @@ public abstract class DensityAsset implements JsonAssetWithMap<String, DefaultAs
 
    @Nonnull
    public static DensityAsset.Argument from(@Nonnull VectorProviderAsset.Argument argument) {
-      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer);
+      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId);
    }
 
    @Nonnull
    public static DensityAsset.Argument from(@Nonnull MaterialProviderAsset.Argument argument) {
-      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer);
+      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId);
    }
 
    @Nonnull
    public static DensityAsset.Argument from(@Nonnull PropAsset.Argument argument) {
-      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer);
+      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId);
    }
 
    @Nonnull
    public static DensityAsset.Argument from(@Nonnull PatternAsset.Argument argument) {
-      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer);
+      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId);
    }
 
    @Nonnull
    public static DensityAsset.Argument from(@Nonnull PositionProviderAsset.Argument argument) {
-      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer);
+      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId);
    }
 
    @Nonnull
    public static DensityAsset.Argument from(@Nonnull AssignmentsAsset.Argument argument) {
-      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer);
+      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId);
    }
 
    @Nonnull
    public static DensityAsset.Argument from(@Nonnull WorldStructureAsset.Argument argument, @Nonnull ReferenceBundle referenceBundle) {
-      return new DensityAsset.Argument(argument.parentSeed, referenceBundle, argument.workerIndexer);
+      return new DensityAsset.Argument(argument.parentSeed, referenceBundle, argument.workerId);
    }
 
    @Nonnull
    public static DensityAsset.Argument from(@Nonnull EnvironmentProviderAsset.Argument argument) {
-      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer);
+      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId);
    }
 
    @Nonnull
    public static DensityAsset.Argument from(@Nonnull TintProviderAsset.Argument argument) {
-      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer);
+      return new DensityAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId);
    }
 
    public static class Argument {
       public SeedBox parentSeed;
       public ReferenceBundle referenceBundle;
-      public WorkerIndexer workerIndexer;
+      public WorkerIndexer.Id workerId;
 
-      public Argument(@Nonnull SeedBox parentSeed, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer workerIndexer) {
+      public Argument(@Nonnull SeedBox parentSeed, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer.Id workerId) {
          this.parentSeed = parentSeed;
          this.referenceBundle = referenceBundle;
-         this.workerIndexer = workerIndexer;
+         this.workerId = workerId;
       }
 
       public Argument(@Nonnull DensityAsset.Argument argument) {
          this.parentSeed = argument.parentSeed;
          this.referenceBundle = argument.referenceBundle;
-         this.workerIndexer = argument.workerIndexer;
+         this.workerId = argument.workerId;
       }
    }
 
    public static class Exported {
-      public boolean singleInstance;
+      public boolean isSingleInstance;
+      @Nonnull
       public DensityAsset asset;
-      @Nullable
-      public Density builtInstance;
+      @Nonnull
+      public Map<WorkerIndexer.Id, Density> threadInstances;
+
+      public Exported(boolean i, @Nonnull DensityAsset asset) {
+         this.isSingleInstance = i;
+         this.asset = asset;
+         this.threadInstances = new ConcurrentHashMap<>();
+      }
    }
 }

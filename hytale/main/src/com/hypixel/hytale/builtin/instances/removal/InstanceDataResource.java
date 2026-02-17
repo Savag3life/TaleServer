@@ -9,8 +9,10 @@ import com.hypixel.hytale.component.ResourceType;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import java.time.Instant;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class InstanceDataResource implements Resource<ChunkStore> {
+   @Nonnull
    public static final BuilderCodec<InstanceDataResource> CODEC = BuilderCodec.builder(InstanceDataResource.class, InstanceDataResource::new)
       .append(new KeyedCodec<>("TimeoutTimer", Codec.INSTANT), (o, i) -> o.timeoutTimer = i, o -> o.timeoutTimer)
       .add()
@@ -25,6 +27,7 @@ public class InstanceDataResource implements Resource<ChunkStore> {
    private Instant timeoutTimer;
    private Instant idleTimeoutTimer;
    private boolean hadPlayer;
+   @Nullable
    private Instant worldTimeoutTimer;
 
    @Nonnull
@@ -64,11 +67,12 @@ public class InstanceDataResource implements Resource<ChunkStore> {
       this.hadPlayer = hadPlayer;
    }
 
+   @Nullable
    public Instant getWorldTimeoutTimer() {
       return this.worldTimeoutTimer;
    }
 
-   public void setWorldTimeoutTimer(Instant worldTimeoutTimer) {
+   public void setWorldTimeoutTimer(@Nullable Instant worldTimeoutTimer) {
       this.worldTimeoutTimer = worldTimeoutTimer;
    }
 

@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class AreaScannerAsset extends ScannerAsset {
+   @Nonnull
    public static final BuilderCodec<AreaScannerAsset> CODEC = BuilderCodec.builder(AreaScannerAsset.class, AreaScannerAsset::new, ScannerAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("ResultCap", Codec.INTEGER, true), (t, k) -> t.resultCap = k, k -> k.resultCap)
       .addValidator(Validators.greaterThanOrEqual(0))

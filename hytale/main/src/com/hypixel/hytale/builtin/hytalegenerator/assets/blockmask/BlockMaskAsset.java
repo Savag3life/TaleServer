@@ -18,7 +18,9 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 public class BlockMaskAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, BlockMaskAsset>>, Cleanable {
+   @Nonnull
    private static final Map<String, BlockMaskAsset.Exported> exportedNodes = new HashMap<>();
+   @Nonnull
    public static final AssetBuilderCodec<String, BlockMaskAsset> CODEC = AssetBuilderCodec.builder(
          BlockMaskAsset.class,
          BlockMaskAsset::new,

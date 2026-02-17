@@ -22,7 +22,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public class SimpleCraftingWindow extends CraftingWindow implements MaterialContainerWindow {
-   public SimpleCraftingWindow(BenchState benchState) {
+   public SimpleCraftingWindow(@Nonnull BenchState benchState) {
       super(WindowType.BasicCrafting, benchState);
    }
 
@@ -42,12 +42,19 @@ public class SimpleCraftingWindow extends CraftingWindow implements MaterialCont
             CraftingRecipe craftRecipe = CraftingRecipe.getAssetMap().getAsset(recipeId);
             if (craftRecipe == null) {
                PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-               playerRef.getPacketHandler().disconnect("Attempted to craft unknown recipe!");
+               if (playerRef != null) {
+                  playerRef.getPacketHandler().disconnect("Attempted to craft unknown recipe!");
+               }
+
                return;
             }
 
-            Player player = store.getComponent(ref, Player.getComponentType());
-            CombinedItemContainer combined = player.getInventory().getCombinedBackpackStorageHotbar();
+            Player playerComponent = store.getComponent(ref, Player.getComponentType());
+            if (playerComponent == null) {
+               return;
+            }
+
+            CombinedItemContainer combined = playerComponent.getInventory().getCombinedBackpackStorageHotbar();
             CombinedItemContainer playerAndContainerInventory = new CombinedItemContainer(combined, this.getExtraResourcesSection().getItemContainer());
             boolean accepted;
             if (craftRecipe.getTimeSeconds() > 0.0F) {

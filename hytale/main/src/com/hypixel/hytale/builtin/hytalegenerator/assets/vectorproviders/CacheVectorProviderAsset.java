@@ -9,6 +9,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class CacheVectorProviderAsset extends VectorProviderAsset {
+   @Nonnull
    public static final BuilderCodec<CacheVectorProviderAsset> CODEC = BuilderCodec.builder(
          CacheVectorProviderAsset.class, CacheVectorProviderAsset::new, ABSTRACT_CODEC
       )
@@ -28,13 +29,14 @@ public class CacheVectorProviderAsset extends VectorProviderAsset {
       this.vectorProviderAsset = vectorProviderAsset;
    }
 
+   @Nonnull
    @Override
    public VectorProvider build(@Nonnull VectorProviderAsset.Argument argument) {
       if (this.isSkipped()) {
          return new ConstantVectorProvider(new Vector3d());
       } else {
          VectorProvider vectorProvider = this.vectorProviderAsset.build(argument);
-         return new CacheVectorProvider(vectorProvider, argument.workerIndexer.getWorkerCount());
+         return new CacheVectorProvider(vectorProvider);
       }
    }
 }

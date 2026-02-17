@@ -209,7 +209,7 @@ public class SpawnSuppressionSystems {
 
       @Override
       public void onSystemUnregistered() {
-         this.eventRegistry.shutdown();
+         this.eventRegistry.shutdownAndCleanup(true);
       }
 
       private void onSpawnSuppressionsLoaded(@Nonnull LoadedAssetsEvent<String, SpawnSuppression, IndexedAssetMap<String, SpawnSuppression>> event) {

@@ -171,7 +171,7 @@ public class BrushData implements NetworkSerializable<BuilderToolBrushData> {
    protected IntArg height = new IntArg(5, 1, 100);
    protected IntArg thickness = new IntArg(0, 0, 100);
    protected BoolArg capped = new BoolArg(false);
-   protected BrushShapeArg shape = new BrushShapeArg(BrushShape.Cube);
+   protected BrushShapeArg shape = new BrushShapeArg(BrushShape.Sphere);
    protected BrushOriginArg origin = new BrushOriginArg(BrushOrigin.Center);
    protected BoolArg originRotation = new BoolArg(false);
    protected BrushAxisArg rotationAxis = new BrushAxisArg(BrushAxis.None);

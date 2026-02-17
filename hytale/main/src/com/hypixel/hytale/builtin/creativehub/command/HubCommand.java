@@ -27,7 +27,7 @@ public class HubCommand extends AbstractPlayerCommand {
 
    public HubCommand() {
       super("hub", "server.commands.hub.desc");
-      this.addAliases("converge", "convergence");
+      this.addAliases("cosmos", "crossroads");
       this.setPermissionGroup(GameMode.Creative);
    }
 
@@ -35,14 +35,14 @@ public class HubCommand extends AbstractPlayerCommand {
    protected void execute(
       @Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world
    ) {
-      World parentWorld = this.findParentHubWorld(store, ref);
+      World parentWorld = findParentHubWorld(store, ref);
       if (parentWorld == null) {
          playerRef.sendMessage(MESSAGE_NOT_IN_HUB_WORLD);
       } else {
          CreativeHubWorldConfig hubConfig = CreativeHubWorldConfig.get(parentWorld.getWorldConfig());
          if (hubConfig != null && hubConfig.getStartupInstance() != null) {
             World currentHub = CreativeHubPlugin.get().getActiveHubInstance(parentWorld);
-            if (currentHub != null && world.equals(currentHub)) {
+            if (world.equals(currentHub)) {
                playerRef.sendMessage(MESSAGE_ALREADY_IN_HUB);
             } else {
                ISpawnProvider spawnProvider = parentWorld.getWorldConfig().getSpawnProvider();
@@ -57,7 +57,7 @@ public class HubCommand extends AbstractPlayerCommand {
    }
 
    @Nullable
-   private World findParentHubWorld(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref) {
+   private static World findParentHubWorld(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref) {
       CreativeHubEntityConfig hubEntityConfig = store.getComponent(ref, CreativeHubEntityConfig.getComponentType());
       if (hubEntityConfig != null && hubEntityConfig.getParentHubWorldUuid() != null) {
          World parentWorld = Universe.get().getWorld(hubEntityConfig.getParentHubWorldUuid());

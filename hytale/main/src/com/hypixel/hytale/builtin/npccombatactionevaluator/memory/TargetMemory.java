@@ -9,13 +9,19 @@ import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class TargetMemory implements Component<EntityStore> {
+   @Nonnull
    private final Int2FloatOpenHashMap knownFriendlies = new Int2FloatOpenHashMap();
+   @Nonnull
    private final List<Ref<EntityStore>> knownFriendliesList = new ObjectArrayList();
+   @Nonnull
    private final Int2FloatOpenHashMap knownHostiles = new Int2FloatOpenHashMap();
+   @Nonnull
    private final List<Ref<EntityStore>> knownHostilesList = new ObjectArrayList();
    private final float rememberFor;
+   @Nullable
    private Ref<EntityStore> closestHostile;
 
    public static ComponentType<EntityStore, TargetMemory> getComponentType() {
@@ -52,11 +58,12 @@ public class TargetMemory implements Component<EntityStore> {
       return this.rememberFor;
    }
 
+   @Nullable
    public Ref<EntityStore> getClosestHostile() {
       return this.closestHostile;
    }
 
-   public void setClosestHostile(Ref<EntityStore> ref) {
+   public void setClosestHostile(@Nullable Ref<EntityStore> ref) {
       this.closestHostile = ref;
    }
 

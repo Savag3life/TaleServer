@@ -23,6 +23,7 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 
 public class ObjectiveAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, ObjectiveAsset>> {
+   @Nonnull
    public static final AssetBuilderCodec<String, ObjectiveAsset> CODEC = AssetBuilderCodec.builder(
          ObjectiveAsset.class,
          ObjectiveAsset::new,
@@ -87,6 +88,7 @@ public class ObjectiveAsset implements JsonAssetWithMap<String, DefaultAssetMap<
          }
       })
       .build();
+   @Nonnull
    public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(ObjectiveAsset::getAssetStore));
    private static AssetStore<String, ObjectiveAsset, DefaultAssetMap<String, ObjectiveAsset>> ASSET_STORE;
    protected AssetExtraInfo.Data extraData;

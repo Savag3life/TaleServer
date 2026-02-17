@@ -23,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import javax.annotation.Nonnull;
 
 public class DeployableTrapSpawnerConfig extends DeployableTrapConfig {
+   @Nonnull
    public static final BuilderCodec<DeployableTrapSpawnerConfig> CODEC = BuilderCodec.builder(
          DeployableTrapSpawnerConfig.class, DeployableTrapSpawnerConfig::new, DeployableTrapConfig.CODEC
       )
@@ -85,7 +86,7 @@ public class DeployableTrapSpawnerConfig extends DeployableTrapConfig {
       playAnimation(store, entityRef, this, "Deploy");
    }
 
-   private void tickDeployAnimationState(Store<EntityStore> store, DeployableComponent component, Ref<EntityStore> entityRef) {
+   private void tickDeployAnimationState(@Nonnull Store<EntityStore> store, @Nonnull DeployableComponent component, @Nonnull Ref<EntityStore> entityRef) {
       component.setFlag(DeployableComponent.DeployableFlag.STATE, 2);
       playAnimation(store, entityRef, this, "Deploy");
    }
@@ -102,34 +103,43 @@ public class DeployableTrapSpawnerConfig extends DeployableTrapConfig {
       @Nonnull Store<EntityStore> store,
       @Nonnull DeployableComponent component,
       @Nonnull Ref<EntityStore> entityRef,
-      CommandBuffer<EntityStore> commandBuffer,
+      @Nonnull CommandBuffer<EntityStore> commandBuffer,
       float dt
    ) {
-      Vector3d position = store.getComponent(entityRef, TransformComponent.getComponentType()).getPosition();
-      float radius = this.getRadius(store, component.getSpawnInstant());
-      component.setTimeSinceLastAttack(component.getTimeSinceLastAttack() + dt);
-      if (component.getTimeSinceLastAttack() > this.damageInterval && this.isLive(store, component)) {
-         component.setTimeSinceLastAttack(0.0F);
-         this.handleDetection(store, commandBuffer, entityRef, component, position, radius, DamageCause.PHYSICAL);
+      TransformComponent transformComponent = store.getComponent(entityRef, TransformComponent.getComponentType());
+      if (transformComponent != null) {
+         Vector3d position = transformComponent.getPosition();
+         float radius = this.getRadius(store, component.getSpawnInstant());
+         component.setTimeSinceLastAttack(component.getTimeSinceLastAttack() + dt);
+         if (component.getTimeSinceLastAttack() > this.damageInterval && this.isLive(store, component)) {
+            component.setTimeSinceLastAttack(0.0F);
+            this.handleDetection(store, commandBuffer, entityRef, component, position, radius, DamageCause.PHYSICAL);
+         }
       }
    }
 
    private void tickTriggeredState(
-      CommandBuffer<EntityStore> commandBuffer, @Nonnull Store<EntityStore> store, @Nonnull DeployableComponent component, @Nonnull Ref<EntityStore> entityRef
+      @Nonnull CommandBuffer<EntityStore> commandBuffer,
+      @Nonnull Store<EntityStore> store,
+      @Nonnull DeployableComponent component,
+      @Nonnull Ref<EntityStore> entityRef
    ) {
-      component.setFlag(DeployableComponent.DeployableFlag.STATE, 5);
-      Vector3d parentPosition = store.getComponent(entityRef, TransformComponent.getComponentType()).getPosition();
-      Ref<EntityStore> parentOwner = store.getComponent(entityRef, DeployableComponent.getComponentType()).getOwner();
-      World world = store.getExternalData().getWorld();
-      if (this.deployableSpawners != null) {
-         for (DeployableSpawner spawner : this.deployableSpawners) {
-            if (spawner != null) {
-               DeployableConfig config = spawner.getConfig();
-               Vector3d[] positionOffsets = spawner.getPositionOffsets();
+      TransformComponent transformComponent = store.getComponent(entityRef, TransformComponent.getComponentType());
+      if (transformComponent != null) {
+         component.setFlag(DeployableComponent.DeployableFlag.STATE, 5);
+         Vector3d parentPosition = transformComponent.getPosition();
+         Ref<EntityStore> parentOwner = component.getOwner();
+         World world = store.getExternalData().getWorld();
+         if (this.deployableSpawners != null) {
+            for (DeployableSpawner spawner : this.deployableSpawners) {
+               if (spawner != null) {
+                  DeployableConfig config = spawner.getConfig();
+                  Vector3d[] positionOffsets = spawner.getPositionOffsets();
 
-               for (Vector3d offset : positionOffsets) {
-                  Vector3f childPosition = Vector3d.add(parentPosition, offset).toVector3f();
-                  world.execute(() -> DeployablesUtils.spawnDeployable(commandBuffer, store, config, parentOwner, childPosition, new Vector3f(), "UP"));
+                  for (Vector3d offset : positionOffsets) {
+                     Vector3f childPosition = Vector3d.add(parentPosition, offset).toVector3f();
+                     world.execute(() -> DeployablesUtils.spawnDeployable(commandBuffer, store, config, parentOwner, childPosition, new Vector3f(), "UP"));
+                  }
                }
             }
          }
@@ -143,6 +153,9 @@ public class DeployableTrapSpawnerConfig extends DeployableTrapConfig {
 
    @Override
    protected void onTriggered(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref) {
-      store.getComponent(ref, DeployableComponent.getComponentType()).setFlag(DeployableComponent.DeployableFlag.STATE, 4);
+      DeployableComponent deployableComponent = store.getComponent(ref, DeployableComponent.getComponentType());
+      if (deployableComponent != null) {
+         deployableComponent.setFlag(DeployableComponent.DeployableFlag.STATE, 4);
+      }
    }
 }

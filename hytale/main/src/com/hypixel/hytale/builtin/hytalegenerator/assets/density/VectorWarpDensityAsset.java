@@ -10,6 +10,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class VectorWarpDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<VectorWarpDensityAsset> CODEC = BuilderCodec.builder(
          VectorWarpDensityAsset.class, VectorWarpDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import javax.annotation.Nonnull;
 
 public class OrConditionAsset extends ConditionAsset {
+   @Nonnull
    public static final BuilderCodec<OrConditionAsset> CODEC = BuilderCodec.builder(OrConditionAsset.class, OrConditionAsset::new, ConditionAsset.ABSTRACT_CODEC)
       .append(
          new KeyedCodec<>("Conditions", new ArrayCodec<>(ConditionAsset.CODEC, ConditionAsset[]::new), true),

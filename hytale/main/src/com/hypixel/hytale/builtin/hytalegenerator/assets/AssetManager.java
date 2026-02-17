@@ -88,6 +88,7 @@ import com.hypixel.hytale.builtin.hytalegenerator.assets.density.VectorWarpDensi
 import com.hypixel.hytale.builtin.hytalegenerator.assets.density.XOverrideDensityAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.density.XValueDensityAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.density.YOverrideDensityAsset;
+import com.hypixel.hytale.builtin.hytalegenerator.assets.density.YSampledDensityAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.density.YValueDensityAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.density.ZOverrideDensityAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.density.ZValueDensityAsset;
@@ -110,6 +111,9 @@ import com.hypixel.hytale.builtin.hytalegenerator.assets.density.positions.retur
 import com.hypixel.hytale.builtin.hytalegenerator.assets.environmentproviders.ConstantEnvironmentProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.environmentproviders.DensityDelimitedEnvironmentProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.environmentproviders.EnvironmentProviderAsset;
+import com.hypixel.hytale.builtin.hytalegenerator.assets.framework.DecimalConstantsFrameworkAsset;
+import com.hypixel.hytale.builtin.hytalegenerator.assets.framework.FrameworkAsset;
+import com.hypixel.hytale.builtin.hytalegenerator.assets.framework.PositionsFrameworkAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.materialproviders.ConstantMaterialProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.materialproviders.DownwardDepthMaterialProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.materialproviders.DownwardSpaceMaterialProviderAsset;
@@ -161,9 +165,11 @@ import com.hypixel.hytale.builtin.hytalegenerator.assets.pointgenerators.MeshPoi
 import com.hypixel.hytale.builtin.hytalegenerator.assets.pointgenerators.PointGeneratorAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.AnchorPositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.BaseHeightPositionProviderAsset;
+import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.BoundPositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.CachedPositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.FieldFunctionOccurrencePositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.FieldFunctionPositionProviderAsset;
+import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.FrameworkPositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.ImportedPositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.ListPositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.Mesh2DPositionProviderAsset;
@@ -171,7 +177,6 @@ import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.Mesh3
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.OffsetPositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.PositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.SimpleHorizontalPositionProviderAsset;
-import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.SpherePositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.positionproviders.UnionPositionProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.propassignments.AssignmentsAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.propassignments.ConstantAssignmentsAsset;
@@ -215,8 +220,6 @@ import com.hypixel.hytale.builtin.hytalegenerator.assets.vectorproviders.Importe
 import com.hypixel.hytale.builtin.hytalegenerator.assets.vectorproviders.VectorProviderAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.worldstructures.WorldStructureAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.assets.worldstructures.basic.BasicWorldStructureAsset;
-import com.hypixel.hytale.builtin.hytalegenerator.assets.worldstructures.mapcontentfield.BaseHeightContentFieldAsset;
-import com.hypixel.hytale.builtin.hytalegenerator.assets.worldstructures.mapcontentfield.ContentFieldAsset;
 import com.hypixel.hytale.common.util.ExceptionUtil;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -264,7 +267,7 @@ public class AssetManager {
 
       for (BlockMaskAsset value : event.getLoadedAssets().values()) {
          this.blockMaskAssets.put(value.getId(), value);
-         this.logger.at(Level.FINE).log("Loaded BlockMask asset " + value.toString());
+         this.logger.at(Level.FINE).log("Loaded BlockMask asset " + value);
       }
 
       this.triggerReloadListeners();
@@ -275,7 +278,7 @@ public class AssetManager {
 
       for (DensityAsset value : event.getLoadedAssets().values()) {
          this.densityAssets.put(value.getId(), value);
-         this.logger.at(Level.FINE).log("Loaded Density asset " + value.toString());
+         this.logger.at(Level.FINE).log("Loaded Density asset " + value);
       }
 
       this.triggerReloadListeners();
@@ -462,7 +465,9 @@ public class AssetManager {
       DensityAsset.CODEC.register("Exported", ExportedDensityAsset.class, ExportedDensityAsset.CODEC);
       DensityAsset.CODEC.register("Terrain", TerrainDensityAsset.class, TerrainDensityAsset.CODEC);
       DensityAsset.CODEC.register("DistanceToBiomeEdge", DistanceToBiomeEdgeDensityAsset.class, DistanceToBiomeEdgeDensityAsset.CODEC);
-      ContentFieldAsset.CODEC.register("BaseHeight", BaseHeightContentFieldAsset.class, BaseHeightContentFieldAsset.CODEC);
+      DensityAsset.CODEC.register("YSampled", YSampledDensityAsset.class, YSampledDensityAsset.CODEC);
+      FrameworkAsset.CODEC.register("DecimalConstants", DecimalConstantsFrameworkAsset.class, DecimalConstantsFrameworkAsset.CODEC);
+      FrameworkAsset.CODEC.register("Positions", PositionsFrameworkAsset.class, PositionsFrameworkAsset.CODEC);
       TerrainAsset.CODEC.register("DAOTerrain", DensityTerrainAsset.class, DensityTerrainAsset.CODEC);
       NoiseAsset.CODEC.register("Simplex", SimplexNoiseAsset.class, SimplexNoiseAsset.CODEC);
       NoiseAsset.CODEC.register("Cell", CellNoiseAsset.class, CellNoiseAsset.CODEC);
@@ -505,7 +510,8 @@ public class AssetManager {
       PositionProviderAsset.CODEC.register("BaseHeight", BaseHeightPositionProviderAsset.class, BaseHeightPositionProviderAsset.CODEC);
       PositionProviderAsset.CODEC.register("Imported", ImportedPositionProviderAsset.class, ImportedPositionProviderAsset.CODEC);
       PositionProviderAsset.CODEC.register("Anchor", AnchorPositionProviderAsset.class, AnchorPositionProviderAsset.CODEC);
-      PositionProviderAsset.CODEC.register("Sphere", SpherePositionProviderAsset.class, SpherePositionProviderAsset.CODEC);
+      PositionProviderAsset.CODEC.register("Bound", BoundPositionProviderAsset.class, BoundPositionProviderAsset.CODEC);
+      PositionProviderAsset.CODEC.register("Framework", FrameworkPositionProviderAsset.class, FrameworkPositionProviderAsset.CODEC);
       PointGeneratorAsset.CODEC.register("Mesh", MeshPointGeneratorAsset.class, MeshPointGeneratorAsset.CODEC);
       AssignmentsAsset.CODEC.register("FieldFunction", FieldFunctionAssignmentsAsset.class, FieldFunctionAssignmentsAsset.CODEC);
       AssignmentsAsset.CODEC.register("Sandwich", SandwichAssignmentsAsset.class, SandwichAssignmentsAsset.CODEC);

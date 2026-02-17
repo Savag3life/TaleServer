@@ -21,6 +21,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 public class DensityDelimitedEnvironmentProviderAsset extends EnvironmentProviderAsset {
+   @Nonnull
    public static final BuilderCodec<DensityDelimitedEnvironmentProviderAsset> CODEC = BuilderCodec.builder(
          DensityDelimitedEnvironmentProviderAsset.class, DensityDelimitedEnvironmentProviderAsset::new, EnvironmentProviderAsset.ABSTRACT_CODEC
       )
@@ -69,6 +70,7 @@ public class DensityDelimitedEnvironmentProviderAsset extends EnvironmentProvide
    public static class DelimiterAsset
       implements Cleanable,
       JsonAssetWithMap<String, DefaultAssetMap<String, DensityDelimitedEnvironmentProviderAsset.DelimiterAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, DensityDelimitedEnvironmentProviderAsset.DelimiterAsset> CODEC = AssetBuilderCodec.builder(
             DensityDelimitedEnvironmentProviderAsset.DelimiterAsset.class,
             DensityDelimitedEnvironmentProviderAsset.DelimiterAsset::new,

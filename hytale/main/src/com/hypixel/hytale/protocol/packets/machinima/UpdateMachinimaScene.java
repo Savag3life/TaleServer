@@ -1,6 +1,9 @@
 package com.hypixel.hytale.protocol.packets.machinima;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.PacketIO;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
@@ -11,7 +14,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class UpdateMachinimaScene implements Packet {
+public class UpdateMachinimaScene implements Packet, ToServerPacket, ToClientPacket {
    public static final int PACKET_ID = 262;
    public static final boolean IS_COMPRESSED = true;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -32,6 +35,11 @@ public class UpdateMachinimaScene implements Packet {
    @Override
    public int getId() {
       return 262;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public UpdateMachinimaScene() {

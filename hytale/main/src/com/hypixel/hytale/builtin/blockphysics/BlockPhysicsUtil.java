@@ -34,7 +34,7 @@ public class BlockPhysicsUtil {
 
    @Nonnull
    public static BlockPhysicsUtil.Result applyBlockPhysics(
-      @Nullable ComponentAccessor<EntityStore> commandBuffer,
+      @Nonnull ComponentAccessor<EntityStore> componentAccessor,
       @Nonnull Ref<ChunkStore> chunkReference,
       @Nonnull BlockPhysicsSystems.CachedAccessor chunkAccessor,
       BlockSection blockSection,
@@ -55,9 +55,7 @@ public class BlockPhysicsUtil {
             supportDistance = testBlockPhysics(chunkAccessor, blockSection, blockPhysics, fluidSection, blockX, blockY, blockZ, blockType, rotation, filler);
          } else {
             BlockBoundingBoxes boundingBoxes = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
-            if (!boundingBoxes.protrudesUnitBox()) {
-               supportDistance = testBlockPhysics(chunkAccessor, blockSection, blockPhysics, fluidSection, blockX, blockY, blockZ, blockType, rotation, filler);
-            } else {
+            if (boundingBoxes != null && boundingBoxes.protrudesUnitBox()) {
                BlockBoundingBoxes.RotatedVariantBoxes rotatedBox = boundingBoxes.get(rotation);
                Box boundingBox = rotatedBox.getBoundingBox();
                int minX = (int)boundingBox.min.x;
@@ -94,7 +92,7 @@ public class BlockPhysicsUtil {
                int blockHeight = Math.max(maxY - minY, 1);
                int blockDepth = Math.max(maxZ - minZ, 1);
 
-               label138:
+               label136:
                for (int x = 0; x < blockWidth; x++) {
                   for (int y = 0; y < blockHeight; y++) {
                      for (int z = 0; z < blockDepth; z++) {
@@ -140,7 +138,7 @@ public class BlockPhysicsUtil {
                               case Any:
                                  if (fillerSupportDistance == -2) {
                                     supportDistance = -2;
-                                    break label138;
+                                    break label136;
                                  }
 
                                  if (fillerSupportDistance == 0) {
@@ -152,7 +150,7 @@ public class BlockPhysicsUtil {
                               case All:
                                  if (fillerSupportDistance == 0) {
                                     supportDistance = 0;
-                                    break label138;
+                                    break label136;
                                  }
 
                                  if (fillerSupportDistance == -2) {
@@ -165,21 +163,23 @@ public class BlockPhysicsUtil {
                      }
                   }
                }
+            } else {
+               supportDistance = testBlockPhysics(chunkAccessor, blockSection, blockPhysics, fluidSection, blockX, blockY, blockZ, blockType, rotation, filler);
             }
          }
 
          if (supportDistance == 0) {
-            World world = commandBuffer.getExternalData().getWorld();
+            World world = componentAccessor.getExternalData().getWorld();
             Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
             switch (blockType.getSupportDropType()) {
                case BREAK:
                   BlockHarvestUtils.naturallyRemoveBlockByPhysics(
-                     new Vector3i(blockX, blockY, blockZ), blockType, filler, 256, chunkReference, commandBuffer, chunkStore
+                     new Vector3i(blockX, blockY, blockZ), blockType, filler, 256, chunkReference, componentAccessor, chunkStore
                   );
                   break;
                case DESTROY:
                   BlockHarvestUtils.naturallyRemoveBlockByPhysics(
-                     new Vector3i(blockX, blockY, blockZ), blockType, filler, 2304, chunkReference, commandBuffer, chunkStore
+                     new Vector3i(blockX, blockY, blockZ), blockType, filler, 2304, chunkReference, componentAccessor, chunkStore
                   );
             }
 
@@ -289,7 +289,6 @@ public class BlockPhysicsUtil {
                            if (requiredBlockFaceSupport.isAppliedToFiller(blockFillerOffset)) {
                               boolean doesSatisfyRequirements = doesSatisfyRequirements(
                                  blockType,
-                                 fluid,
                                  blockFillerOffset,
                                  neighbourFillerOffset,
                                  blockFace,
@@ -361,7 +360,6 @@ public class BlockPhysicsUtil {
 
    public static boolean doesSatisfyRequirements(
       @Nonnull BlockType blockType,
-      Fluid fluid,
       Vector3i blockFillerOffset,
       Vector3i neighbourFillerOffset,
       BlockFace blockFace,

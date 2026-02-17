@@ -24,6 +24,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class TeleporterSettingsPageSupplier implements OpenCustomUIInteraction.CustomPageSupplier {
+   @Nonnull
    public static final BuilderCodec<TeleporterSettingsPageSupplier> CODEC = BuilderCodec.builder(
          TeleporterSettingsPageSupplier.class, TeleporterSettingsPageSupplier::new
       )
@@ -41,23 +42,17 @@ public class TeleporterSettingsPageSupplier implements OpenCustomUIInteraction.C
          (supplier, parent) -> supplier.mode = parent.mode
       )
       .add()
-      .appendInherited(
-         new KeyedCodec<>("ActiveState", Codec.STRING),
-         (supplier, o) -> supplier.activeState = o,
-         supplier -> supplier.activeState,
-         (supplier, parent) -> supplier.activeState = parent.activeState
-      )
-      .add()
       .build();
    private boolean create = true;
    private TeleporterSettingsPage.Mode mode = TeleporterSettingsPage.Mode.FULL;
-   @Nullable
-   private String activeState;
 
    @Nullable
    @Override
    public CustomUIPage tryCreate(
-      @Nonnull Ref<EntityStore> ref, ComponentAccessor<EntityStore> componentAccessor, @Nonnull PlayerRef playerRef, @Nonnull InteractionContext context
+      @Nonnull Ref<EntityStore> ref,
+      @Nonnull ComponentAccessor<EntityStore> componentAccessor,
+      @Nonnull PlayerRef playerRef,
+      @Nonnull InteractionContext context
    ) {
       BlockPosition targetBlock = context.getTargetBlock();
       if (targetBlock == null) {
@@ -66,10 +61,11 @@ public class TeleporterSettingsPageSupplier implements OpenCustomUIInteraction.C
          Store<EntityStore> store = ref.getStore();
          World world = store.getExternalData().getWorld();
          ChunkStore chunkStore = world.getChunkStore();
+         Store<ChunkStore> chunkComponentStore = chunkStore.getStore();
          Ref<ChunkStore> chunkRef = chunkStore.getChunkReference(ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z));
-         BlockComponentChunk blockComponentChunk = chunkRef == null
-            ? null
-            : chunkStore.getStore().getComponent(chunkRef, BlockComponentChunk.getComponentType());
+         BlockComponentChunk blockComponentChunk = chunkRef != null && chunkRef.isValid()
+            ? chunkComponentStore.getComponent(chunkRef, BlockComponentChunk.getComponentType())
+            : null;
          if (blockComponentChunk == null) {
             return null;
          } else {
@@ -83,10 +79,10 @@ public class TeleporterSettingsPageSupplier implements OpenCustomUIInteraction.C
                Holder<ChunkStore> holder = ChunkStore.REGISTRY.newHolder();
                holder.putComponent(BlockModule.BlockStateInfo.getComponentType(), new BlockModule.BlockStateInfo(blockIndex, chunkRef));
                holder.ensureComponent(Teleporter.getComponentType());
-               blockRef = world.getChunkStore().getStore().addEntity(holder, AddReason.SPAWN);
+               blockRef = chunkComponentStore.addEntity(holder, AddReason.SPAWN);
             }
 
-            return new TeleporterSettingsPage(playerRef, blockRef, this.mode, this.activeState);
+            return blockRef != null && blockRef.isValid() ? new TeleporterSettingsPage(playerRef, blockRef, this.mode) : null;
          }
       }
    }

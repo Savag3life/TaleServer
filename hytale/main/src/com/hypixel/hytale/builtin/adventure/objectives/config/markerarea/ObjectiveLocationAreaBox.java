@@ -16,6 +16,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 public class ObjectiveLocationAreaBox extends ObjectiveLocationMarkerArea {
+   @Nonnull
    public static final BuilderCodec<ObjectiveLocationAreaBox> CODEC = BuilderCodec.builder(ObjectiveLocationAreaBox.class, ObjectiveLocationAreaBox::new)
       .append(
          new KeyedCodec<>("EntryBox", Box.CODEC),
@@ -33,7 +34,9 @@ public class ObjectiveLocationAreaBox extends ObjectiveLocationMarkerArea {
       .add()
       .afterDecode(ObjectiveLocationAreaBox::computeAreaBoxes)
       .build();
+   @Nonnull
    private static final Box DEFAULT_ENTRY_BOX = new Box(-5.0, -5.0, -5.0, 5.0, 5.0, 5.0);
+   @Nonnull
    private static final Box DEFAULT_EXIT_BOX = new Box(-10.0, -10.0, -10.0, 10.0, 10.0, 10.0);
    private Box entryArea;
    private Box exitArea;
@@ -115,7 +118,7 @@ public class ObjectiveLocationAreaBox extends ObjectiveLocationMarkerArea {
 
    private static void getPlayersInArea(
       @Nonnull SpatialResource<Ref<EntityStore>, EntityStore> spatialComponent,
-      List<Ref<EntityStore>> results,
+      @Nonnull List<Ref<EntityStore>> results,
       @Nonnull Vector3d markerPosition,
       @Nonnull Box box
    ) {

@@ -21,23 +21,23 @@ public final class CannedWarpNames {
    }
 
    @Nullable
-   public static String generateCannedWarpName(Ref<ChunkStore> blockRef, String language) {
+   public static String generateCannedWarpName(@Nonnull Ref<ChunkStore> blockRef, @Nonnull String language) {
       String translationKey = generateCannedWarpNameKey(blockRef, language);
       return translationKey == null ? null : I18nModule.get().getMessage(language, translationKey);
    }
 
    @Nullable
-   public static String generateCannedWarpNameKey(Ref<ChunkStore> blockRef, String language) {
+   public static String generateCannedWarpNameKey(@Nonnull Ref<ChunkStore> blockRef, @Nonnull String language) {
       Store<ChunkStore> store = blockRef.getStore();
       World world = store.getExternalData().getWorld();
       BlockModule.BlockStateInfo blockStateInfo = store.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
       Random random = blockStateInfo == null ? new Random() : new Random(blockStateInfo.getIndex());
-      Teleporter teleporter = store.getComponent(blockRef, Teleporter.getComponentType());
-      String wordListKey = teleporter == null ? null : teleporter.getWarpNameWordListKey();
+      Teleporter teleporterComponent = store.getComponent(blockRef, Teleporter.getComponentType());
+      String wordListKey = teleporterComponent == null ? null : teleporterComponent.getWarpNameWordListKey();
       Set<String> existingNames = getWarpNamesInWorld(world);
-      if (teleporter != null) {
-         String ownName = teleporter.getOwnedWarp();
-         if (ownName != null && !teleporter.isCustomName()) {
+      if (teleporterComponent != null) {
+         String ownName = teleporterComponent.getOwnedWarp();
+         if (ownName != null && !teleporterComponent.isCustomName()) {
             existingNames.remove(ownName);
          }
       }
@@ -46,7 +46,7 @@ public final class CannedWarpNames {
    }
 
    @Nonnull
-   private static Set<String> getWarpNamesInWorld(World world) {
+   private static Set<String> getWarpNamesInWorld(@Nonnull World world) {
       Set<String> existingNames = new HashSet<>();
 
       for (Warp warp : TeleportPlugin.get().getWarps().values()) {

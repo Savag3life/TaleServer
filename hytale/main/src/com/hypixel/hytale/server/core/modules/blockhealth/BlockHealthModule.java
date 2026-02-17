@@ -19,7 +19,7 @@ import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockPosition;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.packets.world.UpdateBlockDamage;
 import com.hypixel.hytale.server.core.asset.type.gameplay.WorldConfig;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
@@ -106,7 +106,7 @@ public class BlockHealthModule extends JavaPlugin {
          Store<ChunkStore> store,
          CommandBuffer<ChunkStore> commandBuffer,
          PlayerRef player,
-         @Nonnull List<Packet> results
+         @Nonnull List<ToClientPacket> results
       ) {
          BlockHealthChunk blockHealthChunkComponent = archetypeChunk.getComponent(index, this.blockHealthCunkComponentType);
 

@@ -1,7 +1,9 @@
 package com.hypixel.hytale.protocol.packets.assets;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.ObjectiveTask;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.io.PacketIO;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
@@ -10,14 +12,14 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class UpdateObjectiveTask implements Packet {
+public class UpdateObjectiveTask implements Packet, ToClientPacket {
    public static final int PACKET_ID = 71;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
    public static final int FIXED_BLOCK_SIZE = 21;
    public static final int VARIABLE_FIELD_COUNT = 1;
    public static final int VARIABLE_BLOCK_START = 21;
-   public static final int MAX_SIZE = 16384035;
+   public static final int MAX_SIZE = 1677721600;
    @Nonnull
    public UUID objectiveUuid = new UUID(0L, 0L);
    public int taskIndex;
@@ -27,6 +29,11 @@ public class UpdateObjectiveTask implements Packet {
    @Override
    public int getId() {
       return 71;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public UpdateObjectiveTask() {

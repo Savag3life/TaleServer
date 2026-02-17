@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class AnchorDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<AnchorDensityAsset> CODEC = BuilderCodec.builder(
          AnchorDensityAsset.class, AnchorDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )

@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
 
 public class OffsetPatternAsset extends PatternAsset {
+   @Nonnull
    public static final BuilderCodec<OffsetPatternAsset> CODEC = BuilderCodec.builder(
          OffsetPatternAsset.class, OffsetPatternAsset::new, PatternAsset.ABSTRACT_CODEC
       )

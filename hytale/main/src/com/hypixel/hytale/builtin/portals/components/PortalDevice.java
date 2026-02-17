@@ -11,9 +11,11 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import java.util.UUID;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class PortalDevice implements Component<ChunkStore> {
+   @Nonnull
    public static final BuilderCodec<PortalDevice> CODEC = BuilderCodec.builder(PortalDevice.class, PortalDevice::new)
       .append(new KeyedCodec<>("Config", PortalDeviceConfig.CODEC), (portal, o) -> portal.config = o, portal -> portal.config)
       .add()
@@ -46,6 +48,7 @@ public class PortalDevice implements Component<ChunkStore> {
       return this.baseBlockTypeKey;
    }
 
+   @Nullable
    public BlockType getBaseBlockType() {
       return BlockType.getAssetMap().getAsset(this.baseBlockTypeKey);
    }
@@ -65,7 +68,7 @@ public class PortalDevice implements Component<ChunkStore> {
       }
    }
 
-   public void setDestinationWorld(World world) {
+   public void setDestinationWorld(@Nonnull World world) {
       this.destinationWorldUuid = world.getWorldConfig().getUuid();
    }
 

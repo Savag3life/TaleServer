@@ -32,6 +32,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nonnull;
 
 public class DirectionalGrowthBehaviour extends SpreadGrowthBehaviour {
+   @Nonnull
    public static final BuilderCodec<DirectionalGrowthBehaviour> CODEC = BuilderCodec.builder(
          DirectionalGrowthBehaviour.class, DirectionalGrowthBehaviour::new, BASE_CODEC
       )
@@ -92,9 +93,9 @@ public class DirectionalGrowthBehaviour extends SpreadGrowthBehaviour {
 
    @Override
    public void execute(
-      ComponentAccessor<ChunkStore> commandBuffer,
-      Ref<ChunkStore> sectionRef,
-      Ref<ChunkStore> blockRef,
+      @Nonnull ComponentAccessor<ChunkStore> componentAccessor,
+      @Nonnull Ref<ChunkStore> sectionRef,
+      @Nonnull Ref<ChunkStore> blockRef,
       int worldX,
       int worldY,
       int worldZ,
@@ -103,54 +104,68 @@ public class DirectionalGrowthBehaviour extends SpreadGrowthBehaviour {
       int x = 0;
       int z = 0;
       FastRandom random = new FastRandom();
-      String blockTypeKey = this.blockTypes.get(random).getBlockTypeKey();
-      World world = commandBuffer.getExternalData().getWorld();
-      LocalCachedChunkAccessor chunkAccessor = LocalCachedChunkAccessor.atWorldCoords(world, worldX, worldZ, 1);
+      DirectionalGrowthBehaviour.BlockTypeWeight blockTypeWeight = this.blockTypes.get(random);
+      if (blockTypeWeight != null) {
+         String blockTypeKey = blockTypeWeight.getBlockTypeKey();
+         World world = componentAccessor.getExternalData().getWorld();
+         LocalCachedChunkAccessor chunkAccessor = LocalCachedChunkAccessor.atWorldCoords(world, worldX, worldZ, 1);
 
-      for (int i = 0; i < 100; i++) {
-         if (this.horizontalRange != null) {
-            double angle = (float) (Math.PI * 2) * random.nextFloat();
-            int radius = this.horizontalRange.getInt(random.nextFloat());
-            x = MathUtil.fastRound(radius * TrigMathUtil.cos(angle));
-            z = MathUtil.fastRound(radius * TrigMathUtil.sin(angle));
-         }
-
-         int targetX = worldX + x;
-         int targetZ = worldZ + z;
-         int chunkX = ChunkUtil.chunkCoordinate(targetX);
-         int chunkZ = ChunkUtil.chunkCoordinate(targetZ);
-         WorldChunk chunk = chunkAccessor.getChunkIfInMemory(ChunkUtil.indexChunk(chunkX, chunkZ));
-         if (chunk != null) {
-            int targetY;
-            if (this.verticalRange != null) {
-               int directionValue = switch (this.verticalDirection) {
-                  case DOWNWARDS, UPWARDS -> this.verticalDirection.getValue();
-                  case BOTH -> random.nextBoolean() ? 1 : -1;
-               };
-               targetY = worldY + this.verticalRange.getInt(random.nextFloat()) * directionValue;
-            } else {
-               targetY = chunk.getHeight(targetX, targetZ) + 1;
+         for (int i = 0; i < 100; i++) {
+            if (this.horizontalRange != null) {
+               double angle = (float) (Math.PI * 2) * random.nextFloat();
+               int radius = this.horizontalRange.getInt(random.nextFloat());
+               x = MathUtil.fastRound(radius * TrigMathUtil.cos(angle));
+               z = MathUtil.fastRound(radius * TrigMathUtil.sin(angle));
             }
 
-            if (this.tryPlaceBlock(world, chunk, targetX, targetY, targetZ, blockTypeKey, 0)) {
-               int finalTargetY = targetY;
-               world.execute(() -> {
-                  WorldChunk loadedChunk = chunkAccessor.getChunk(ChunkUtil.indexChunk(chunkX, chunkZ));
-                  if (loadedChunk != null) {
-                     loadedChunk.placeBlock(targetX, finalTargetY, targetZ, blockTypeKey, Rotation.None, Rotation.None, Rotation.None);
-                     decaySpread(commandBuffer, loadedChunk.getBlockComponentChunk(), targetX, finalTargetY, targetZ, newSpreadRate);
-                  }
-               });
-               return;
+            int targetX = worldX + x;
+            int targetZ = worldZ + z;
+            int chunkX = ChunkUtil.chunkCoordinate(targetX);
+            int chunkZ = ChunkUtil.chunkCoordinate(targetZ);
+            long chunkIndex = ChunkUtil.indexChunk(chunkX, chunkZ);
+            WorldChunk worldChunkComponent = chunkAccessor.getChunkIfInMemory(chunkIndex);
+            if (worldChunkComponent != null) {
+               int targetY;
+               if (this.verticalRange != null) {
+                  int directionValue = switch (this.verticalDirection) {
+                     case DOWNWARDS, UPWARDS -> this.verticalDirection.getValue();
+                     case BOTH -> random.nextBoolean() ? 1 : -1;
+                  };
+                  targetY = worldY + this.verticalRange.getInt(random.nextFloat()) * directionValue;
+               } else {
+                  targetY = worldChunkComponent.getHeight(targetX, targetZ) + 1;
+               }
+
+               if (this.tryPlaceBlock(world, worldChunkComponent, targetX, targetY, targetZ, blockTypeKey, 0)) {
+                  int finalTargetY = targetY;
+                  world.execute(() -> {
+                     long loadedChunkIndex = ChunkUtil.indexChunk(chunkX, chunkZ);
+                     WorldChunk loadedChunk = chunkAccessor.getChunk(loadedChunkIndex);
+                     if (loadedChunk != null) {
+                        loadedChunk.placeBlock(targetX, finalTargetY, targetZ, blockTypeKey, Rotation.None, Rotation.None, Rotation.None);
+                        BlockComponentChunk blockComponentChunk = loadedChunk.getBlockComponentChunk();
+                        if (blockComponentChunk != null) {
+                           decaySpread(componentAccessor, blockComponentChunk, targetX, finalTargetY, targetZ, newSpreadRate);
+                        }
+                     }
+                  });
+                  return;
+               }
             }
          }
       }
    }
 
    private static void decaySpread(
-      ComponentAccessor<ChunkStore> commandBuffer, BlockComponentChunk blockComponentChunk, int worldX, int worldY, int worldZ, float newSpreadRate
+      @Nonnull ComponentAccessor<ChunkStore> commandBuffer,
+      @Nonnull BlockComponentChunk blockComponentChunk,
+      int worldX,
+      int worldY,
+      int worldZ,
+      float newSpreadRate
    ) {
-      Ref<ChunkStore> blockRefPlaced = blockComponentChunk.getEntityReference(ChunkUtil.indexBlockInColumn(worldX, worldY, worldZ));
+      int blockIndex = ChunkUtil.indexBlockInColumn(worldX, worldY, worldZ);
+      Ref<ChunkStore> blockRefPlaced = blockComponentChunk.getEntityReference(blockIndex);
       if (blockRefPlaced != null) {
          FarmingBlock farmingPlaced = commandBuffer.getComponent(blockRefPlaced, FarmingBlock.getComponentType());
          if (farmingPlaced != null) {
@@ -159,37 +174,58 @@ public class DirectionalGrowthBehaviour extends SpreadGrowthBehaviour {
       }
    }
 
-   private boolean tryPlaceBlock(@Nonnull World world, @Nonnull WorldChunk chunk, int worldX, int worldY, int worldZ, String blockTypeKey, int rotation) {
+   private boolean tryPlaceBlock(
+      @Nonnull World world, @Nonnull WorldChunk chunk, int worldX, int worldY, int worldZ, @Nonnull String blockTypeKey, int rotation
+   ) {
       if (chunk.getBlock(worldX, worldY, worldZ) != 0) {
          return false;
       } else if (!this.validatePosition(world, worldX, worldY, worldZ)) {
          return false;
       } else {
-         BlockType blockType = BlockType.getAssetMap().getAsset(blockTypeKey);
-         if (blockType == null) {
+         BlockType blockTypeAsset = BlockType.getAssetMap().getAsset(blockTypeKey);
+         if (blockTypeAsset == null) {
             return false;
-         } else if (!chunk.testPlaceBlock(worldX, worldY, worldZ, blockType, rotation)) {
+         } else if (!chunk.testPlaceBlock(worldX, worldY, worldZ, blockTypeAsset, rotation)) {
             return false;
          } else {
-            int cx = chunk.getX();
-            int cz = chunk.getZ();
-            int cy = ChunkUtil.indexSection(worldY);
-            Ref<ChunkStore> sectionRef = world.getChunkStore().getChunkSectionReference(cx, cy, cz);
-            if (sectionRef == null) {
-               return false;
-            } else {
-               Store<ChunkStore> store = world.getChunkStore().getStore();
-               BlockPhysics blockPhysics = store.getComponent(sectionRef, BlockPhysics.getComponentType());
-               FluidSection fluidSection = store.getComponent(sectionRef, FluidSection.getComponentType());
-               BlockSection blockSection = store.getComponent(sectionRef, BlockSection.getComponentType());
-               int filler = blockSection.getFiller(worldX, worldY, worldZ);
+            int chunkX = chunk.getX();
+            int chunkY = ChunkUtil.indexSection(worldY);
+            int chunkZ = chunk.getZ();
+            ChunkStore chunkStore = world.getChunkStore();
+            Ref<ChunkStore> sectionRef = chunkStore.getChunkSectionReference(chunkX, chunkY, chunkZ);
+            if (sectionRef != null && sectionRef.isValid()) {
+               Store<ChunkStore> store = chunkStore.getStore();
+               BlockPhysics blockPhysicsComponent = store.getComponent(sectionRef, BlockPhysics.getComponentType());
+
+               assert blockPhysicsComponent != null;
+
+               FluidSection fluidSectionComponent = store.getComponent(sectionRef, FluidSection.getComponentType());
+
+               assert fluidSectionComponent != null;
+
+               BlockSection blockSectionComponent = store.getComponent(sectionRef, BlockSection.getComponentType());
+
+               assert blockSectionComponent != null;
+
+               int filler = blockSectionComponent.getFiller(worldX, worldY, worldZ);
                BlockPhysicsSystems.CachedAccessor cachedAccessor = BlockPhysicsSystems.CachedAccessor.of(
-                  store, blockSection, blockPhysics, fluidSection, cx, cy, cz, 14
+                  store, blockSectionComponent, blockPhysicsComponent, fluidSectionComponent, chunkX, chunkY, chunkZ, 14
                );
                return BlockPhysicsUtil.testBlockPhysics(
-                     cachedAccessor, blockSection, blockPhysics, fluidSection, worldX, worldY, worldZ, blockType, rotation, filler
+                     cachedAccessor,
+                     blockSectionComponent,
+                     blockPhysicsComponent,
+                     fluidSectionComponent,
+                     worldX,
+                     worldY,
+                     worldZ,
+                     blockTypeAsset,
+                     rotation,
+                     filler
                   )
                   != 0;
+            } else {
+               return false;
             }
          }
       }
@@ -212,7 +248,7 @@ public class DirectionalGrowthBehaviour extends SpreadGrowthBehaviour {
 
    public static class BlockTypeWeight implements IWeightedElement {
       @Nonnull
-      public static BuilderCodec<DirectionalGrowthBehaviour.BlockTypeWeight> CODEC = BuilderCodec.builder(
+      public static final BuilderCodec<DirectionalGrowthBehaviour.BlockTypeWeight> CODEC = BuilderCodec.builder(
             DirectionalGrowthBehaviour.BlockTypeWeight.class, DirectionalGrowthBehaviour.BlockTypeWeight::new
          )
          .append(

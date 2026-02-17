@@ -158,10 +158,14 @@ public class Archetype<ECS_TYPE> implements Query<ECS_TYPE> {
 
    @Nonnull
    public static <ECS_TYPE> Archetype<ECS_TYPE> of(@Nonnull ComponentType<ECS_TYPE, ?> componentTypes) {
-      int index = componentTypes.getIndex();
-      ComponentType<ECS_TYPE, ?>[] arr = new ComponentType[index + 1];
-      arr[index] = componentTypes;
-      return new Archetype<>(index, 1, arr);
+      if (componentTypes == null) {
+         throw new IllegalArgumentException("ComponentType in Archetype cannot be null");
+      } else {
+         int index = componentTypes.getIndex();
+         ComponentType<ECS_TYPE, ?>[] arr = new ComponentType[index + 1];
+         arr[index] = componentTypes;
+         return new Archetype<>(index, 1, arr);
+      }
    }
 
    @SafeVarargs
@@ -169,13 +173,20 @@ public class Archetype<ECS_TYPE> implements Query<ECS_TYPE> {
       if (componentTypes.length == 0) {
          return EMPTY;
       } else {
+         for (int i = 0; i < componentTypes.length; i++) {
+            ComponentType<ECS_TYPE, ?> componentType = componentTypes[i];
+            if (componentType == null) {
+               throw new IllegalArgumentException("ComponentType in Archetype cannot be null (Index: " + i + ")");
+            }
+         }
+
          ComponentRegistry<ECS_TYPE> registry = componentTypes[0].getRegistry();
          int minIndex = Integer.MAX_VALUE;
          int maxIndex = Integer.MIN_VALUE;
 
-         for (int i = 0; i < componentTypes.length; i++) {
-            componentTypes[i].validateRegistry(registry);
-            int index = componentTypes[i].getIndex();
+         for (int ix = 0; ix < componentTypes.length; ix++) {
+            componentTypes[ix].validateRegistry(registry);
+            int index = componentTypes[ix].getIndex();
             if (index < minIndex) {
                minIndex = index;
             }
@@ -184,8 +195,8 @@ public class Archetype<ECS_TYPE> implements Query<ECS_TYPE> {
                maxIndex = index;
             }
 
-            for (int n = i + 1; n < componentTypes.length; n++) {
-               if (componentTypes[i] == componentTypes[n]) {
+            for (int n = ix + 1; n < componentTypes.length; n++) {
+               if (componentTypes[ix] == componentTypes[n]) {
                   throw new IllegalArgumentException("ComponentType provided multiple times! " + Arrays.toString((Object[])componentTypes));
                }
             }

@@ -10,17 +10,20 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public abstract class PortalWorldCommandBase extends AbstractWorldCommand {
-   public PortalWorldCommandBase(String name, String description) {
+   @Nonnull
+   private static final Message MESSAGE_SERVER_COMMANDS_PORTALS_NOT_IN_PORTAL = Message.translation("server.commands.portals.notInPortal");
+
+   public PortalWorldCommandBase(@Nonnull String name, @Nonnull String description) {
       super(name, description);
    }
 
    @Override
    protected final void execute(@Nonnull CommandContext context, @Nonnull World world, @Nonnull Store<EntityStore> store) {
-      PortalWorld portalWorld = store.getResource(PortalWorld.getResourceType());
-      if (!portalWorld.exists()) {
-         context.sendMessage(Message.translation("server.commands.portals.notInPortal"));
+      PortalWorld portalWorldResource = store.getResource(PortalWorld.getResourceType());
+      if (!portalWorldResource.exists()) {
+         context.sendMessage(MESSAGE_SERVER_COMMANDS_PORTALS_NOT_IN_PORTAL);
       } else {
-         this.execute(context, world, portalWorld, store);
+         this.execute(context, world, portalWorldResource, store);
       }
    }
 

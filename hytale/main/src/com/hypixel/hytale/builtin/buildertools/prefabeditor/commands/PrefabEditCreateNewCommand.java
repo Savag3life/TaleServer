@@ -5,6 +5,7 @@ import com.hypixel.hytale.builtin.buildertools.prefabeditor.PrefabEditorCreation
 import com.hypixel.hytale.builtin.buildertools.prefabeditor.enums.PrefabRootDirectory;
 import com.hypixel.hytale.builtin.buildertools.prefabeditor.enums.WorldGenType;
 import com.hypixel.hytale.codec.validation.Validators;
+import com.hypixel.hytale.common.util.PathUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -72,11 +73,8 @@ public class PrefabEditCreateNewCommand extends AbstractAsyncPlayerCommand {
          prefabName = prefabName + ".prefab.json";
       }
 
-      Path prefabPath = prefabBaseDirectory.resolve(prefabName);
-      if (prefabPath.toString().endsWith("/")) {
-         context.sendMessage(MESSAGE_COMMANDS_EDIT_PREFAB_NEW_ERRORS_NOT_A_FILE);
-         return CompletableFuture.completedFuture(null);
-      } else {
+      Path prefabPath = PathUtil.resolvePathWithinDir(prefabBaseDirectory, prefabName);
+      if (prefabPath != null && !prefabPath.toString().endsWith("/")) {
          PrefabEditorCreationSettings prefabEditorLoadCommandSettings = new PrefabEditorCreationSettings(
             this.prefabPathArg.get(context),
             List.of(prefabName),
@@ -98,6 +96,9 @@ public class PrefabEditCreateNewCommand extends AbstractAsyncPlayerCommand {
          return BuilderToolsPlugin.get()
             .getPrefabEditSessionManager()
             .createEditSessionForNewPrefab(ref, playerComponent, prefabEditorLoadCommandSettings, store);
+      } else {
+         context.sendMessage(MESSAGE_COMMANDS_EDIT_PREFAB_NEW_ERRORS_NOT_A_FILE);
+         return CompletableFuture.completedFuture(null);
       }
    }
 }

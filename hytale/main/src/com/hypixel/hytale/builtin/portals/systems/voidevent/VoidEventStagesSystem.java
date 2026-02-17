@@ -39,29 +39,31 @@ public class VoidEventStagesSystem extends DelayedEntitySystem<EntityStore> {
          if (voidEvent != null) {
             World world = store.getExternalData().getWorld();
             VoidEventConfig voidEventConfig = portalWorld.getVoidEventConfig();
-            double elapsedSecondsInPortal = portalWorld.getElapsedSeconds(world);
-            int timeLimitSeconds = portalWorld.getTimeLimitSeconds();
-            int shouldStartAfter = voidEventConfig.getShouldStartAfterSeconds(timeLimitSeconds);
-            int elapsedSecondsInEvent = (int)Math.max(0.0, elapsedSecondsInPortal - shouldStartAfter);
-            VoidEventStage currentStage = voidEvent.getActiveStage();
-            VoidEventStage desiredStage = this.computeAppropriateStage(voidEventConfig, elapsedSecondsInEvent);
-            if (currentStage != desiredStage) {
-               if (currentStage != null) {
-                  stopStage(currentStage, world, store, commandBuffer);
-               }
+            if (voidEventConfig != null) {
+               double elapsedSecondsInPortal = portalWorld.getElapsedSeconds(world);
+               int timeLimitSeconds = portalWorld.getTimeLimitSeconds();
+               int shouldStartAfter = voidEventConfig.getShouldStartAfterSeconds(timeLimitSeconds);
+               int elapsedSecondsInEvent = (int)Math.max(0.0, elapsedSecondsInPortal - shouldStartAfter);
+               VoidEventStage currentStage = voidEvent.getActiveStage();
+               VoidEventStage desiredStage = computeAppropriateStage(voidEventConfig, elapsedSecondsInEvent);
+               if (currentStage != desiredStage) {
+                  if (currentStage != null) {
+                     stopStage(currentStage, store, commandBuffer);
+                  }
 
-               if (desiredStage != null) {
-                  startStage(desiredStage, world, store, commandBuffer);
-               }
+                  if (desiredStage != null) {
+                     startStage(desiredStage, store, commandBuffer);
+                  }
 
-               voidEvent.setActiveStage(desiredStage);
+                  voidEvent.setActiveStage(desiredStage);
+               }
             }
          }
       }
    }
 
    @Nullable
-   private VoidEventStage computeAppropriateStage(VoidEventConfig config, int elapsedSeconds) {
+   private static VoidEventStage computeAppropriateStage(@Nonnull VoidEventConfig config, int elapsedSeconds) {
       List<VoidEventStage> stages = config.getStagesSortedByStartTime();
 
       for (int i = stages.size() - 1; i >= 0; i--) {
@@ -74,7 +76,7 @@ public class VoidEventStagesSystem extends DelayedEntitySystem<EntityStore> {
       return null;
    }
 
-   public static void startStage(VoidEventStage stage, World world, Store<EntityStore> store, CommandBuffer<EntityStore> commandBuffer) {
+   public static void startStage(@Nonnull VoidEventStage stage, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
       HytaleLogger.getLogger().at(Level.INFO).log("Starting stage SecondsInto=" + stage.getSecondsInto() + " in portal void event");
       String forcedWeatherId = stage.getForcedWeatherId();
       if (forcedWeatherId != null) {
@@ -83,7 +85,7 @@ public class VoidEventStagesSystem extends DelayedEntitySystem<EntityStore> {
       }
    }
 
-   public static void stopStage(VoidEventStage stage, World world, Store<EntityStore> store, CommandBuffer<EntityStore> commandBuffer) {
+   public static void stopStage(@Nonnull VoidEventStage stage, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
       HytaleLogger.getLogger().at(Level.INFO).log("Stopping stage SecondsInto=" + stage.getSecondsInto() + " in portal void event");
       String forcedWeatherId = stage.getForcedWeatherId();
       if (forcedWeatherId != null) {

@@ -7,6 +7,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class ZValueDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<ZValueDensityAsset> CODEC = BuilderCodec.builder(
          ZValueDensityAsset.class, ZValueDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )

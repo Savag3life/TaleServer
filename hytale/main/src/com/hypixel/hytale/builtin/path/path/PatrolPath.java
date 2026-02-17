@@ -83,7 +83,9 @@ public class PatrolPath implements IPrefabPath {
 
       for (int i = 0; i < index; i++) {
          PatrolPathMarkerEntity wp = (PatrolPathMarkerEntity)this.waypoints.get(i);
-         wp.markNeedsSave();
+         if (wp != null) {
+            wp.markNeedsSave();
+         }
       }
 
       this.pathChanged.set(true);
@@ -94,13 +96,19 @@ public class PatrolPath implements IPrefabPath {
    public void registerNewWaypointAt(int index, @Nonnull IPrefabPathWaypoint waypoint, int worldGenId) {
       for (int i = 0; i < index; i++) {
          PatrolPathMarkerEntity wp = (PatrolPathMarkerEntity)this.waypoints.get(i);
-         wp.markNeedsSave();
+         if (wp != null) {
+            wp.markNeedsSave();
+         }
       }
 
-      for (int i = this.waypoints.size() - 1; i >= index; i--) {
-         PatrolPathMarkerEntity wp = (PatrolPathMarkerEntity)this.waypoints.remove(i);
-         wp.setOrder((short)(i + 1));
-         this.waypoints.put(i + 1, wp);
+      for (int ix = this.waypoints.size() - 1; ix >= index; ix--) {
+         PatrolPathMarkerEntity wp = (PatrolPathMarkerEntity)this.waypoints.remove(ix);
+         if (wp == null) {
+            this.waypoints.remove(ix + 1);
+         } else {
+            wp.setOrder((short)(ix + 1));
+            this.waypoints.put(ix + 1, wp);
+         }
       }
 
       this.length.getAndIncrement();
@@ -130,13 +138,19 @@ public class PatrolPath implements IPrefabPath {
 
       for (int i = 0; i < index; i++) {
          PatrolPathMarkerEntity wp = (PatrolPathMarkerEntity)this.waypoints.get(i);
-         wp.markNeedsSave();
+         if (wp != null) {
+            wp.markNeedsSave();
+         }
       }
 
-      for (int i = index; i < this.waypoints.size(); i++) {
-         PatrolPathMarkerEntity wp = (PatrolPathMarkerEntity)this.waypoints.remove(i + 1);
-         wp.setOrder(i);
-         this.waypoints.put(i, wp);
+      for (int ix = index; ix < this.waypoints.size(); ix++) {
+         PatrolPathMarkerEntity wp = (PatrolPathMarkerEntity)this.waypoints.remove(ix + 1);
+         if (wp == null) {
+            this.waypoints.remove(ix);
+         } else {
+            wp.setOrder(ix);
+            this.waypoints.put(ix, wp);
+         }
       }
 
       this.pathChanged.set(true);

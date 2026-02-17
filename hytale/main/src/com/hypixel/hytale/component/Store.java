@@ -611,7 +611,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
    @Nonnull
    public Holder<ECS_TYPE> copyEntity(@Nonnull Ref<ECS_TYPE> ref, @Nonnull Holder<ECS_TYPE> holder) {
       this.assertThread();
-      ref.validate();
+      ref.validate(this);
       int refIndex = ref.getIndex();
       int archetypeIndex = this.entityToArchetypeChunk[refIndex];
       return this.archetypeChunks[archetypeIndex].copyEntity(this.entityChunkIndex[refIndex], holder);
@@ -625,7 +625,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
    @Nonnull
    public Holder<ECS_TYPE> copySerializableEntity(@Nonnull Ref<ECS_TYPE> ref, @Nonnull Holder<ECS_TYPE> holder) {
       this.assertThread();
-      ref.validate();
+      ref.validate(this);
       int refIndex = ref.getIndex();
       int archetypeIndex = this.entityToArchetypeChunk[refIndex];
       return this.archetypeChunks[archetypeIndex].copySerializableEntity(this.registry.getData(), this.entityChunkIndex[refIndex], holder);
@@ -635,14 +635,14 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
    @Override
    public Archetype<ECS_TYPE> getArchetype(@Nonnull Ref<ECS_TYPE> ref) {
       this.assertThread();
-      ref.validate();
+      ref.validate(this);
       int archetypeIndex = this.entityToArchetypeChunk[ref.getIndex()];
       return this.archetypeChunks[archetypeIndex].getArchetype();
    }
 
    @Nonnull
    protected Archetype<ECS_TYPE> __internal_getArchetype(@Nonnull Ref<ECS_TYPE> ref) {
-      ref.validate();
+      ref.validate(this);
       int archetypeIndex = this.entityToArchetypeChunk[ref.getIndex()];
       return this.archetypeChunks[archetypeIndex].getArchetype();
    }
@@ -662,7 +662,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
    Holder<ECS_TYPE> removeEntity(@Nonnull Ref<ECS_TYPE> ref, @Nonnull Holder<ECS_TYPE> holder, @Nonnull RemoveReason reason, @Nullable Throwable proxyReason) {
       this.assertThread();
       this.assertWriteProcessing();
-      ref.validate();
+      ref.validate(this);
       CommandBuffer<ECS_TYPE> commandBuffer = this.takeCommandBuffer();
       int entityIndex = ref.getIndex();
       int archetypeIndex = this.entityToArchetypeChunk[entityIndex];
@@ -766,7 +766,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
          throw new IllegalArgumentException("EntityHolder start and length exceed array length!");
       } else {
          for (int i = refStart; i < refEnd; i++) {
-            refArr[i].validate();
+            refArr[i].validate(this);
          }
 
          this.assertThread();
@@ -914,7 +914,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
    public <T extends Component<ECS_TYPE>> void addComponent(@Nonnull Ref<ECS_TYPE> ref, @Nonnull ComponentType<ECS_TYPE, T> componentType, @Nonnull T component) {
       this.assertThread();
       this.assertWriteProcessing();
-      ref.validate();
+      ref.validate(this);
       componentType.validateRegistry(this.registry);
       componentType.validate();
       Objects.requireNonNull(component);
@@ -936,7 +936,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
    ) {
       this.assertThread();
       this.assertWriteProcessing();
-      ref.validate();
+      ref.validate(this);
       componentType.validateRegistry(this.registry);
       componentType.validate();
       Objects.requireNonNull(component);
@@ -973,7 +973,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
    public <T extends Component<ECS_TYPE>> void putComponent(@Nonnull Ref<ECS_TYPE> ref, @Nonnull ComponentType<ECS_TYPE, T> componentType, @Nonnull T component) {
       this.assertThread();
       this.assertWriteProcessing();
-      ref.validate();
+      ref.validate(this);
       componentType.validateRegistry(this.registry);
       componentType.validate();
       Objects.requireNonNull(component);
@@ -1018,7 +1018,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
 
    @Nullable
    protected <T extends Component<ECS_TYPE>> T __internal_getComponent(@Nonnull Ref<ECS_TYPE> ref, @Nonnull ComponentType<ECS_TYPE, T> componentType) {
-      ref.validate();
+      ref.validate(this);
       componentType.validateRegistry(this.registry);
       componentType.validate();
       int archetypeIndex = this.entityToArchetypeChunk[ref.getIndex()];
@@ -1030,7 +1030,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
    public <T extends Component<ECS_TYPE>> void removeComponent(@Nonnull Ref<ECS_TYPE> ref, @Nonnull ComponentType<ECS_TYPE, T> componentType) {
       this.assertThread();
       this.assertWriteProcessing();
-      ref.validate();
+      ref.validate(this);
       componentType.validateRegistry(this.registry);
       componentType.validate();
       CommandBuffer<ECS_TYPE> commandBuffer = this.takeCommandBuffer();
@@ -1084,7 +1084,7 @@ public class Store<ECS_TYPE> implements ComponentAccessor<ECS_TYPE> {
    public <T extends Component<ECS_TYPE>> boolean removeComponentIfExists(@Nonnull Ref<ECS_TYPE> ref, @Nonnull ComponentType<ECS_TYPE, T> componentType) {
       this.assertThread();
       this.assertWriteProcessing();
-      ref.validate();
+      ref.validate(this);
       componentType.validateRegistry(this.registry);
       componentType.validate();
       CommandBuffer<ECS_TYPE> commandBuffer = this.takeCommandBuffer();

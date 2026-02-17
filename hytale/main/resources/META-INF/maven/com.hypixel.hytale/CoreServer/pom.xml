@@ -88,6 +88,12 @@
             <scope>compile</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.joml</groupId>
+            <artifactId>joml</artifactId>
+            <version>1.10.8</version>
+        </dependency>
+
         <!-- JWT signature verification for OAuth2 auth flow -->
         <!-- Used by Spring Security; actively maintained by Connect2ID -->
         <!-- JWT parsing and signature verification -->
@@ -103,6 +109,30 @@
             <artifactId>tink</artifactId>
             <version>1.20.0</version>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>10.4.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>10.4.2</version>
+            <classifier>linux64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>10.4.2</version>
+            <classifier>osx</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>10.4.2</version>
+            <classifier>win64</classifier>
         </dependency>
 
         <dependency>
@@ -221,15 +251,17 @@
                         <configuration>
                             <target>
                                 <mkdir dir="${project.build.directory}/generated-sources/auth-config/com/hypixel/hytale/server/core/auth"/>
-                                <echo file="${project.build.directory}/generated-sources/auth-config/com/hypixel/hytale/server/core/auth/AuthConfigGenerated.java">// Auto-generated at build time - do not edit
-package com.hypixel.hytale.server.core.auth;
+                                <echo
+                                    file="${project.build.directory}/generated-sources/auth-config/com/hypixel/hytale/server/core/auth/AuthConfigGenerated.java">
+                                    // Auto-generated at build time - do not edit
+                                    package com.hypixel.hytale.server.core.auth;
 
-final class AuthConfigGenerated {
-    static final String DOMAIN = "${auth.domain}";
-    static final String ENVIRONMENT = "${hytale.environment}";
-    private AuthConfigGenerated() {}
-}
-</echo>
+                                    final class AuthConfigGenerated {
+                                    static final String DOMAIN = "${auth.domain}";
+                                    static final String ENVIRONMENT = "${hytale.environment}";
+                                    private AuthConfigGenerated() {}
+                                    }
+                                </echo>
                             </target>
                         </configuration>
                     </execution>
@@ -292,23 +324,4 @@ final class AuthConfigGenerated {
             </properties>
         </profile>
     </profiles>
-
-    <!--<profiles>
-        <profile>
-            <id>yjp</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.yourkit</groupId>
-                    <artifactId>yjp-controller-api-redist</artifactId>
-                    <version>LATEST</version>
-                    <scope>system</scope>
-                    <systemPath>${project.basedir}/libs/yjp-controller-api-redist.jar</systemPath>
-                    <optional>true</optional>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>-->
 </project>

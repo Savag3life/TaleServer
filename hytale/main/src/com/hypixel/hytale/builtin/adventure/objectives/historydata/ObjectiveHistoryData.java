@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
 public final class ObjectiveHistoryData extends CommonObjectiveHistoryData {
+   @Nonnull
    public static final BuilderCodec<ObjectiveHistoryData> CODEC = BuilderCodec.builder(ObjectiveHistoryData.class, ObjectiveHistoryData::new, BASE_CODEC)
       .append(
          new KeyedCodec<>("Rewards", new ArrayCodec<>(ObjectiveRewardHistoryData.CODEC, ObjectiveRewardHistoryData[]::new)),

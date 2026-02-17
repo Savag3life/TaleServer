@@ -17,6 +17,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public class DialogPage extends InteractiveCustomUIPage<DialogPage.DialogPageEventData> {
+   @Nonnull
    public static final String LAYOUT = "Pages/DialogPage.ui";
    private final UseEntityObjectiveTaskAsset.DialogOptions dialogOptions;
 
@@ -37,10 +38,13 @@ public class DialogPage extends InteractiveCustomUIPage<DialogPage.DialogPageEve
 
    public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull DialogPage.DialogPageEventData data) {
       Player playerComponent = store.getComponent(ref, Player.getComponentType());
-      playerComponent.getPageManager().setPage(ref, store, Page.None);
+      if (playerComponent != null) {
+         playerComponent.getPageManager().setPage(ref, store, Page.None);
+      }
    }
 
    public static class DialogPageEventData {
+      @Nonnull
       public static final BuilderCodec<DialogPage.DialogPageEventData> CODEC = BuilderCodec.builder(
             DialogPage.DialogPageEventData.class, DialogPage.DialogPageEventData::new
          )

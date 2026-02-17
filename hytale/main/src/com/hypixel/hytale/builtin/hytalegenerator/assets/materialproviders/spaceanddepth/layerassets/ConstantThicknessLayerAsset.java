@@ -12,6 +12,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class ConstantThicknessLayerAsset extends LayerAsset {
+   @Nonnull
    public static final BuilderCodec<ConstantThicknessLayerAsset> CODEC = BuilderCodec.builder(
          ConstantThicknessLayerAsset.class, ConstantThicknessLayerAsset::new, LayerAsset.ABSTRACT_CODEC
       )
@@ -21,7 +22,7 @@ public class ConstantThicknessLayerAsset extends LayerAsset {
       .append(new KeyedCodec<>("Material", MaterialProviderAsset.CODEC, true), (t, k) -> t.materialProviderAsset = k, k -> k.materialProviderAsset)
       .add()
       .build();
-   private int thickness = 0;
+   private int thickness;
    private MaterialProviderAsset materialProviderAsset = new ConstantMaterialProviderAsset();
 
    @Nonnull

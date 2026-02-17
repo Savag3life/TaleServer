@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class InverterCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<InverterCurveAsset> CODEC = BuilderCodec.builder(
          InverterCurveAsset.class, InverterCurveAsset::new, CurveAsset.ABSTRACT_CODEC
       )

@@ -3,6 +3,7 @@ package com.hypixel.hytale.server.core.universe.datastore;
 import com.hypixel.hytale.codec.ExtraInfo;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.util.RawJsonReader;
+import com.hypixel.hytale.common.util.PathUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.util.BsonUtil;
@@ -33,20 +34,26 @@ public class DiskDataStore<T> implements DataStore<T> {
 
    public DiskDataStore(@Nonnull String path, BuilderCodec<T> codec) {
       this.logger = HytaleLogger.get("DataStore|" + path);
-      this.path = Universe.get().getPath().resolve(path);
-      this.codec = codec;
-      if (Files.isDirectory(this.path)) {
-         try (DirectoryStream<Path> paths = Files.newDirectoryStream(this.path, "*.bson")) {
-            for (Path oldPath : paths) {
-               Path newPath = getPathFromId(this.path, getIdFromPath(oldPath));
+      Path universePath = Universe.get().getPath();
+      Path resolved = PathUtil.resolvePathWithinDir(universePath, path);
+      if (resolved == null) {
+         throw new IllegalStateException("Data store path must be within universe directory: " + path);
+      } else {
+         this.path = resolved;
+         this.codec = codec;
+         if (Files.isDirectory(this.path)) {
+            try (DirectoryStream<Path> paths = Files.newDirectoryStream(this.path, "*.bson")) {
+               for (Path oldPath : paths) {
+                  Path newPath = getPathFromId(this.path, getIdFromPath(oldPath));
 
-               try {
-                  Files.move(oldPath, newPath);
-               } catch (IOException var9) {
+                  try {
+                     Files.move(oldPath, newPath);
+                  } catch (IOException var11) {
+                  }
                }
+            } catch (IOException var13) {
+               ((HytaleLogger.Api)this.logger.at(Level.SEVERE).withCause(var13)).log("Failed to migrate files form .bson to .json!");
             }
-         } catch (IOException var11) {
-            ((HytaleLogger.Api)this.logger.at(Level.SEVERE).withCause(var11)).log("Failed to migrate files form .bson to .json!");
          }
       }
    }
@@ -126,12 +133,20 @@ public class DiskDataStore<T> implements DataStore<T> {
 
    @Nonnull
    protected static Path getPathFromId(@Nonnull Path path, String id) {
-      return path.resolve(id + ".json");
+      if (!PathUtil.isValidName(id)) {
+         throw new IllegalArgumentException("Invalid ID: " + id);
+      } else {
+         return path.resolve(id + ".json");
+      }
    }
 
    @Nonnull
    protected static Path getBackupPathFromId(@Nonnull Path path, String id) {
-      return path.resolve(id + ".json.bak");
+      if (!PathUtil.isValidName(id)) {
+         throw new IllegalArgumentException("Invalid ID: " + id);
+      } else {
+         return path.resolve(id + ".json.bak");
+      }
    }
 
    @Nonnull

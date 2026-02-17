@@ -321,6 +321,8 @@ public class PrefabCommand extends AbstractCommandCollection {
       private final FlagArg emptyFlag = this.withFlagArg("empty", "server.commands.prefab.save.empty.desc");
       @Nonnull
       private final FlagArg playerAnchorFlag = this.withFlagArg("playerAnchor", "server.commands.prefab.save.playerAnchor.desc");
+      @Nonnull
+      private final FlagArg clearSupportFlag = this.withFlagArg("clearSupport", "server.commands.editprefab.save.clearSupport.desc");
 
       public PrefabSaveDirectCommand() {
          super("server.commands.prefab.save.desc");
@@ -338,11 +340,12 @@ public class PrefabCommand extends AbstractCommandCollection {
          boolean overwrite = this.overwriteFlag.get(context);
          boolean entities = this.entitiesFlag.get(context);
          boolean empty = this.emptyFlag.get(context);
+         boolean clearSupport = this.clearSupportFlag.get(context);
          Vector3i playerAnchor = this.getPlayerAnchor(ref, store, this.playerAnchorFlag.get(context));
          BuilderToolsPlugin.addToQueue(
             playerComponent,
             playerRef,
-            (r, s, componentAccessor) -> s.saveFromSelection(r, name, true, overwrite, entities, empty, playerAnchor, componentAccessor)
+            (r, s, componentAccessor) -> s.saveFromSelection(r, name, true, overwrite, entities, empty, playerAnchor, clearSupport, componentAccessor)
          );
       }
 

@@ -15,6 +15,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class CuboidDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<CuboidDensityAsset> CODEC = BuilderCodec.builder(
          CuboidDensityAsset.class, CuboidDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -40,7 +41,7 @@ public class CuboidDensityAsset extends DensityAsset {
    private Vector3d scaleVector = new Vector3d(1.0, 1.0, 1.0);
    @Nonnull
    private Vector3d newYAxis = new Vector3d(0.0, 1.0, 0.0);
-   private double spinAngle = 0.0;
+   private double spinAngle;
 
    @Nonnull
    @Override

@@ -2,7 +2,6 @@ package com.hypixel.hytale.builtin.hytalegenerator.positionproviders.cached;
 
 import com.hypixel.hytale.builtin.hytalegenerator.VectorUtil;
 import com.hypixel.hytale.builtin.hytalegenerator.positionproviders.PositionProvider;
-import com.hypixel.hytale.builtin.hytalegenerator.threadindexer.WorkerIndexer;
 import com.hypixel.hytale.math.util.HashUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -13,13 +12,13 @@ public class CachedPositionProvider extends PositionProvider {
    @Nonnull
    private final PositionProvider positionProvider;
    private final int sectionSize;
-   private WorkerIndexer.Data<CacheThreadMemory> threadData;
+   private CacheThreadMemory cache;
 
-   public CachedPositionProvider(@Nonnull PositionProvider positionProvider, int sectionSize, int cacheSize, boolean useInternalThreadData, int threadCount) {
-      if (sectionSize > 0 && cacheSize >= 0 && threadCount > 0) {
+   public CachedPositionProvider(@Nonnull PositionProvider positionProvider, int sectionSize, int cacheSize, boolean useInternalThreadData) {
+      if (sectionSize > 0 && cacheSize >= 0) {
          this.positionProvider = positionProvider;
          this.sectionSize = sectionSize;
-         this.threadData = new WorkerIndexer.Data<>(threadCount, () -> new CacheThreadMemory(cacheSize));
+         this.cache = new CacheThreadMemory(cacheSize);
       } else {
          throw new IllegalArgumentException();
       }
@@ -31,7 +30,6 @@ public class CachedPositionProvider extends PositionProvider {
    }
 
    public void get(@Nonnull PositionProvider.Context context) {
-      CacheThreadMemory cachedData = this.threadData.get(context.workerId);
       Vector3i minSection = this.sectionAddress(context.minInclusive);
       Vector3i maxSection = this.sectionAddress(context.maxExclusive);
       Vector3i sectionAddress = minSection.clone();
@@ -40,20 +38,20 @@ public class CachedPositionProvider extends PositionProvider {
          for (sectionAddress.z = minSection.z; sectionAddress.z <= maxSection.z; sectionAddress.z++) {
             for (sectionAddress.y = minSection.y; sectionAddress.y <= maxSection.y; sectionAddress.y++) {
                long key = HashUtil.hash(sectionAddress.x, sectionAddress.y, sectionAddress.z);
-               Vector3d[] section = cachedData.sections.get(key);
+               Vector3d[] section = this.cache.sections.get(key);
                if (section == null) {
                   Vector3d sectionMin = this.sectionMin(sectionAddress);
                   Vector3d sectionMax = sectionMin.clone().add(this.sectionSize, this.sectionSize, this.sectionSize);
                   ArrayList<Vector3d> generatedPositions = new ArrayList<>();
-                  PositionProvider.Context childContext = new PositionProvider.Context(sectionMin, sectionMax, generatedPositions::add, null, context.workerId);
+                  PositionProvider.Context childContext = new PositionProvider.Context(sectionMin, sectionMax, generatedPositions::add, null);
                   this.positionProvider.positionsIn(childContext);
                   section = new Vector3d[generatedPositions.size()];
                   generatedPositions.toArray(section);
-                  cachedData.sections.put(key, section);
-                  cachedData.expirationList.addFirst(key);
-                  if (cachedData.expirationList.size() > cachedData.size) {
-                     long removedKey = cachedData.expirationList.removeLast();
-                     cachedData.sections.remove(removedKey);
+                  this.cache.sections.put(key, section);
+                  this.cache.expirationList.addFirst(key);
+                  if (this.cache.expirationList.size() > this.cache.size) {
+                     long removedKey = this.cache.expirationList.removeLast();
+                     this.cache.sections.remove(removedKey);
                   }
                }
 

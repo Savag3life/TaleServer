@@ -17,13 +17,15 @@ import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import javax.annotation.Nonnull;
 
 public final class BlockMountAPI {
    private BlockMountAPI() {
    }
 
+   @Nonnull
    public static BlockMountAPI.BlockMountResult mountOnBlock(
-      Ref<EntityStore> entity, CommandBuffer<EntityStore> commandBuffer, Vector3i targetBlock, Vector3f interactPos
+      @Nonnull Ref<EntityStore> entity, @Nonnull CommandBuffer<EntityStore> commandBuffer, @Nonnull Vector3i targetBlock, @Nonnull Vector3f interactPos
    ) {
       MountedComponent existingMounted = commandBuffer.getComponent(entity, MountedComponent.getComponentType());
       if (existingMounted != null) {

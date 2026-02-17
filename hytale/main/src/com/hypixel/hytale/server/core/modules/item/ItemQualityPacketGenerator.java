@@ -1,7 +1,7 @@
 package com.hypixel.hytale.server.core.modules.item;
 
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.UpdateType;
 import com.hypixel.hytale.protocol.packets.assets.UpdateItemQualities;
 import com.hypixel.hytale.server.core.asset.packet.SimpleAssetPacketGenerator;
@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
 
 public class ItemQualityPacketGenerator extends SimpleAssetPacketGenerator<String, ItemQuality, IndexedLookupTableAssetMap<String, ItemQuality>> {
    @Nonnull
-   public Packet generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, ItemQuality> assetMap, @Nonnull Map<String, ItemQuality> assets) {
+   public ToClientPacket generateInitPacket(@Nonnull IndexedLookupTableAssetMap<String, ItemQuality> assetMap, @Nonnull Map<String, ItemQuality> assets) {
       UpdateItemQualities packet = new UpdateItemQualities();
       packet.type = UpdateType.Init;
       packet.itemQualities = new Int2ObjectOpenHashMap();
@@ -34,7 +34,9 @@ public class ItemQualityPacketGenerator extends SimpleAssetPacketGenerator<Strin
    }
 
    @Nonnull
-   protected Packet generateUpdatePacket(@Nonnull IndexedLookupTableAssetMap<String, ItemQuality> assetMap, @Nonnull Map<String, ItemQuality> loadedAssets) {
+   protected ToClientPacket generateUpdatePacket(
+      @Nonnull IndexedLookupTableAssetMap<String, ItemQuality> assetMap, @Nonnull Map<String, ItemQuality> loadedAssets
+   ) {
       UpdateItemQualities packet = new UpdateItemQualities();
       packet.type = UpdateType.AddOrUpdate;
       packet.itemQualities = new Int2ObjectOpenHashMap();
@@ -54,7 +56,7 @@ public class ItemQualityPacketGenerator extends SimpleAssetPacketGenerator<Strin
    }
 
    @Nonnull
-   protected Packet generateRemovePacket(@Nonnull IndexedLookupTableAssetMap<String, ItemQuality> assetMap, @Nonnull Set<String> removed) {
+   protected ToClientPacket generateRemovePacket(@Nonnull IndexedLookupTableAssetMap<String, ItemQuality> assetMap, @Nonnull Set<String> removed) {
       UpdateItemQualities packet = new UpdateItemQualities();
       packet.type = UpdateType.Remove;
       packet.itemQualities = new Int2ObjectOpenHashMap();

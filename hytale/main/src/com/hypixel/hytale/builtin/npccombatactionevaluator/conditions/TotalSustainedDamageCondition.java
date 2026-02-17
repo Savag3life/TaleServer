@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.npc.decisionmaker.core.conditions.base.ScaledCu
 import javax.annotation.Nonnull;
 
 public class TotalSustainedDamageCondition extends ScaledCurveCondition {
+   @Nonnull
    public static final BuilderCodec<TotalSustainedDamageCondition> CODEC = BuilderCodec.builder(
          TotalSustainedDamageCondition.class, TotalSustainedDamageCondition::new, ScaledCurveCondition.ABSTRACT_CODEC
       )
@@ -28,8 +29,8 @@ public class TotalSustainedDamageCondition extends ScaledCurveCondition {
       CommandBuffer<EntityStore> commandBuffer,
       EvaluationContext context
    ) {
-      DamageMemory memory = archetypeChunk.getComponent(selfIndex, DAMAGE_MEMORY_COMPONENT_TYPE);
-      return memory.getTotalCombatDamage();
+      DamageMemory damageMemoryComponent = archetypeChunk.getComponent(selfIndex, DAMAGE_MEMORY_COMPONENT_TYPE);
+      return damageMemoryComponent == null ? Double.MAX_VALUE : damageMemoryComponent.getTotalCombatDamage();
    }
 
    @Override

@@ -13,7 +13,6 @@ import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.protocol.Direction;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.protocol.SoundCategory;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.model.config.Model;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.InteractionChain;
@@ -65,7 +64,6 @@ public class ProjectileModule extends JavaPlugin {
       .depends(CollisionModule.class)
       .depends(EntityModule.class)
       .build();
-   public static final Message MESSAGE_GENERAL_UNKNOWN = Message.translation("server.general.unknown");
    private static ProjectileModule instance;
    private ComponentType<EntityStore, Projectile> projectileComponentType;
    private ComponentType<EntityStore, StandardPhysicsProvider> standardPhysicsProviderComponentType;

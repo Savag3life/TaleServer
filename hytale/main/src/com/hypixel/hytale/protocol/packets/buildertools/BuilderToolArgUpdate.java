@@ -1,6 +1,8 @@
 package com.hypixel.hytale.protocol.packets.buildertools;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.PacketIO;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
@@ -10,7 +12,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class BuilderToolArgUpdate implements Packet {
+public class BuilderToolArgUpdate implements Packet, ToServerPacket {
    public static final int PACKET_ID = 400;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 1;
@@ -31,6 +33,11 @@ public class BuilderToolArgUpdate implements Packet {
    @Override
    public int getId() {
       return 400;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public BuilderToolArgUpdate() {

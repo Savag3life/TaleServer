@@ -1,11 +1,12 @@
 package com.hypixel.hytale.builtin.hytalegenerator.patterns;
 
 import com.hypixel.hytale.builtin.hytalegenerator.bounds.SpaceSize;
+import com.hypixel.hytale.builtin.hytalegenerator.datastructures.voxelspace.NullSpace;
 import com.hypixel.hytale.builtin.hytalegenerator.datastructures.voxelspace.VoxelSpace;
 import com.hypixel.hytale.builtin.hytalegenerator.material.Material;
-import com.hypixel.hytale.builtin.hytalegenerator.threadindexer.WorkerIndexer;
 import com.hypixel.hytale.math.vector.Vector3i;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public abstract class Pattern {
    public abstract boolean matches(@Nonnull Pattern.Context var1);
@@ -47,20 +48,29 @@ public abstract class Pattern {
    }
 
    public static class Context {
+      @Nonnull
       public Vector3i position;
+      @Nonnull
       public VoxelSpace<Material> materialSpace;
-      public WorkerIndexer.Id workerId;
 
-      public Context(@Nonnull Vector3i position, @Nonnull VoxelSpace<Material> materialSpace, WorkerIndexer.Id workerId) {
+      public Context() {
+         this.position = new Vector3i();
+         this.materialSpace = NullSpace.instance();
+      }
+
+      public Context(@Nonnull Vector3i position, @Nullable VoxelSpace<Material> materialSpace) {
          this.position = position;
          this.materialSpace = materialSpace;
-         this.workerId = workerId;
       }
 
       public Context(@Nonnull Pattern.Context other) {
          this.position = other.position;
          this.materialSpace = other.materialSpace;
-         this.workerId = other.workerId;
+      }
+
+      public void assign(@Nonnull Pattern.Context other) {
+         this.position = other.position;
+         this.materialSpace = other.materialSpace;
       }
    }
 }

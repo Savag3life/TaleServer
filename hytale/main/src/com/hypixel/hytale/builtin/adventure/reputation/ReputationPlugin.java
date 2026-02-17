@@ -175,17 +175,21 @@ public class ReputationPlugin extends JavaPlugin {
    public int getReputationValue(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> playerEntityRef, @Nonnull String reputationGroupId) {
       World world = store.getExternalData().getWorld();
       Player playerComponent = store.getComponent(playerEntityRef, Player.getComponentType());
-      ReputationGameplayConfig reputationGameplayConfig = ReputationGameplayConfig.getOrDefault(world.getGameplayConfig());
-      if (reputationGameplayConfig.getReputationStorageType() == ReputationGameplayConfig.ReputationStorageType.PerPlayer) {
-         ReputationGroup reputationGroup = ReputationGroup.getAssetMap().getAsset(reputationGroupId);
-         if (reputationGroup != null) {
-            Object2IntMap<String> reputationData = playerComponent.getPlayerConfigData().getReputationData();
-            return this.getReputationValueForGroup(reputationData, reputationGroup);
-         } else {
-            return Integer.MIN_VALUE;
-         }
+      if (playerComponent == null) {
+         return Integer.MIN_VALUE;
       } else {
-         return this.getReputationValue(store, reputationGroupId);
+         ReputationGameplayConfig reputationGameplayConfig = ReputationGameplayConfig.getOrDefault(world.getGameplayConfig());
+         if (reputationGameplayConfig.getReputationStorageType() == ReputationGameplayConfig.ReputationStorageType.PerPlayer) {
+            ReputationGroup reputationGroup = ReputationGroup.getAssetMap().getAsset(reputationGroupId);
+            if (reputationGroup != null) {
+               Object2IntMap<String> reputationData = playerComponent.getPlayerConfigData().getReputationData();
+               return this.getReputationValueForGroup(reputationData, reputationGroup);
+            } else {
+               return Integer.MIN_VALUE;
+            }
+         } else {
+            return this.getReputationValue(store, reputationGroupId);
+         }
       }
    }
 
@@ -194,7 +198,7 @@ public class ReputationPlugin extends JavaPlugin {
       return this.getReputationValue(store, reputationGroupId);
    }
 
-   public int getReputationValue(@Nonnull Store<EntityStore> store, String reputationGroupId) {
+   public int getReputationValue(@Nonnull Store<EntityStore> store, @Nonnull String reputationGroupId) {
       World world = store.getExternalData().getWorld();
       ReputationGameplayConfig reputationGameplayConfig = ReputationGameplayConfig.getOrDefault(world.getGameplayConfig());
       if (reputationGameplayConfig.getReputationStorageType() != ReputationGameplayConfig.ReputationStorageType.PerWorld) {
@@ -204,7 +208,8 @@ public class ReputationPlugin extends JavaPlugin {
          if (reputationGroup == null) {
             return Integer.MIN_VALUE;
          } else {
-            Object2IntMap<String> reputationData = world.getEntityStore().getStore().getResource(this.reputationDataResourceType).getReputationStats();
+            ReputationDataResource reputationDataResource = world.getEntityStore().getStore().getResource(this.reputationDataResourceType);
+            Object2IntMap<String> reputationData = reputationDataResource.getReputationStats();
             return this.getReputationValueForGroup(reputationData, reputationGroup);
          }
       }

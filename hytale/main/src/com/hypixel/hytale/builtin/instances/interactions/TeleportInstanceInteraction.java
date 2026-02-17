@@ -48,6 +48,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class TeleportInstanceInteraction extends SimpleInstantInteraction {
+   @Nonnull
    public static final BuilderCodec<TeleportInstanceInteraction> CODEC = BuilderCodec.builder(
          TeleportInstanceInteraction.class, TeleportInstanceInteraction::new, SimpleInstantInteraction.CODEC
       )

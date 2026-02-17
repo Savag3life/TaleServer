@@ -94,6 +94,11 @@ public class GeneratedBlockChunk {
       return height;
    }
 
+   @Nonnull
+   public EnvironmentChunk getEnvironmentChunk() {
+      return this.environments;
+   }
+
    @Nullable
    public GeneratedChunkSection getSection(int y) {
       int index = ChunkUtil.indexSection(y);

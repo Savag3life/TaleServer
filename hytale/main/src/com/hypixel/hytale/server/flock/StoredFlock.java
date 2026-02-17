@@ -90,4 +90,21 @@ public class StoredFlock {
 
       return storedFlock;
    }
+
+   @Nonnull
+   public StoredFlock cloneSerializable() {
+      StoredFlock storedFlock = new StoredFlock();
+      if (this.members != null) {
+         ComponentRegistry.Data<EntityStore> data = EntityStore.REGISTRY.getData();
+         Holder<EntityStore>[] newMembers = new Holder[this.members.length];
+
+         for (int i = 0; i < newMembers.length; i++) {
+            newMembers[i] = this.members[i].cloneSerializable(data);
+         }
+
+         storedFlock.members = newMembers;
+      }
+
+      return storedFlock;
+   }
 }

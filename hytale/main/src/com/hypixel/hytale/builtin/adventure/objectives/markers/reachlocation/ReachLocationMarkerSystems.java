@@ -38,15 +38,29 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 
 public class ReachLocationMarkerSystems {
+   @Nonnull
    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+   @Nonnull
    private static final ThreadLocal<Set<UUID>> THREAD_LOCAL_TEMP_UUIDS = ThreadLocal.withInitial(HashSet::new);
 
    public static class EnsureNetworkSendable extends HolderSystem<EntityStore> {
-      private final Query<EntityStore> query = Query.and(ReachLocationMarker.getComponentType(), Query.not(NetworkId.getComponentType()));
+      @Nonnull
+      private final ComponentType<EntityStore, NetworkId> networkIdComponentType;
+      @Nonnull
+      private final Query<EntityStore> query;
+
+      public EnsureNetworkSendable(
+         @Nonnull ComponentType<EntityStore, ReachLocationMarker> reachLocationMarkerComponentType,
+         @Nonnull ComponentType<EntityStore, NetworkId> networkIdComponentType
+      ) {
+         this.networkIdComponentType = networkIdComponentType;
+         this.query = Query.and(reachLocationMarkerComponentType, Query.not(networkIdComponentType));
+      }
 
       @Override
       public void onEntityAdd(@Nonnull Holder<EntityStore> holder, @Nonnull AddReason reason, @Nonnull Store<EntityStore> store) {
-         holder.addComponent(NetworkId.getComponentType(), new NetworkId(store.getExternalData().takeNextNetworkId()));
+         int nextNetworkId = store.getExternalData().takeNextNetworkId();
+         holder.addComponent(this.networkIdComponentType, new NetworkId(nextNetworkId));
       }
 
       @Override
@@ -61,15 +75,20 @@ public class ReachLocationMarkerSystems {
    }
 
    public static class EntityAdded extends RefSystem<EntityStore> {
+      @Nonnull
       private final ComponentType<EntityStore, ReachLocationMarker> reachLocationMarkerComponent;
+      @Nonnull
       private final ComponentType<EntityStore, TransformComponent> transformComponentType;
       @Nonnull
       private final Query<EntityStore> query;
 
-      public EntityAdded(ComponentType<EntityStore, ReachLocationMarker> reachLocationMarkerComponent) {
+      public EntityAdded(
+         @Nonnull ComponentType<EntityStore, ReachLocationMarker> reachLocationMarkerComponent,
+         @Nonnull ComponentType<EntityStore, TransformComponent> transformComponentType
+      ) {
          this.reachLocationMarkerComponent = reachLocationMarkerComponent;
-         this.transformComponentType = TransformComponent.getComponentType();
-         this.query = Query.and(reachLocationMarkerComponent, this.transformComponentType);
+         this.transformComponentType = transformComponentType;
+         this.query = Query.and(reachLocationMarkerComponent, transformComponentType);
       }
 
       @Nonnull
@@ -109,23 +128,30 @@ public class ReachLocationMarkerSystems {
    }
 
    public static class Ticking extends EntityTickingSystem<EntityStore> {
+      @Nonnull
       private final ComponentType<EntityStore, ReachLocationMarker> reachLocationMarkerComponent;
+      @Nonnull
       private final ComponentType<EntityStore, TransformComponent> transformComponentType;
+      @Nonnull
       private final ResourceType<EntityStore, SpatialResource<Ref<EntityStore>, EntityStore>> playerSpatialComponent;
-      private final ComponentType<EntityStore, UUIDComponent> uuidComponentType = UUIDComponent.getComponentType();
+      @Nonnull
+      private final ComponentType<EntityStore, UUIDComponent> uuidComponentType;
       @Nonnull
       private final Query<EntityStore> query;
       @Nonnull
       private final Set<Dependency<EntityStore>> dependencies;
 
       public Ticking(
-         ComponentType<EntityStore, ReachLocationMarker> reachLocationMarkerComponent,
-         ResourceType<EntityStore, SpatialResource<Ref<EntityStore>, EntityStore>> playerSpatialComponent
+         @Nonnull ComponentType<EntityStore, ReachLocationMarker> reachLocationMarkerComponent,
+         @Nonnull ResourceType<EntityStore, SpatialResource<Ref<EntityStore>, EntityStore>> playerSpatialComponent,
+         @Nonnull ComponentType<EntityStore, TransformComponent> transformComponentType,
+         @Nonnull ComponentType<EntityStore, UUIDComponent> uuidComponentType
       ) {
          this.reachLocationMarkerComponent = reachLocationMarkerComponent;
-         this.transformComponentType = TransformComponent.getComponentType();
+         this.transformComponentType = transformComponentType;
+         this.uuidComponentType = uuidComponentType;
          this.playerSpatialComponent = playerSpatialComponent;
-         this.query = Query.and(reachLocationMarkerComponent, this.transformComponentType);
+         this.query = Query.and(reachLocationMarkerComponent, transformComponentType);
          this.dependencies = Set.of(new SystemDependency<>(Order.AFTER, PlayerSpatialSystem.class, OrderPriority.CLOSEST));
       }
 
@@ -184,16 +210,15 @@ public class ReachLocationMarkerSystems {
             for (int i = 0; i < results.size(); i++) {
                Ref<EntityStore> otherEntityReference = (Ref<EntityStore>)results.get(i);
                UUIDComponent otherUuidComponent = commandBuffer.getComponent(otherEntityReference, this.uuidComponentType);
-
-               assert otherUuidComponent != null;
-
-               UUID otherUuid = otherUuidComponent.getUuid();
-               players.add(otherUuid);
-               if (!previousPlayers.contains(otherUuid)) {
-                  for (ObjectiveTaskRef<ReachLocationTask> taskRef : objectiveDataStore.getTaskRefsForType(ReachLocationTask.class)) {
-                     Objective objective = objectiveDataStore.getObjective(taskRef.getObjectiveUUID());
-                     if (objective != null) {
-                        taskRef.getObjectiveTask().onPlayerReachLocationMarker(store, otherEntityReference, markerId, objective);
+               if (otherUuidComponent != null) {
+                  UUID otherUuid = otherUuidComponent.getUuid();
+                  players.add(otherUuid);
+                  if (!previousPlayers.contains(otherUuid)) {
+                     for (ObjectiveTaskRef<ReachLocationTask> taskRef : objectiveDataStore.getTaskRefsForType(ReachLocationTask.class)) {
+                        Objective objective = objectiveDataStore.getObjective(taskRef.getObjectiveUUID());
+                        if (objective != null) {
+                           taskRef.getObjectiveTask().onPlayerReachLocationMarker(store, otherEntityReference, markerId, objective);
+                        }
                      }
                   }
                }

@@ -27,18 +27,16 @@ import javax.annotation.Nullable;
 
 public class ViewportCommand extends AbstractPlayerCommand {
    @Nonnull
-   private final FlagArg deleteFlag = this.withFlagArg("delete", "Deletes the existing Viewport instance.");
+   private final FlagArg deleteFlag = this.withFlagArg("delete", "server.commands.viewport.delete.desc");
    @Nonnull
-   private final OptionalArg<Integer> radiusArg = this.withOptionalArg(
-      "radius", "Creates a viewport with the given radius in chunks around the player.", ArgTypes.INTEGER
-   );
+   private final OptionalArg<Integer> radiusArg = this.withOptionalArg("radius", "server.commands.viewport.radius.desc", ArgTypes.INTEGER);
    @Nonnull
    private final AssetManager assetManager;
    @Nullable
    private Runnable activeTask;
 
    public ViewportCommand(@Nonnull AssetManager assetManager) {
-      super("Viewport", "Establishes a worldgen viewport on the selected region.");
+      super("Viewport", "server.commands.viewport.desc");
       this.assetManager = assetManager;
    }
 

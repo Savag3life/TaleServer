@@ -46,9 +46,9 @@ public class NPCMemoryProvider extends MemoryProvider<NPCMemory> {
                   String translationKey = getNPCNameTranslationKey(builder);
                   NPCMemory memory;
                   if (memoriesNameOverride != null && !memoriesNameOverride.isEmpty()) {
-                     memory = new NPCMemory(memoriesNameOverride, translationKey, true);
+                     memory = new NPCMemory(memoriesNameOverride, translationKey);
                   } else {
-                     memory = new NPCMemory(builderInfo.getKeyName(), translationKey, false);
+                     memory = new NPCMemory(builderInfo.getKeyName(), translationKey);
                   }
 
                   allMemories.computeIfAbsent(category, s -> new HashSet<>()).add(memory);

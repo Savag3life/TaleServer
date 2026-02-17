@@ -59,7 +59,9 @@ public class QueueProp extends Prop {
    public void place(@Nonnull Prop.Context context) {
       QueueProp.QueueScanResult conditionalScanResult = QueueProp.QueueScanResult.cast(context.scanResult);
       if (!conditionalScanResult.isNegative()) {
-         conditionalScanResult.prop.place(context);
+         Prop.Context childContext = new Prop.Context(context);
+         childContext.scanResult = conditionalScanResult.propScanResult;
+         conditionalScanResult.prop.place(childContext);
       }
    }
 

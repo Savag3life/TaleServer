@@ -13,7 +13,9 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 public class CellNoiseAsset extends NoiseAsset {
+   @Nonnull
    private static Set<String> validCellTypes = new HashSet<>();
+   @Nonnull
    public static final BuilderCodec<CellNoiseAsset> CODEC;
    private double warpScale = 1.0;
    private double warpAmount = 1.0;

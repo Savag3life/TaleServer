@@ -23,10 +23,19 @@ import javax.annotation.Nullable;
 
 public class CameraEffectSystem extends DamageEventSystem {
    @Nonnull
-   private static final ComponentType<EntityStore, PlayerRef> PLAYER_REF_COMPONENT_TYPE = PlayerRef.getComponentType();
-   private static final ComponentType<EntityStore, EntityStatMap> ENTITY_STAT_MAP_COMPONENT_TYPE = EntityStatMap.getComponentType();
+   private final ComponentType<EntityStore, PlayerRef> playerRefComponentType;
    @Nonnull
-   private static final Query<EntityStore> QUERY = Query.and(PLAYER_REF_COMPONENT_TYPE, ENTITY_STAT_MAP_COMPONENT_TYPE);
+   private final ComponentType<EntityStore, EntityStatMap> entityStatMapComponentType;
+   @Nonnull
+   private final Query<EntityStore> query;
+
+   public CameraEffectSystem(
+      @Nonnull ComponentType<EntityStore, PlayerRef> playerRefComponentType, @Nonnull ComponentType<EntityStore, EntityStatMap> entityStatMapComponentType
+   ) {
+      this.playerRefComponentType = playerRefComponentType;
+      this.entityStatMapComponentType = entityStatMapComponentType;
+      this.query = Query.and(playerRefComponentType, entityStatMapComponentType);
+   }
 
    @Nullable
    @Override
@@ -37,7 +46,7 @@ public class CameraEffectSystem extends DamageEventSystem {
    @Nonnull
    @Override
    public Query<EntityStore> getQuery() {
-      return QUERY;
+      return this.query;
    }
 
    public void handle(
@@ -47,7 +56,7 @@ public class CameraEffectSystem extends DamageEventSystem {
       @Nonnull CommandBuffer<EntityStore> commandBuffer,
       @Nonnull Damage damage
    ) {
-      EntityStatMap entityStatMapComponent = archetypeChunk.getComponent(index, ENTITY_STAT_MAP_COMPONENT_TYPE);
+      EntityStatMap entityStatMapComponent = archetypeChunk.getComponent(index, this.entityStatMapComponentType);
 
       assert entityStatMapComponent != null;
 
@@ -55,7 +64,7 @@ public class CameraEffectSystem extends DamageEventSystem {
       if (healthStat != null) {
          float health = healthStat.getMax() - healthStat.getMin();
          if (!(health <= 0.0F)) {
-            PlayerRef playerRefComponent = archetypeChunk.getComponent(index, PLAYER_REF_COMPONENT_TYPE);
+            PlayerRef playerRefComponent = archetypeChunk.getComponent(index, this.playerRefComponentType);
 
             assert playerRefComponent != null;
 

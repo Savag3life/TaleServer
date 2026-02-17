@@ -14,6 +14,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nonnull;
 
 public class NoiseThicknessAsset extends LayerAsset {
+   @Nonnull
    public static final BuilderCodec<NoiseThicknessAsset> CODEC = BuilderCodec.builder(
          NoiseThicknessAsset.class, NoiseThicknessAsset::new, LayerAsset.ABSTRACT_CODEC
       )

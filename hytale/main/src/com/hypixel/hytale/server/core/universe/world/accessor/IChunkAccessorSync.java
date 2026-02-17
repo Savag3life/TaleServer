@@ -32,11 +32,13 @@ public interface IChunkAccessorSync<WorldChunk extends BlockAccessor> {
    WorldChunk getNonTickingChunk(long var1);
 
    default int getBlock(@Nonnull Vector3i pos) {
-      return this.getChunk(ChunkUtil.indexChunkFromBlock(pos.getX(), pos.getZ())).getBlock(pos.getX(), pos.getY(), pos.getZ());
+      return this.getBlock(pos.getX(), pos.getY(), pos.getZ());
    }
 
    default int getBlock(int x, int y, int z) {
-      return this.getChunk(ChunkUtil.indexChunkFromBlock(x, z)).getBlock(x, y, z);
+      long chunkIndex = ChunkUtil.indexChunkFromBlock(x, z);
+      WorldChunk worldChunk = this.getChunk(chunkIndex);
+      return worldChunk == null ? 0 : worldChunk.getBlock(x, y, z);
    }
 
    @Nullable
@@ -46,9 +48,14 @@ public interface IChunkAccessorSync<WorldChunk extends BlockAccessor> {
 
    @Nullable
    default BlockType getBlockType(int x, int y, int z) {
-      WorldChunk chunk = this.getChunk(ChunkUtil.indexChunkFromBlock(x, z));
-      int blockId = chunk.getBlock(x, y, z);
-      return BlockType.getAssetMap().getAsset(blockId);
+      long chunkIndex = ChunkUtil.indexChunkFromBlock(x, z);
+      WorldChunk worldChunk = this.getChunk(chunkIndex);
+      if (worldChunk == null) {
+         return null;
+      } else {
+         int blockId = worldChunk.getBlock(x, y, z);
+         return BlockType.getAssetMap().getAsset(blockId);
+      }
    }
 
    default void setBlock(int x, int y, int z, String blockTypeKey) {

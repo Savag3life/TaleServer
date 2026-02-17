@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class ClampCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<ClampCurveAsset> CODEC = BuilderCodec.builder(ClampCurveAsset.class, ClampCurveAsset::new, CurveAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Curve", CurveAsset.CODEC, false), (t, k) -> t.curveAsset = k, k -> k.curveAsset)
       .add()

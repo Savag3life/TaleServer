@@ -19,13 +19,19 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 public abstract class ReturnTypeAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, ReturnTypeAsset>> {
+   @Nonnull
    private static final ReturnTypeAsset[] EMPTY_INPUTS = new ReturnTypeAsset[0];
+   @Nonnull
    public static final AssetCodecMapCodec<String, ReturnTypeAsset> CODEC = new AssetCodecMapCodec<>(
       Codec.STRING, (t, k) -> t.id = k, t -> t.id, (t, data) -> t.data = data, t -> t.data
    );
+   @Nonnull
    private static final Map<String, ReturnTypeAsset> exportedNodes = new HashMap<>();
+   @Nonnull
    public static final Codec<String> CHILD_ASSET_CODEC = new ContainedAssetCodec<>(ReturnTypeAsset.class, CODEC);
+   @Nonnull
    public static final Codec<String[]> CHILD_ASSET_CODEC_ARRAY = new ArrayCodec<>(CHILD_ASSET_CODEC, String[]::new);
+   @Nonnull
    public static final BuilderCodec<ReturnTypeAsset> ABSTRACT_CODEC = BuilderCodec.abstractBuilder(ReturnTypeAsset.class)
       .append(new KeyedCodec<>("ExportAs", Codec.STRING, false), (t, k) -> t.exportName = k, t -> t.exportName)
       .add()
@@ -43,7 +49,7 @@ public abstract class ReturnTypeAsset implements JsonAssetWithMap<String, Defaul
    protected ReturnTypeAsset() {
    }
 
-   public abstract ReturnType build(@Nonnull SeedBox var1, @Nonnull ReferenceBundle var2, @Nonnull WorkerIndexer var3);
+   public abstract ReturnType build(@Nonnull SeedBox var1, @Nonnull ReferenceBundle var2, @Nonnull WorkerIndexer.Id var3);
 
    public void cleanUp() {
    }

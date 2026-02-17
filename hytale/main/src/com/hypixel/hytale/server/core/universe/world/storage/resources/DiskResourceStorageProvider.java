@@ -5,6 +5,7 @@ import com.hypixel.hytale.codec.ExtraInfo;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.util.RawJsonReader;
+import com.hypixel.hytale.common.util.PathUtil;
 import com.hypixel.hytale.component.ComponentRegistry;
 import com.hypixel.hytale.component.IResourceStorage;
 import com.hypixel.hytale.component.Resource;
@@ -46,7 +47,12 @@ public class DiskResourceStorageProvider implements IResourceStorageProvider {
    @Nonnull
    @Override
    public <T extends WorldProvider> IResourceStorage getResourceStorage(@Nonnull World world) {
-      return new DiskResourceStorageProvider.DiskResourceStorage(world.getSavePath().resolve(this.path));
+      Path resolved = PathUtil.resolvePathWithinDir(world.getSavePath(), this.path);
+      if (resolved == null) {
+         throw new IllegalStateException("Resource storage path must be within world directory: " + this.path);
+      } else {
+         return new DiskResourceStorageProvider.DiskResourceStorage(resolved);
+      }
    }
 
    @Nonnull

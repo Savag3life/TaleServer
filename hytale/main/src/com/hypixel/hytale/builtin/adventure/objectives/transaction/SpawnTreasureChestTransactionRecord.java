@@ -14,6 +14,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 public class SpawnTreasureChestTransactionRecord extends TransactionRecord {
+   @Nonnull
    public static final BuilderCodec<SpawnTreasureChestTransactionRecord> CODEC = BuilderCodec.builder(
          SpawnTreasureChestTransactionRecord.class, SpawnTreasureChestTransactionRecord::new, BASE_CODEC
       )

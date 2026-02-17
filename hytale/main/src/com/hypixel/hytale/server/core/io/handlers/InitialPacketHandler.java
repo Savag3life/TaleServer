@@ -2,7 +2,7 @@ package com.hypixel.hytale.server.core.io.handlers;
 
 import com.hypixel.hytale.common.util.java.ManifestUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.netty.ProtocolUtil;
 import com.hypixel.hytale.protocol.packets.auth.ConnectAccept;
 import com.hypixel.hytale.protocol.packets.connection.ClientType;
@@ -40,18 +40,18 @@ public class InitialPacketHandler extends PacketHandler {
    @Nonnull
    @Override
    public String getIdentifier() {
-      return "{Initial(" + NettyUtil.formatRemoteAddress(this.channel) + ")}";
+      return "{Initial(" + NettyUtil.formatRemoteAddress(this.getChannel()) + ")}";
    }
 
    @Override
    public void registered0(PacketHandler oldHandler) {
       HytaleServerConfig.TimeoutProfile timeouts = HytaleServer.get().getConfig().getConnectionTimeouts();
       this.initStage("initial", timeouts.getInitial(), () -> !this.registered);
-      PacketHandler.logConnectionTimings(this.channel, "Registered", Level.FINE);
+      PacketHandler.logConnectionTimings(this.getChannel(), "Registered", Level.FINE);
    }
 
    @Override
-   public void accept(@Nonnull Packet packet) {
+   public void accept(@Nonnull ToServerPacket packet) {
       if (packet.getId() == 0) {
          this.handle((Connect)packet);
       } else if (packet.getId() == 1) {
@@ -66,18 +66,18 @@ public class InitialPacketHandler extends PacketHandler {
       if (this.receivedConnect) {
          super.disconnect(message);
       } else {
-         HytaleLogger.getLogger().at(Level.INFO).log("Silently disconnecting %s because no Connect packet!", NettyUtil.formatRemoteAddress(this.channel));
-         ProtocolUtil.closeConnection(this.channel);
+         HytaleLogger.getLogger().at(Level.INFO).log("Silently disconnecting %s because no Connect packet!", NettyUtil.formatRemoteAddress(this.getChannel()));
+         ProtocolUtil.closeConnection(this.getChannel());
       }
    }
 
    public void handle(@Nonnull Connect packet) {
       this.receivedConnect = true;
       this.clearTimeout();
-      PacketHandler.logConnectionTimings(this.channel, "Connect", Level.FINE);
-      if (packet.protocolCrc != 1789265863) {
+      PacketHandler.logConnectionTimings(this.getChannel(), "Connect", Level.FINE);
+      if (packet.protocolCrc != -1356075132) {
          int clientBuild = packet.protocolBuildNumber;
-         int serverBuild = 2;
+         int serverBuild = 20;
          int errorCode;
          if (clientBuild < serverBuild) {
             errorCode = 5;
@@ -86,7 +86,7 @@ public class InitialPacketHandler extends PacketHandler {
          }
 
          String serverVersion = ManifestUtil.getImplementationVersion();
-         ProtocolUtil.closeApplicationConnection(this.channel, errorCode, serverVersion != null ? serverVersion : "unknown");
+         ProtocolUtil.closeApplicationConnection(this.getChannel(), errorCode, serverVersion != null ? serverVersion : "unknown");
       } else if (HytaleServer.get().isShuttingDown()) {
          this.disconnect("Server is shutting down!");
       } else if (!HytaleServer.get().isBooted()) {
@@ -98,9 +98,11 @@ public class InitialPacketHandler extends PacketHandler {
             language = "en-US";
          }
 
-         boolean isTcpConnection = !(this.channel instanceof QuicStreamChannel);
+         boolean isTcpConnection = !(this.getChannel() instanceof QuicStreamChannel);
          if (isTcpConnection) {
-            HytaleLogger.getLogger().at(Level.INFO).log("TCP connection from %s - only insecure auth supported", NettyUtil.formatRemoteAddress(this.channel));
+            HytaleLogger.getLogger()
+               .at(Level.INFO)
+               .log("TCP connection from %s - only insecure auth supported", NettyUtil.formatRemoteAddress(this.getChannel()));
          }
 
          if (packet.uuid == null) {
@@ -135,7 +137,7 @@ public class InitialPacketHandler extends PacketHandler {
                   if (isTcpConnection) {
                      HytaleLogger.getLogger()
                         .at(Level.WARNING)
-                        .log("Rejecting authenticated connection from %s - TCP only supports insecure auth", NettyUtil.formatRemoteAddress(this.channel));
+                        .log("Rejecting authenticated connection from %s - TCP only supports insecure auth", NettyUtil.formatRemoteAddress(this.getChannel()));
                      this.disconnect("TCP connections only support insecure authentication. Use QUIC for authenticated connections.");
                      return;
                   }
@@ -148,11 +150,11 @@ public class InitialPacketHandler extends PacketHandler {
 
                   HytaleLogger.getLogger()
                      .at(Level.INFO)
-                     .log("Starting authenticated flow for %s (%s) from %s", packet.username, packet.uuid, NettyUtil.formatRemoteAddress(this.channel));
+                     .log("Starting authenticated flow for %s (%s) from %s", packet.username, packet.uuid, NettyUtil.formatRemoteAddress(this.getChannel()));
                   NettyUtil.setChannelHandler(
-                     this.channel,
+                     this.getChannel(),
                      new AuthenticationPacketHandler(
-                        this.channel,
+                        this.getChannel(),
                         protocolVersion,
                         language,
                         supplier,
@@ -170,7 +172,7 @@ public class InitialPacketHandler extends PacketHandler {
                         .at(Level.WARNING)
                         .log(
                            "Rejecting development connection from %s - server requires authentication (auth-mode=%s)",
-                           NettyUtil.formatRemoteAddress(this.channel),
+                           NettyUtil.formatRemoteAddress(this.getChannel()),
                            authMode
                         );
                      this.disconnect("This server requires authentication!");
@@ -181,7 +183,7 @@ public class InitialPacketHandler extends PacketHandler {
                      if (!Constants.SINGLEPLAYER) {
                         HytaleLogger.getLogger()
                            .at(Level.WARNING)
-                           .log("Rejecting connection from %s - offline mode is only valid in singleplayer", NettyUtil.formatRemoteAddress(this.channel));
+                           .log("Rejecting connection from %s - offline mode is only valid in singleplayer", NettyUtil.formatRemoteAddress(this.getChannel()));
                         this.disconnect("Offline mode is only available in singleplayer.");
                         return;
                      }
@@ -202,16 +204,16 @@ public class InitialPacketHandler extends PacketHandler {
 
                   HytaleLogger.getLogger()
                      .at(Level.INFO)
-                     .log("Starting development flow for %s (%s) from %s", packet.username, packet.uuid, NettyUtil.formatRemoteAddress(this.channel));
+                     .log("Starting development flow for %s (%s) from %s", packet.username, packet.uuid, NettyUtil.formatRemoteAddress(this.getChannel()));
                   byte[] passwordChallenge = this.generatePasswordChallengeIfNeeded(packet.uuid);
                   this.write(new ConnectAccept(passwordChallenge));
                   PasswordPacketHandler.SetupHandlerSupplier setupSupplier = isEditorClient && EDITOR_PACKET_HANDLER_SUPPLIER != null
                      ? (ch, pv, lang, auth) -> EDITOR_PACKET_HANDLER_SUPPLIER.create(ch, pv, lang, auth)
                      : SetupPacketHandler::new;
                   NettyUtil.setChannelHandler(
-                     this.channel,
+                     this.getChannel(),
                      new PasswordPacketHandler(
-                        this.channel,
+                        this.getChannel(),
                         protocolVersion,
                         language,
                         packet.uuid,
@@ -250,7 +252,7 @@ public class InitialPacketHandler extends PacketHandler {
 
    public void handle(@Nonnull Disconnect packet) {
       this.disconnectReason.setClientDisconnectType(packet.type);
-      HytaleLogger.getLogger().at(Level.WARNING).log("Disconnecting %s - Sent disconnect packet???", NettyUtil.formatRemoteAddress(this.channel));
-      ProtocolUtil.closeApplicationConnection(this.channel);
+      HytaleLogger.getLogger().at(Level.WARNING).log("Disconnecting %s - Sent disconnect packet???", NettyUtil.formatRemoteAddress(this.getChannel()));
+      ProtocolUtil.closeApplicationConnection(this.getChannel());
    }
 }

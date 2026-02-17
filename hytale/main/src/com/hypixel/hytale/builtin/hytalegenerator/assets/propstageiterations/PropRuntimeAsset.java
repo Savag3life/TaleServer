@@ -20,6 +20,7 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import javax.annotation.Nonnull;
 
 public class PropRuntimeAsset implements Cleanable, JsonAssetWithMap<String, DefaultAssetMap<String, PropRuntimeAsset>> {
+   @Nonnull
    public static final AssetBuilderCodec<String, PropRuntimeAsset> CODEC = AssetBuilderCodec.builder(
          PropRuntimeAsset.class,
          PropRuntimeAsset::new,
@@ -58,8 +59,8 @@ public class PropRuntimeAsset implements Cleanable, JsonAssetWithMap<String, Def
       this.assignmentsAsset.cleanUp();
    }
 
-   public PositionProvider buildPositionProvider(@Nonnull SeedBox parentSeed, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer workerIndexer) {
-      return this.positionProviderAsset.build(new PositionProviderAsset.Argument(parentSeed, referenceBundle, workerIndexer));
+   public PositionProvider buildPositionProvider(@Nonnull SeedBox parentSeed, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer.Id workerId) {
+      return this.positionProviderAsset.build(new PositionProviderAsset.Argument(parentSeed, referenceBundle, workerId));
    }
 
    public Assignments buildPropDistribution(
@@ -67,9 +68,9 @@ public class PropRuntimeAsset implements Cleanable, JsonAssetWithMap<String, Def
       @Nonnull MaterialCache materialCache,
       int runtime,
       @Nonnull ReferenceBundle referenceBundle,
-      @Nonnull WorkerIndexer workerIndexer
+      @Nonnull WorkerIndexer.Id workerId
    ) {
-      return this.assignmentsAsset.build(new AssignmentsAsset.Argument(parentSeed, materialCache, referenceBundle, runtime, workerIndexer));
+      return this.assignmentsAsset.build(new AssignmentsAsset.Argument(parentSeed, materialCache, referenceBundle, runtime, workerId));
    }
 
    public int getRuntime() {

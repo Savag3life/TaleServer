@@ -55,19 +55,17 @@ public class BlockTickPlugin extends JavaPlugin implements IBlockTickProvider {
       }
    }
 
-   public int discoverTickingBlocks(@Nonnull Holder<ChunkStore> holder, @Nonnull WorldChunk chunk) {
+   public int discoverTickingBlocks(@Nonnull Holder<ChunkStore> holder, @Nonnull WorldChunk worldChunk) {
       if (!this.isEnabled()) {
          return 0;
       } else {
-         BlockChunk bc = chunk.getBlockChunk();
-         if (!bc.consumeNeedsPhysics()) {
-            return 0;
-         } else {
-            ChunkColumn column = holder.getComponent(ChunkColumn.getComponentType());
-            if (column == null) {
+         BlockChunk blockChunkComponent = worldChunk.getBlockChunk();
+         if (blockChunkComponent != null && blockChunkComponent.consumeNeedsPhysics()) {
+            ChunkColumn chunkColumnComponent = holder.getComponent(ChunkColumn.getComponentType());
+            if (chunkColumnComponent == null) {
                return 0;
             } else {
-               Holder<ChunkStore>[] sections = column.getSectionHolders();
+               Holder<ChunkStore>[] sections = chunkColumnComponent.getSectionHolders();
                if (sections == null) {
                   return 0;
                } else {
@@ -76,14 +74,14 @@ public class BlockTickPlugin extends JavaPlugin implements IBlockTickProvider {
 
                   for (int i = 0; i < sections.length; i++) {
                      Holder<ChunkStore> sectionHolder = sections[i];
-                     BlockSection section = sectionHolder.ensureAndGetComponent(BlockSection.getComponentType());
-                     if (!section.isSolidAir()) {
+                     BlockSection blockSectionComponent = sectionHolder.ensureAndGetComponent(BlockSection.getComponentType());
+                     if (!blockSectionComponent.isSolidAir()) {
                         for (int blockIdx = 0; blockIdx < 32768; blockIdx++) {
-                           int blockId = section.get(blockIdx);
+                           int blockId = blockSectionComponent.get(blockIdx);
                            BlockType blockType = assetMap.getAsset(blockId);
                            if (blockType != null && blockType.getTickProcedure() != null) {
-                              section.setTicking(blockIdx, true);
-                              bc.markNeedsSaving();
+                              blockSectionComponent.setTicking(blockIdx, true);
+                              blockChunkComponent.markNeedsSaving();
                               count++;
                            }
                         }
@@ -93,6 +91,8 @@ public class BlockTickPlugin extends JavaPlugin implements IBlockTickProvider {
                   return count;
                }
             }
+         } else {
+            return 0;
          }
       }
    }

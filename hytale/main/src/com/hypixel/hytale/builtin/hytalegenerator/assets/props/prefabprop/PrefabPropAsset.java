@@ -30,6 +30,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.common.util.ExceptionUtil;
+import com.hypixel.hytale.common.util.PathUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.AssetModule;
 import com.hypixel.hytale.server.core.prefab.selection.buffer.impl.PrefabBuffer;
@@ -40,6 +41,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class PrefabPropAsset extends PropAsset {
+   @Nonnull
    public static final BuilderCodec<PrefabPropAsset> CODEC = BuilderCodec.builder(PrefabPropAsset.class, PrefabPropAsset::new, PropAsset.ABSTRACT_CODEC)
       .append(
          new KeyedCodec<>("WeightedPrefabPaths", new ArrayCodec<>(PrefabPropAsset.WeightedPathAsset.CODEC, PrefabPropAsset.WeightedPathAsset[]::new), true),
@@ -150,21 +152,25 @@ public class PrefabPropAsset extends PropAsset {
       List<PrefabBuffer> pathPrefabs = new ArrayList<>();
 
       for (AssetPack pack : AssetModule.get().getAssetPacks()) {
-         Path fullPath = pack.getRoot().resolve("Server");
+         Path prefabsDir = pack.getRoot().resolve("Server");
          if (this.legacyPath) {
-            fullPath = fullPath.resolve("World").resolve("Default").resolve("Prefabs");
+            prefabsDir = prefabsDir.resolve("World").resolve("Default").resolve("Prefabs");
          } else {
-            fullPath = fullPath.resolve("Prefabs");
+            prefabsDir = prefabsDir.resolve("Prefabs");
          }
 
-         fullPath = fullPath.resolve(path);
+         Path fullPath = PathUtil.resolvePathWithinDir(prefabsDir, path);
+         if (fullPath == null) {
+            LoggerUtil.getLogger().severe("Invalid prefab path: " + path);
+            return null;
+         }
 
          try {
             PrefabLoader.loadAllPrefabBuffersUnder(fullPath, pathPrefabs);
-         } catch (Exception var8) {
+         } catch (Exception var9) {
             String msg = "Couldn't load prefab with path: " + path;
             msg = msg + "\n";
-            msg = msg + ExceptionUtil.toStringWithStack(var8);
+            msg = msg + ExceptionUtil.toStringWithStack(var9);
             LoggerUtil.getLogger().severe(msg);
             return null;
          }
@@ -179,6 +185,7 @@ public class PrefabPropAsset extends PropAsset {
    }
 
    public static class WeightedPathAsset implements JsonAssetWithMap<String, DefaultAssetMap<String, PrefabPropAsset.WeightedPathAsset>> {
+      @Nonnull
       public static final AssetBuilderCodec<String, PrefabPropAsset.WeightedPathAsset> CODEC = AssetBuilderCodec.builder(
             PrefabPropAsset.WeightedPathAsset.class,
             PrefabPropAsset.WeightedPathAsset::new,

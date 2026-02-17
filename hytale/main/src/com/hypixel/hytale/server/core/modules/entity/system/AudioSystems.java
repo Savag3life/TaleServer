@@ -11,9 +11,8 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.random.RandomExtra;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.protocol.AudioUpdate;
 import com.hypixel.hytale.protocol.BlockSoundEvent;
-import com.hypixel.hytale.protocol.ComponentUpdate;
-import com.hypixel.hytale.protocol.ComponentUpdateType;
 import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.asset.type.blocksound.config.BlockSoundSet;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
@@ -80,9 +79,7 @@ public class AudioSystems {
       private static void queueUpdatesFor(
          @Nonnull Ref<EntityStore> ref, @Nonnull AudioComponent audioComponent, @Nonnull Map<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> visibleTo
       ) {
-         ComponentUpdate update = new ComponentUpdate();
-         update.type = ComponentUpdateType.Audio;
-         update.soundEventIds = audioComponent.getSoundEventIds();
+         AudioUpdate update = new AudioUpdate(audioComponent.getSoundEventIds());
 
          for (Entry<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> entry : visibleTo.entrySet()) {
             entry.getValue().queueUpdate(ref, update);

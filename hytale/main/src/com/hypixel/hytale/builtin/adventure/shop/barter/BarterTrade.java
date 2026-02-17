@@ -9,6 +9,7 @@ import java.util.Arrays;
 import javax.annotation.Nonnull;
 
 public class BarterTrade {
+   @Nonnull
    public static final BuilderCodec<BarterTrade> CODEC = BuilderCodec.builder(BarterTrade.class, BarterTrade::new)
       .append(new KeyedCodec<>("Output", BarterItemStack.CODEC), (trade, stack) -> trade.output = stack, trade -> trade.output)
       .addValidator(Validators.nonNull())

@@ -25,6 +25,7 @@ import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
+import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.protocol.BenchRequirement;
 import com.hypixel.hytale.protocol.BenchType;
 import com.hypixel.hytale.protocol.ItemResourceType;
@@ -59,7 +60,9 @@ import javax.annotation.Nullable;
 
 public class CraftingPlugin extends JavaPlugin {
    private static CraftingPlugin instance;
+   @Nonnull
    private static final Map<String, BenchRecipeRegistry> registries = new Object2ObjectOpenHashMap();
+   @Nonnull
    private static final Map<String, String[]> itemGeneratedRecipes = new Object2ObjectOpenHashMap();
    private ComponentType<EntityStore, CraftingManager> craftingManagerComponentType;
 
@@ -69,17 +72,17 @@ public class CraftingPlugin extends JavaPlugin {
    }
 
    @Nullable
-   public static Set<String> getAvailableRecipesForCategory(String benchId, String benchCategoryId) {
+   public static Set<String> getAvailableRecipesForCategory(@Nonnull String benchId, @Nonnull String benchCategoryId) {
       BenchRecipeRegistry benchRecipeRegistry = registries.get(benchId);
       return benchRecipeRegistry == null ? null : benchRecipeRegistry.getRecipesForCategory(benchCategoryId);
    }
 
-   public static boolean isValidCraftingMaterialForBench(BenchState benchState, ItemStack itemStack) {
+   public static boolean isValidCraftingMaterialForBench(@Nonnull BenchState benchState, @Nonnull ItemStack itemStack) {
       BenchRecipeRegistry benchRecipeRegistry = registries.get(benchState.getBench().getId());
       return benchRecipeRegistry == null ? false : benchRecipeRegistry.isValidCraftingMaterial(itemStack);
    }
 
-   public static boolean isValidUpgradeMaterialForBench(BenchState benchState, ItemStack itemStack) {
+   public static boolean isValidUpgradeMaterialForBench(@Nonnull BenchState benchState, @Nonnull ItemStack itemStack) {
       BenchUpgradeRequirement nextLevelUpgradeMaterials = benchState.getNextLevelUpgradeMaterials();
       if (nextLevelUpgradeMaterials == null) {
          return false;
@@ -92,7 +95,7 @@ public class CraftingPlugin extends JavaPlugin {
             ItemResourceType[] resourceTypeId = itemStack.getItem().getResourceTypes();
             if (resourceTypeId != null) {
                for (ItemResourceType resTypeId : resourceTypeId) {
-                  if (resTypeId.id.equals(upgradeMaterial.getResourceTypeId())) {
+                  if (resTypeId.id != null && resTypeId.id.equals(upgradeMaterial.getResourceTypeId())) {
                      return true;
                   }
                }
@@ -118,10 +121,8 @@ public class CraftingPlugin extends JavaPlugin {
             )
          );
       ComponentRegistryProxy<EntityStore> entityStoreRegistry = this.getEntityStoreRegistry();
+      EventRegistry eventRegistry = this.getEventRegistry();
       this.craftingManagerComponentType = entityStoreRegistry.registerComponent(CraftingManager.class, CraftingManager::new);
-      entityStoreRegistry.registerSystem(new PlayerCraftingSystems.CraftingTickingSystem(this.craftingManagerComponentType));
-      entityStoreRegistry.registerSystem(new PlayerCraftingSystems.CraftingHolderSystem(this.craftingManagerComponentType));
-      entityStoreRegistry.registerSystem(new PlayerCraftingSystems.CraftingRefSystem(this.craftingManagerComponentType));
       this.getCodecRegistry(Interaction.CODEC)
          .register("OpenBenchPage", OpenBenchPageInteraction.class, OpenBenchPageInteraction.CODEC)
          .register("OpenProcessingBench", OpenProcessingBenchInteraction.class, OpenProcessingBenchInteraction.CODEC);
@@ -132,16 +133,21 @@ public class CraftingPlugin extends JavaPlugin {
       blockStateRegistry.registerBlockState(ProcessingBenchState.class, "processingBench", ProcessingBenchState.CODEC);
       blockStateRegistry.registerBlockState(BenchState.class, "crafting", BenchState.CODEC);
       Window.CLIENT_REQUESTABLE_WINDOW_TYPES.put(WindowType.PocketCrafting, FieldCraftingWindow::new);
-      this.getEventRegistry().register(LoadedAssetsEvent.class, CraftingRecipe.class, CraftingPlugin::onRecipeLoad);
-      this.getEventRegistry().register(RemovedAssetsEvent.class, CraftingRecipe.class, CraftingPlugin::onRecipeRemove);
-      this.getEventRegistry().register(LoadedAssetsEvent.class, Item.class, CraftingPlugin::onItemAssetLoad);
-      this.getEventRegistry().register(RemovedAssetsEvent.class, Item.class, CraftingPlugin::onItemAssetRemove);
+      eventRegistry.register(LoadedAssetsEvent.class, CraftingRecipe.class, CraftingPlugin::onRecipeLoad);
+      eventRegistry.register(RemovedAssetsEvent.class, CraftingRecipe.class, CraftingPlugin::onRecipeRemove);
+      eventRegistry.register(LoadedAssetsEvent.class, Item.class, CraftingPlugin::onItemAssetLoad);
+      eventRegistry.register(RemovedAssetsEvent.class, Item.class, CraftingPlugin::onItemAssetRemove);
       Interaction.CODEC.register("LearnRecipe", LearnRecipeInteraction.class, LearnRecipeInteraction.CODEC);
       CommandManager.get().registerSystemCommand(new RecipeCommand());
-      entityStoreRegistry.registerSystem(new CraftingPlugin.PlayerAddedSystem());
+      ComponentType<EntityStore, Player> playerComponentType = Player.getComponentType();
+      ComponentType<EntityStore, PlayerRef> playerRefComponentType = PlayerRef.getComponentType();
+      entityStoreRegistry.registerSystem(new PlayerCraftingSystems.CraftingTickingSystem(this.craftingManagerComponentType));
+      entityStoreRegistry.registerSystem(new PlayerCraftingSystems.CraftingHolderSystem(playerComponentType, this.craftingManagerComponentType));
+      entityStoreRegistry.registerSystem(new PlayerCraftingSystems.CraftingRefSystem(playerComponentType, this.craftingManagerComponentType));
+      entityStoreRegistry.registerSystem(new CraftingPlugin.PlayerAddedSystem(playerComponentType, playerRefComponentType));
    }
 
-   private static void onItemAssetLoad(LoadedAssetsEvent<String, Item, DefaultAssetMap<String, Item>> event) {
+   private static void onItemAssetLoad(@Nonnull LoadedAssetsEvent<String, Item, DefaultAssetMap<String, Item>> event) {
       List<CraftingRecipe> recipesToLoad = new ObjectArrayList();
 
       for (Item item : event.getLoadedAssets().values()) {
@@ -174,7 +180,7 @@ public class CraftingPlugin extends JavaPlugin {
       }
    }
 
-   private static void onRecipeLoad(LoadedAssetsEvent<String, CraftingRecipe, DefaultAssetMap<String, CraftingRecipe>> event) {
+   private static void onRecipeLoad(@Nonnull LoadedAssetsEvent<String, CraftingRecipe, DefaultAssetMap<String, CraftingRecipe>> event) {
       for (CraftingRecipe recipe : event.getLoadedAssets().values()) {
          for (BenchRecipeRegistry registry : registries.values()) {
             registry.removeRecipe(recipe.getId());
@@ -191,7 +197,7 @@ public class CraftingPlugin extends JavaPlugin {
       computeBenchRecipeRegistries();
    }
 
-   private static void onRecipeRemove(RemovedAssetsEvent<String, CraftingRecipe, DefaultAssetMap<String, CraftingRecipe>> event) {
+   private static void onRecipeRemove(@Nonnull RemovedAssetsEvent<String, CraftingRecipe, DefaultAssetMap<String, CraftingRecipe>> event) {
       for (String removedRecipeId : event.getRemovedAssets()) {
          for (BenchRecipeRegistry registry : registries.values()) {
             registry.removeRecipe(removedRecipeId);
@@ -322,11 +328,19 @@ public class CraftingPlugin extends JavaPlugin {
    }
 
    public static class PlayerAddedSystem extends RefSystem<EntityStore> {
-      private static final Query<EntityStore> QUERY = Archetype.of(Player.getComponentType(), PlayerRef.getComponentType());
+      @Nonnull
+      private final Query<EntityStore> query;
 
+      public PlayerAddedSystem(
+         @Nonnull ComponentType<EntityStore, Player> playerComponentType, @Nonnull ComponentType<EntityStore, PlayerRef> playerRefComponentType
+      ) {
+         this.query = Archetype.of(playerComponentType, playerRefComponentType);
+      }
+
+      @Nonnull
       @Override
       public Query<EntityStore> getQuery() {
-         return QUERY;
+         return this.query;
       }
 
       @Override

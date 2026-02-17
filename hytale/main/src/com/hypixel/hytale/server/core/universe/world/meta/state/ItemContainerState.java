@@ -25,7 +25,6 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.meta.BlockState;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,12 +34,11 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class ItemContainerState extends BlockState implements ItemContainerBlockState, DestroyableBlockState, MarkerBlockState {
+public class ItemContainerState extends BlockState implements ItemContainerBlockState, DestroyableBlockState {
    public static final Codec<ItemContainerState> CODEC = BuilderCodec.builder(ItemContainerState.class, ItemContainerState::new, BlockState.BASE_CODEC)
       .addField(new KeyedCodec<>("Custom", Codec.BOOLEAN), (state, o) -> state.custom = o, state -> state.custom)
       .addField(new KeyedCodec<>("AllowViewing", Codec.BOOLEAN), (state, o) -> state.allowViewing = o, state -> state.allowViewing)
       .addField(new KeyedCodec<>("Droplist", Codec.STRING), (state, o) -> state.droplist = o, state -> state.droplist)
-      .addField(new KeyedCodec<>("Marker", WorldMapManager.MarkerReference.CODEC), (state, o) -> state.marker = o, state -> state.marker)
       .addField(new KeyedCodec<>("ItemContainer", SimpleItemContainer.CODEC), (state, o) -> state.itemContainer = o, state -> state.itemContainer)
       .build();
    private final Map<UUID, ContainerBlockWindow> windows = new ConcurrentHashMap<>();
@@ -49,7 +47,6 @@ public class ItemContainerState extends BlockState implements ItemContainerBlock
    @Nullable
    protected String droplist;
    protected SimpleItemContainer itemContainer;
-   protected WorldMapManager.MarkerReference marker;
 
    @Override
    public boolean initialize(@Nonnull BlockType blockType) {
@@ -107,10 +104,6 @@ public class ItemContainerState extends BlockState implements ItemContainerBlock
       if (itemEntityHolders.length > 0) {
          world.execute(() -> store.addEntities(itemEntityHolders, AddReason.SPAWN));
       }
-
-      if (this.marker != null) {
-         this.marker.remove();
-      }
    }
 
    public void setCustom(boolean custom) {
@@ -139,12 +132,6 @@ public class ItemContainerState extends BlockState implements ItemContainerBlock
 
    public void setDroplist(@Nullable String droplist) {
       this.droplist = droplist;
-      this.markNeedsSave();
-   }
-
-   @Override
-   public void setMarker(WorldMapManager.MarkerReference marker) {
-      this.marker = marker;
       this.markNeedsSave();
    }
 

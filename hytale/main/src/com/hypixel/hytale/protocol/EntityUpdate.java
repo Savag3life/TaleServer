@@ -77,8 +77,8 @@ public class EntityUpdate {
          }
 
          int varIntLen = VarInt.length(buf, varPos1);
-         if (varPos1 + varIntLen + updatesCount * 159L > buf.readableBytes()) {
-            throw ProtocolException.bufferTooSmall("Updates", varPos1 + varIntLen + updatesCount * 159, buf.readableBytes());
+         if (varPos1 + varIntLen + updatesCount * 1L > buf.readableBytes()) {
+            throw ProtocolException.bufferTooSmall("Updates", varPos1 + varIntLen + updatesCount * 1, buf.readableBytes());
          }
 
          obj.updates = new ComponentUpdate[updatesCount];
@@ -166,7 +166,7 @@ public class EntityUpdate {
          VarInt.write(buf, this.updates.length);
 
          for (ComponentUpdate item : this.updates) {
-            item.serialize(buf);
+            item.serializeWithTypeId(buf);
          }
       } else {
          buf.setIntLE(updatesOffsetSlot, -1);
@@ -183,7 +183,7 @@ public class EntityUpdate {
          int updatesSize = 0;
 
          for (ComponentUpdate elem : this.updates) {
-            updatesSize += elem.computeSize();
+            updatesSize += elem.computeSizeWithTypeId();
          }
 
          size += VarInt.size(this.updates.length) + updatesSize;
@@ -264,7 +264,7 @@ public class EntityUpdate {
       EntityUpdate copy = new EntityUpdate();
       copy.networkId = this.networkId;
       copy.removed = this.removed != null ? Arrays.copyOf(this.removed, this.removed.length) : null;
-      copy.updates = this.updates != null ? Arrays.stream(this.updates).map(e -> e.clone()).toArray(ComponentUpdate[]::new) : null;
+      copy.updates = this.updates != null ? Arrays.copyOf(this.updates, this.updates.length) : null;
       return copy;
    }
 

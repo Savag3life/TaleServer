@@ -20,16 +20,20 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketProtocolFamily;
 import io.netty.channel.socket.nio.NioChannelOption;
-import io.netty.handler.codec.quic.InsecureQuicTokenHandler;
+import io.netty.handler.codec.quic.QLogConfiguration;
 import io.netty.handler.codec.quic.QuicChannel;
+import io.netty.handler.codec.quic.QuicChannelOption;
 import io.netty.handler.codec.quic.QuicCongestionControlAlgorithm;
 import io.netty.handler.codec.quic.QuicServerCodecBuilder;
 import io.netty.handler.codec.quic.QuicSslContext;
 import io.netty.handler.codec.quic.QuicSslContextBuilder;
 import io.netty.handler.ssl.ClientAuth;
+import io.netty.handler.ssl.SniCompletionEvent;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.util.AttributeKey;
+import io.netty.util.Mapping;
+import java.lang.reflect.Field;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetSocketAddress;
@@ -48,6 +52,7 @@ public class QUICTransport implements Transport {
    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
    public static final AttributeKey<X509Certificate> CLIENT_CERTIFICATE_ATTR = AttributeKey.valueOf("CLIENT_CERTIFICATE");
    public static final AttributeKey<Integer> ALPN_REJECT_ERROR_CODE_ATTR = AttributeKey.valueOf("ALPN_REJECT_ERROR_CODE");
+   public static final AttributeKey<String> SNI_HOSTNAME_ATTR = AttributeKey.valueOf("SNI_HOSTNAME");
    @Nonnull
    private final EventLoopGroup workerGroup = NettyUtil.getEventLoopGroup("ServerWorkerGroup");
    private final Bootstrap bootstrapIpv4;
@@ -58,18 +63,33 @@ public class QUICTransport implements Transport {
 
       try {
          ssc = new SelfSignedCertificate("localhost");
-      } catch (CertificateException var5) {
-         throw new RuntimeException(var5);
+      } catch (CertificateException var7) {
+         throw new RuntimeException(var7);
       }
 
       ServerAuthManager.getInstance().setServerCertificate(ssc.cert());
       LOGGER.at(Level.INFO).log("Server certificate registered for mutual auth, fingerprint: %s", CertificateUtil.computeCertificateFingerprint(ssc.cert()));
-      QuicSslContext sslContext = QuicSslContextBuilder.forServer(ssc.key(), null, new X509Certificate[]{ssc.cert()})
+      QuicSslContext baseSslContext = QuicSslContextBuilder.forServer(ssc.key(), null, new X509Certificate[]{ssc.cert()})
          .applicationProtocols(new String[]{"hytale/2", "hytale/1"})
          .earlyData(false)
          .clientAuth(ClientAuth.REQUIRE)
          .trustManager(InsecureTrustManagerFactory.INSTANCE)
          .build();
+
+      QuicSslContext sslContext;
+      try {
+         QuicSslContextBuilder builder = QuicSslContextBuilder.forServer(ssc.key(), null, new X509Certificate[]{ssc.cert()})
+            .earlyData(false)
+            .clientAuth(ClientAuth.REQUIRE);
+         Field field = builder.getClass().getDeclaredField("mapping");
+         field.setAccessible(true);
+         field.set(builder, (Mapping)sni -> baseSslContext);
+         sslContext = builder.build();
+      } catch (IllegalAccessException | NoSuchFieldException var6) {
+         ((HytaleLogger.Api)LOGGER.at(Level.WARNING).withCause(var6)).log("Failed to set SNI mapping via reflection, SNI support disabled");
+         sslContext = baseSslContext;
+      }
+
       NettyUtil.ReflectiveChannelFactory<? extends DatagramChannel> channelFactoryIpv4 = NettyUtil.getDatagramChannelFactory(SocketProtocolFamily.INET);
       LOGGER.at(Level.INFO).log("Using IPv4 Datagram Channel: %s...", channelFactoryIpv4.getSimpleName());
       this.bootstrapIpv4 = ((Bootstrap)((Bootstrap)((Bootstrap)((Bootstrap)((Bootstrap)new Bootstrap().group(this.workerGroup))
@@ -132,9 +152,10 @@ public class QUICTransport implements Transport {
 
       public void channelActive(@Nonnull ChannelHandlerContext ctx) throws Exception {
          Duration playTimeout = HytaleServer.get().getConfig().getConnectionTimeouts().getPlay();
-         ChannelHandler quicHandler = ((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)new QuicServerCodecBuilder()
-                                             .sslContext(this.sslContext))
-                                          .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
+         ChannelHandler quicHandler = ((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)((QuicServerCodecBuilder)new QuicServerCodecBuilder()
+                                                .sslContext(this.sslContext))
+                                             .tokenHandler(null)
+                                             .activeMigration(false))
                                           .maxIdleTimeout(playTimeout.toMillis(), TimeUnit.MILLISECONDS))
                                        .ackDelayExponent(3L))
                                     .initialMaxData(524288L))
@@ -145,23 +166,39 @@ public class QUICTransport implements Transport {
                      .initialMaxStreamsBidirectional(1L))
                   .discoverPmtu(true))
                .congestionControlAlgorithm(QuicCongestionControlAlgorithm.BBR))
+            .option(QuicChannelOption.QLOG, System.getProperty("hytale.qlog") != null ? new QLogConfiguration(".", "hytale-server-quic-qlogs", "") : null)
             .handler(
                new ChannelInboundHandlerAdapter() {
                   public boolean isSharable() {
                      return true;
                   }
 
+                  public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                     if (evt instanceof SniCompletionEvent sniEvent) {
+                        ctx.channel().attr(QUICTransport.SNI_HOSTNAME_ATTR).set(sniEvent.hostname());
+                     }
+
+                     super.userEventTriggered(ctx, evt);
+                  }
+
                   public void channelActive(@Nonnull ChannelHandlerContext ctx) throws Exception {
                      QuicChannel channel = (QuicChannel)ctx.channel();
+                     String sni = (String)channel.attr(QUICTransport.SNI_HOSTNAME_ATTR).get();
                      QUICTransport.LOGGER
                         .at(Level.INFO)
-                        .log("Received connection from %s to %s", NettyUtil.formatRemoteAddress(channel), NettyUtil.formatLocalAddress(channel));
+                        .log("Received connection from %s to %s (SNI: %s)", NettyUtil.formatRemoteAddress(channel), NettyUtil.formatLocalAddress(channel), sni);
                      String negotiatedAlpn = channel.sslEngine().getApplicationProtocol();
                      int negotiatedVersion = this.parseProtocolVersion(negotiatedAlpn);
                      if (negotiatedVersion < 2) {
                         QUICTransport.LOGGER
                            .at(Level.INFO)
-                           .log("Marking connection from %s for rejection: ALPN %s < required %d", NettyUtil.formatRemoteAddress(channel), negotiatedAlpn, 2);
+                           .log(
+                              "Marking connection from %s (SNI: %s) for rejection: ALPN %s < required %d",
+                              NettyUtil.formatRemoteAddress(channel),
+                              sni,
+                              negotiatedAlpn,
+                              2
+                           );
                         channel.attr(QUICTransport.ALPN_REJECT_ERROR_CODE_ATTR).set(5);
                      }
 
@@ -169,7 +206,7 @@ public class QUICTransport implements Transport {
                      if (clientCert == null) {
                         QUICTransport.LOGGER
                            .at(Level.WARNING)
-                           .log("Connection rejected: no client certificate from %s", NettyUtil.formatRemoteAddress(channel));
+                           .log("Connection rejected: no client certificate from %s (SNI: %s)", NettyUtil.formatRemoteAddress(channel), sni);
                         ProtocolUtil.closeConnection(channel);
                      } else {
                         channel.attr(QUICTransport.CLIENT_CERTIFICATE_ATTR).set(clientCert);

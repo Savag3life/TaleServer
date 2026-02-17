@@ -25,7 +25,9 @@ public class ContractSelectionCommand extends AbstractPlayerCommand {
    @Nonnull
    private final RequiredArg<Integer> distanceArg = this.withRequiredArg("distance", "server.commands.contract.arg.distance.desc", ArgTypes.INTEGER);
    @Nonnull
-   private final OptionalArg<List<Axis>> axisArg = this.withListOptionalArg("axis", "command.contract.arg.axis.desc", ArgTypes.forEnum("Axis", Axis.class));
+   private final OptionalArg<List<Axis>> axisArg = this.withListOptionalArg(
+      "axis", "server.commands.contract.arg.axis.desc", ArgTypes.forEnum("Axis", Axis.class)
+   );
 
    public ContractSelectionCommand() {
       super("contractSelection", "server.commands.contract.desc");

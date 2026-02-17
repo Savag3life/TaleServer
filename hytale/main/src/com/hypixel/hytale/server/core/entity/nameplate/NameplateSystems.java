@@ -9,8 +9,8 @@ import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.protocol.ComponentUpdate;
 import com.hypixel.hytale.protocol.ComponentUpdateType;
+import com.hypixel.hytale.protocol.NameplateUpdate;
 import com.hypixel.hytale.server.core.modules.entity.tracker.EntityTrackerSystems;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Map;
@@ -132,10 +132,7 @@ public class NameplateSystems {
       private static void queueUpdatesFor(
          @Nonnull Ref<EntityStore> ref, @Nonnull Nameplate nameplateComponent, @Nonnull Map<Ref<EntityStore>, EntityTrackerSystems.EntityViewer> visibleTo
       ) {
-         ComponentUpdate update = new ComponentUpdate();
-         update.type = ComponentUpdateType.Nameplate;
-         update.nameplate = new com.hypixel.hytale.protocol.Nameplate();
-         update.nameplate.text = nameplateComponent.getText();
+         NameplateUpdate update = new NameplateUpdate(nameplateComponent.getText());
 
          for (EntityTrackerSystems.EntityViewer viewer : visibleTo.values()) {
             viewer.queueUpdate(ref, update);

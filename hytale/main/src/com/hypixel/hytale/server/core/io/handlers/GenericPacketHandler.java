@@ -1,6 +1,6 @@
 package com.hypixel.hytale.server.core.io.handlers;
 
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.server.core.io.PacketHandler;
 import com.hypixel.hytale.server.core.io.ProtocolVersion;
 import io.netty.channel.Channel;
@@ -10,13 +10,13 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 public abstract class GenericPacketHandler extends PacketHandler {
-   private static final Consumer<Packet> EMPTY_CONSUMER = packet -> {};
+   private static final Consumer<ToServerPacket> EMPTY_CONSUMER = packet -> {};
    @Nonnull
    protected final List<SubPacketHandler> packetHandlers = new ObjectArrayList();
-   private Consumer<Packet>[] handlers = newHandlerArray(0);
+   private Consumer<ToServerPacket>[] handlers = newHandlerArray(0);
 
    @Nonnull
-   public static Consumer<Packet>[] newHandlerArray(int size) {
+   public static Consumer<ToServerPacket>[] newHandlerArray(int size) {
       return new Consumer[size];
    }
 
@@ -28,9 +28,9 @@ public abstract class GenericPacketHandler extends PacketHandler {
       this.packetHandlers.add(subPacketHandler);
    }
 
-   public void registerHandler(int packetId, @Nonnull Consumer<Packet> handler) {
+   public void registerHandler(int packetId, @Nonnull Consumer<ToServerPacket> handler) {
       if (packetId >= this.handlers.length) {
-         Consumer<Packet>[] newHandlers = newHandlerArray(packetId + 1);
+         Consumer<ToServerPacket>[] newHandlers = newHandlerArray(packetId + 1);
          System.arraycopy(this.handlers, 0, newHandlers, 0, this.handlers.length);
          this.handlers = newHandlers;
       }
@@ -45,9 +45,9 @@ public abstract class GenericPacketHandler extends PacketHandler {
    }
 
    @Override
-   public final void accept(@Nonnull Packet packet) {
+   public final void accept(@Nonnull ToServerPacket packet) {
       int packetId = packet.getId();
-      Consumer<Packet> handler = this.handlers.length > packetId ? this.handlers[packetId] : null;
+      Consumer<ToServerPacket> handler = this.handlers.length > packetId ? this.handlers[packetId] : null;
       if (handler != null) {
          try {
             handler.accept(packet);

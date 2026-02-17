@@ -31,8 +31,7 @@ public class ExitInstance implements RespawnController {
       @Nonnull World world, @Nonnull Ref<EntityStore> playerReference, @Nonnull ComponentAccessor<EntityStore> commandBuffer
    ) {
       try {
-         InstancesPlugin.exitInstance(playerReference, commandBuffer);
-         return CompletableFuture.completedFuture(null);
+         return InstancesPlugin.exitInstance(playerReference, commandBuffer);
       } catch (Exception var6) {
          PlayerRef playerRefComponent = commandBuffer.getComponent(playerReference, PlayerRef.getComponentType());
 

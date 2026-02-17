@@ -47,7 +47,7 @@ public class WorldMap implements NetworkSerializable<UpdateWorldMap> {
    }
 
    public void addPointOfInterest(String id, String name, String markerType, @Nonnull Transform transform) {
-      MapMarker old = this.pointsOfInterest.putIfAbsent(id, new MapMarker(id, name, markerType, PositionUtil.toTransformPacket(transform), null));
+      MapMarker old = this.pointsOfInterest.putIfAbsent(id, new MapMarker(id, null, name, markerType, PositionUtil.toTransformPacket(transform), null, null));
       if (old != null) {
          throw new IllegalArgumentException("Id " + id + " already exists!");
       }

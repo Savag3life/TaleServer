@@ -22,12 +22,17 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 public abstract class DirectionalityAsset implements Cleanable, JsonAssetWithMap<String, DefaultAssetMap<String, DirectionalityAsset>> {
+   @Nonnull
    public static final AssetCodecMapCodec<String, DirectionalityAsset> CODEC = new AssetCodecMapCodec<>(
       Codec.STRING, (t, k) -> t.id = k, t -> t.id, (t, data) -> t.data = data, t -> t.data
    );
+   @Nonnull
    private static final Map<String, DirectionalityAsset> exportedNodes = new HashMap<>();
+   @Nonnull
    public static final Codec<String> CHILD_ASSET_CODEC = new ContainedAssetCodec<>(DirectionalityAsset.class, CODEC);
+   @Nonnull
    public static final Codec<String[]> CHILD_ASSET_CODEC_ARRAY = new ArrayCodec<>(CHILD_ASSET_CODEC, String[]::new);
+   @Nonnull
    public static final BuilderCodec<DirectionalityAsset> ABSTRACT_CODEC = BuilderCodec.abstractBuilder(DirectionalityAsset.class)
       .append(new KeyedCodec<>("ExportAs", Codec.STRING, false), (t, k) -> t.exportName = k, t -> t.exportName)
       .add()
@@ -61,29 +66,29 @@ public abstract class DirectionalityAsset implements Cleanable, JsonAssetWithMap
 
    @Nonnull
    public static DirectionalityAsset.Argument argumentFrom(@Nonnull PropAsset.Argument argument) {
-      return new DirectionalityAsset.Argument(argument.parentSeed, argument.materialCache, argument.referenceBundle, argument.workerIndexer);
+      return new DirectionalityAsset.Argument(argument.parentSeed, argument.materialCache, argument.referenceBundle, argument.workerId);
    }
 
    public static class Argument {
       public SeedBox parentSeed;
       public MaterialCache materialCache;
       public ReferenceBundle referenceBundle;
-      public WorkerIndexer workerIndexer;
+      public WorkerIndexer.Id workerId;
 
       public Argument(
-         @Nonnull SeedBox parentSeed, @Nonnull MaterialCache materialCache, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer workerIndexer
+         @Nonnull SeedBox parentSeed, @Nonnull MaterialCache materialCache, @Nonnull ReferenceBundle referenceBundle, @Nonnull WorkerIndexer.Id workerId
       ) {
          this.parentSeed = parentSeed;
          this.materialCache = materialCache;
          this.referenceBundle = referenceBundle;
-         this.workerIndexer = workerIndexer;
+         this.workerId = workerId;
       }
 
       public Argument(@Nonnull DirectionalityAsset.Argument argument) {
          this.parentSeed = argument.parentSeed;
          this.materialCache = argument.materialCache;
          this.referenceBundle = argument.referenceBundle;
-         this.workerIndexer = argument.workerIndexer;
+         this.workerId = argument.workerId;
       }
    }
 }

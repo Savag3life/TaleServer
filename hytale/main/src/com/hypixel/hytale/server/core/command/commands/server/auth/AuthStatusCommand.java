@@ -73,7 +73,7 @@ public class AuthStatusCommand extends CommandBase {
 
       Message sessionTokenStatus = authManager.hasSessionToken() ? MESSAGE_STATUS_TOKEN_PRESENT : MESSAGE_STATUS_TOKEN_MISSING;
       Message identityTokenStatus = authManager.hasIdentityToken() ? MESSAGE_STATUS_TOKEN_PRESENT : MESSAGE_STATUS_TOKEN_MISSING;
-      String expiryStatus = "";
+      Message expiryStatus = Message.empty();
       Instant expiry = authManager.getTokenExpiry();
       if (expiry != null) {
          long secondsRemaining = expiry.getEpochSecond() - Instant.now().getEpochSecond();
@@ -81,18 +81,23 @@ public class AuthStatusCommand extends CommandBase {
             long hours = secondsRemaining / 3600L;
             long minutes = secondsRemaining % 3600L / 60L;
             long seconds = secondsRemaining % 60L;
-            expiryStatus = String.format("%02d:%02d:%02d remaining", hours, minutes, seconds);
+            expiryStatus = Message.translation("server.commands.auth.status.remaining")
+               .param("hours", String.format("%02d", hours))
+               .param("minutes", String.format("%02d", minutes))
+               .param("seconds", String.format("%02d", seconds));
          } else {
-            expiryStatus = "EXPIRED";
+            expiryStatus = Message.translation("server.commands.auth.status.expired");
          }
       }
 
-      String certificateStatus;
+      Message certificateStatus;
       if (authManager.getServerCertificate() != null) {
          String fingerprint = authManager.getServerCertificateFingerprint();
-         certificateStatus = fingerprint != null ? fingerprint.substring(0, 16) + "..." : "Unknown";
+         certificateStatus = fingerprint != null
+            ? Message.raw(fingerprint.substring(0, 16) + "...")
+            : Message.translation("server.commands.auth.status.certificate.unknown");
       } else {
-         certificateStatus = "Not loaded";
+         certificateStatus = Message.translation("server.commands.auth.status.certificate.notLoaded");
       }
 
       context.sendMessage(

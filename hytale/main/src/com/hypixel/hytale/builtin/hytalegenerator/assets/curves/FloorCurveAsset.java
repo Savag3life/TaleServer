@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class FloorCurveAsset extends CurveAsset {
+   @Nonnull
    public static final BuilderCodec<FloorCurveAsset> CODEC = BuilderCodec.builder(FloorCurveAsset.class, FloorCurveAsset::new, CurveAsset.ABSTRACT_CODEC)
       .append(new KeyedCodec<>("Curve", CurveAsset.CODEC, true), (t, k) -> t.curveAsset = k, k -> k.curveAsset)
       .add()
@@ -14,7 +15,7 @@ public class FloorCurveAsset extends CurveAsset {
       .add()
       .build();
    private CurveAsset curveAsset = new ConstantCurveAsset();
-   private double limit = 0.0;
+   private double limit;
 
    @Nonnull
    @Override

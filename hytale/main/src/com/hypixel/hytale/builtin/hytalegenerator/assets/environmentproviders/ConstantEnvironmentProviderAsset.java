@@ -9,6 +9,7 @@ import com.hypixel.hytale.server.core.asset.type.environment.config.Environment;
 import javax.annotation.Nonnull;
 
 public class ConstantEnvironmentProviderAsset extends EnvironmentProviderAsset {
+   @Nonnull
    public static final BuilderCodec<ConstantEnvironmentProviderAsset> CODEC = BuilderCodec.builder(
          ConstantEnvironmentProviderAsset.class, ConstantEnvironmentProviderAsset::new, EnvironmentProviderAsset.ABSTRACT_CODEC
       )

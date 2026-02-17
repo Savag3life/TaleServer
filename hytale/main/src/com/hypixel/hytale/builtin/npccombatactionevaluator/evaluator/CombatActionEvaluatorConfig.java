@@ -17,6 +17,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 public class CombatActionEvaluatorConfig {
+   @Nonnull
    public static final BuilderCodec<CombatActionEvaluatorConfig> CODEC = BuilderCodec.builder(
          CombatActionEvaluatorConfig.class, CombatActionEvaluatorConfig::new
       )
@@ -79,6 +80,7 @@ public class CombatActionEvaluatorConfig {
       .documentation("A random range from which to pick the NPC's predictability factor.")
       .add()
       .build();
+   @Nonnull
    private static final double[] DEFAULT_PREDICTABILITY_RANGE = new double[]{1.0, 1.0};
    protected Map<String, String> availableActions = Collections.emptyMap();
    protected Map<String, CombatActionEvaluatorConfig.ActionSet> actionSets;
@@ -130,6 +132,7 @@ public class CombatActionEvaluatorConfig {
    }
 
    public static class ActionSet {
+      @Nonnull
       public static final BuilderCodec<CombatActionEvaluatorConfig.ActionSet> CODEC = BuilderCodec.builder(
             CombatActionEvaluatorConfig.ActionSet.class, CombatActionEvaluatorConfig.ActionSet::new
          )
@@ -170,6 +173,7 @@ public class CombatActionEvaluatorConfig {
    }
 
    public static class BasicAttacks {
+      @Nonnull
       public static final BuilderCodec<CombatActionEvaluatorConfig.BasicAttacks> CODEC = BuilderCodec.builder(
             CombatActionEvaluatorConfig.BasicAttacks.class, CombatActionEvaluatorConfig.BasicAttacks::new
          )

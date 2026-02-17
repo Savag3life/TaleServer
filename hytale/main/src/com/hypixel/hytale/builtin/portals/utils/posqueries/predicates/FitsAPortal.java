@@ -15,34 +15,53 @@ import com.hypixel.hytale.server.core.universe.world.chunk.ChunkColumn;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import javax.annotation.Nonnull;
 
 public class FitsAPortal implements PositionPredicate {
+   @Nonnull
    private static final int[] THREES = new int[]{-1, 0, 1};
 
    @Override
-   public boolean test(World world, Vector3d point) {
+   public boolean test(@Nonnull World world, @Nonnull Vector3d point) {
       return check(world, point);
    }
 
-   public static boolean check(World world, Vector3d point) {
+   public static boolean check(@Nonnull World world, @Nonnull Vector3d point) {
       ChunkStore chunkStore = world.getChunkStore();
 
       for (int x : THREES) {
          for (int z : THREES) {
             for (int y = -1; y <= 3; y++) {
                Vector3i rel = point.toVector3i().add(x, y, z);
-               WorldChunk chunk = world.getChunk(ChunkUtil.indexChunkFromBlock(rel.x, rel.z));
+               long chunkIndex = ChunkUtil.indexChunkFromBlock(rel.x, rel.z);
+               WorldChunk chunk = world.getChunk(chunkIndex);
+               if (chunk == null) {
+                  return false;
+               }
+
                Ref<ChunkStore> chunkRef = chunk.getReference();
+               if (chunkRef == null || !chunkRef.isValid()) {
+                  return false;
+               }
+
                Store<ChunkStore> chunkStoreAccessor = chunkStore.getStore();
                ChunkColumn chunkColumnComponent = chunkStoreAccessor.getComponent(chunkRef, ChunkColumn.getComponentType());
+               if (chunkColumnComponent == null) {
+                  return false;
+               }
+
                BlockChunk blockChunkComponent = chunkStoreAccessor.getComponent(chunkRef, BlockChunk.getComponentType());
+               if (blockChunkComponent == null) {
+                  return false;
+               }
+
                int fluidId = WorldUtil.getFluidIdAtPosition(chunkStoreAccessor, chunkColumnComponent, rel.x, rel.y, rel.z);
                if (fluidId != 0) {
                   return false;
                }
 
-               BlockSection blockSection = blockChunkComponent.getSectionAtBlockY(rel.y);
-               int blockId = blockSection.get(rel.x, rel.y, rel.z);
+               BlockSection blockSectionComponent = blockChunkComponent.getSectionAtBlockY(rel.y);
+               int blockId = blockSectionComponent.get(rel.x, rel.y, rel.z);
                BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
                if (blockType == null) {
                   return false;

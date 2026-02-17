@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import javax.annotation.Nonnull;
 
 public class CachedPositionProviderAsset extends PositionProviderAsset {
+   @Nonnull
    public static final BuilderCodec<CachedPositionProviderAsset> CODEC = BuilderCodec.builder(
          CachedPositionProviderAsset.class, CachedPositionProviderAsset::new, PositionProviderAsset.ABSTRACT_CODEC
       )
@@ -32,7 +33,7 @@ public class CachedPositionProviderAsset extends PositionProviderAsset {
          return PositionProvider.noPositionProvider();
       } else {
          PositionProvider childPositions = this.childAsset.build(argument);
-         return new CachedPositionProvider(childPositions, this.sectionSize, this.cacheSize, false, argument.workerIndexer.getWorkerCount());
+         return new CachedPositionProvider(childPositions, this.sectionSize, this.cacheSize, false);
       }
    }
 

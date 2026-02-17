@@ -19,6 +19,7 @@ import it.unimi.dsi.fastutil.doubles.Double2DoubleFunction;
 import javax.annotation.Nonnull;
 
 public class Positions3DDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<Positions3DDensityAsset> CODEC = BuilderCodec.builder(
          Positions3DDensityAsset.class, Positions3DDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -43,7 +44,7 @@ public class Positions3DDensityAsset extends DensityAsset {
          return new ConstantValueDensity(0.0);
       } else {
          PositionProvider positionsField = this.positionProviderAsset
-            .build(new PositionProviderAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerIndexer));
+            .build(new PositionProviderAsset.Argument(argument.parentSeed, argument.referenceBundle, argument.workerId));
          Double2DoubleFunction curve = this.curveAsset.build();
          CurveReturnType returnType = new CurveReturnType(curve);
          return new PositionsDensity(positionsField, returnType, new EuclideanDistanceFunction(), this.maxDistance);

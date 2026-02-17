@@ -22,6 +22,7 @@ import com.hypixel.hytale.server.core.asset.type.gameplay.GameplayConfig;
 import com.hypixel.hytale.server.core.asset.type.model.config.Model;
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset;
 import com.hypixel.hytale.server.core.command.system.CommandRegistry;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
 import com.hypixel.hytale.server.core.modules.entity.component.BoundingBox;
 import com.hypixel.hytale.server.core.modules.entity.component.HiddenFromAdventurePlayers;
@@ -40,9 +41,9 @@ import com.hypixel.hytale.server.core.universe.world.events.AllWorldsLoadedEvent
 import com.hypixel.hytale.server.core.universe.world.events.ChunkPreLoadProcessEvent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
-import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MapMarkerTracker;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MapMarkerBuilder;
+import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MarkersCollector;
 import com.hypixel.hytale.server.core.util.BsonUtil;
-import com.hypixel.hytale.server.core.util.PositionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -250,24 +251,17 @@ public class TeleportPlugin extends JavaPlugin {
       public static final TeleportPlugin.WarpMarkerProvider INSTANCE = new TeleportPlugin.WarpMarkerProvider();
 
       @Override
-      public void update(@Nonnull World world, @Nonnull MapMarkerTracker tracker, int chunkViewRadius, int playerChunkX, int playerChunkZ) {
+      public void update(@Nonnull World world, @Nonnull Player player, @Nonnull MarkersCollector collector) {
          Map<String, Warp> warps = TeleportPlugin.get().getWarps();
          if (!warps.isEmpty()) {
             GameplayConfig gameplayConfig = world.getGameplayConfig();
             if (gameplayConfig.getWorldMapConfig().isDisplayWarps()) {
                for (Warp warp : warps.values()) {
                   if (warp.getWorld().equals(world.getName())) {
-                     tracker.trySendMarker(
-                        chunkViewRadius,
-                        playerChunkX,
-                        playerChunkZ,
-                        warp.getTransform().getPosition(),
-                        warp.getTransform().getRotation().getYaw(),
-                        "Warp-" + warp.getId(),
-                        "Warp: " + warp.getId(),
-                        warp,
-                        (id, name, w) -> new MapMarker(id, name, "Warp.png", PositionUtil.toTransformPacket(w.getTransform()), null)
-                     );
+                     MapMarker marker = new MapMarkerBuilder("Warp-" + warp.getId(), "Warp.png", warp.getTransform())
+                        .withCustomName("Warp: " + warp.getId())
+                        .build();
+                     collector.add(marker);
                   }
                }
             }

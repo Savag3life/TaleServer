@@ -15,6 +15,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class EllipsoidDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<EllipsoidDensityAsset> CODEC = BuilderCodec.builder(
          EllipsoidDensityAsset.class, EllipsoidDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )

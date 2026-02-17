@@ -19,7 +19,8 @@ import com.hypixel.hytale.codec.schema.SchemaContext;
 import com.hypixel.hytale.codec.schema.config.Schema;
 import com.hypixel.hytale.common.util.FormatUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
+import com.hypixel.hytale.server.core.Constants;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Options;
 import com.hypixel.hytale.server.core.ShutdownReason;
@@ -247,6 +248,7 @@ public class AssetRegistryLoader {
       Path serverAssetDirectory = assetPack.getRoot().resolve("Server");
       HytaleLogger.getLogger().at(Level.INFO).log("Loading assets from: %s", serverAssetDirectory);
       long startAll = System.nanoTime();
+      boolean shouldFail = Options.getOptionSet().has(Options.VALIDATE_ASSETS) || !Constants.shouldSkipModValidation();
       boolean failedToLoadAsset = false;
       LOGGER.at(Level.INFO).log("Loading assets from %s", serverAssetDirectory);
       Collection<AssetStore<?, ?, ?>> values = AssetRegistry.getStoreMap().values();
@@ -277,18 +279,22 @@ public class AssetRegistryLoader {
                      failedToLoadAsset |= loadResult.hasFailed();
                   }
                }
-            } catch (Exception var18) {
+            } catch (Exception var19) {
                failedToLoadAsset = true;
+               if (event != null) {
+                  event.failed(shouldFail, "Asset pack " + assetPack.getName() + " failed to load " + assetClass.getSimpleName() + " - " + var19.getMessage());
+               }
+
                long end = System.nanoTime();
                long diff = end - start;
                if (iterator.isBeingWaitedFor(assetStore)) {
                   throw new RuntimeException(
                      String.format("Failed to load %s from path '%s' took %s", assetClass.getSimpleName(), assetStore.getPath(), FormatUtil.nanosToString(diff)),
-                     var18
+                     var19
                   );
                }
 
-               ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var18))
+               ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var19))
                   .log("Failed to load %s from path '%s' took %s", assetClass.getSimpleName(), assetStore.getPath(), FormatUtil.nanosToString(diff));
             }
          }
@@ -312,33 +318,25 @@ public class AssetRegistryLoader {
       long diffAll = endAll - startAll;
       LOGGER.at(Level.INFO).log("Took %s to load all assets", FormatUtil.nanosToString(diffAll));
       if (failedToLoadAsset && event != null) {
-         event.failed(Options.getOptionSet().has(Options.VALIDATE_ASSETS), "failed to validate assets");
+         if ("Hytale:Hytale".equals(assetPack.getName())) {
+            event.failed(shouldFail, "Assets " + assetPack.getName() + " failed to load.");
+         } else {
+            event.failed(shouldFail, "Mod " + assetPack.getName() + " failed to load. Check for mod updates or contact the mod author.");
+         }
       }
    }
 
    public static void sendAssets(@Nonnull PacketHandler packetHandler) {
-      Consumer<Packet[]> packetConsumer = packetHandler::write;
-      Consumer<Packet> singlePacketConsumer = packetHandler::write;
-      AssetRegistry.ASSET_LOCK.writeLock().lock();
-
-      try {
-         HytaleAssetStore.SETUP_PACKET_CONSUMERS.add(singlePacketConsumer);
-      } finally {
-         AssetRegistry.ASSET_LOCK.writeLock().unlock();
-      }
+      Consumer<ToClientPacket[]> packetConsumer = packetHandler::write;
+      Consumer<ToClientPacket> singlePacketConsumer = packetHandler::write;
+      HytaleAssetStore.SETUP_PACKET_CONSUMERS.add(singlePacketConsumer);
 
       try {
          for (AssetStore<?, ?, ?> assetStore : AssetRegistry.getStoreMap().values()) {
             ((HytaleAssetStore)assetStore).sendAssets(packetConsumer);
          }
       } finally {
-         AssetRegistry.ASSET_LOCK.writeLock().lock();
-
-         try {
-            HytaleAssetStore.SETUP_PACKET_CONSUMERS.remove(singlePacketConsumer);
-         } finally {
-            AssetRegistry.ASSET_LOCK.writeLock().unlock();
-         }
+         HytaleAssetStore.SETUP_PACKET_CONSUMERS.remove(singlePacketConsumer);
       }
    }
 

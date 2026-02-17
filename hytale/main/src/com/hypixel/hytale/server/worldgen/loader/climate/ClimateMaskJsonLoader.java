@@ -1,8 +1,8 @@
 package com.hypixel.hytale.server.worldgen.loader.climate;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
+import com.google.gson.JsonObject;
+import com.hypixel.hytale.procedurallib.file.FileIO;
 import com.hypixel.hytale.procedurallib.json.CoordinateRandomizerJsonLoader;
 import com.hypixel.hytale.procedurallib.json.JsonLoader;
 import com.hypixel.hytale.procedurallib.json.SeedResource;
@@ -13,9 +13,7 @@ import com.hypixel.hytale.server.worldgen.climate.ClimateGraph;
 import com.hypixel.hytale.server.worldgen.climate.ClimateMaskProvider;
 import com.hypixel.hytale.server.worldgen.climate.ClimateNoise;
 import com.hypixel.hytale.server.worldgen.climate.UniqueClimateGenerator;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -55,16 +53,11 @@ public class ClimateMaskJsonLoader<K extends SeedResource> extends JsonLoader<K,
          .load();
    }
 
-   protected static JsonElement loadMaskFileJson(Path file) {
+   protected static JsonObject loadMaskFileJson(Path file) {
       try {
-         JsonElement var2;
-         try (BufferedReader reader = Files.newBufferedReader(file)) {
-            var2 = JsonParser.parseReader(reader);
-         }
-
-         return var2;
-      } catch (IOException var6) {
-         throw new Error("Failed to load Mask.json", var6);
+         return FileIO.load(file, JsonLoader.JSON_OBJ_LOADER);
+      } catch (IOException var2) {
+         throw new Error("Failed to load Mask.json", var2);
       }
    }
 

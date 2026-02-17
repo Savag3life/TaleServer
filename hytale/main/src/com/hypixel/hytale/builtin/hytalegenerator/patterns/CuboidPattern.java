@@ -13,30 +13,42 @@ public class CuboidPattern extends Pattern {
    private final Vector3i max;
    @Nonnull
    private final SpaceSize readSpaceSize;
+   @Nonnull
+   private final Vector3i rScanMin;
+   @Nonnull
+   private final Vector3i rScanMax;
+   @Nonnull
+   private final Vector3i rChildPosition;
+   @Nonnull
+   private final Pattern.Context rChildContext;
 
    public CuboidPattern(@Nonnull Pattern subPattern, @Nonnull Vector3i min, @Nonnull Vector3i max) {
       this.subPattern = subPattern;
       this.min = min;
       this.max = max;
       this.readSpaceSize = new SpaceSize(min, max.clone().add(1, 1, 1));
+      this.rScanMin = new Vector3i();
+      this.rScanMax = new Vector3i();
+      this.rChildPosition = new Vector3i();
+      this.rChildContext = new Pattern.Context();
    }
 
    @Override
    public boolean matches(@Nonnull Pattern.Context context) {
-      Vector3i scanMin = this.min.clone().add(context.position);
-      Vector3i scanMax = this.max.clone().add(context.position);
-      Vector3i childPosition = context.position.clone();
-      Pattern.Context childContext = new Pattern.Context(context);
-      childContext.position = childPosition;
+      this.rScanMin.assign(this.min).add(context.position);
+      this.rScanMax.assign(this.max).add(context.position);
+      this.rChildPosition.assign(context.position);
+      this.rChildContext.assign(context);
+      this.rChildContext.position = this.rChildPosition;
 
-      for (childPosition.x = scanMin.x; childPosition.x <= scanMax.x; childPosition.x++) {
-         for (childPosition.z = scanMin.z; childPosition.z <= scanMax.z; childPosition.z++) {
-            for (childPosition.y = scanMin.y; childPosition.y <= scanMax.y; childPosition.y++) {
-               if (!context.materialSpace.isInsideSpace(childPosition)) {
+      for (this.rChildPosition.x = this.rScanMin.x; this.rChildPosition.x <= this.rScanMax.x; this.rChildPosition.x++) {
+         for (this.rChildPosition.z = this.rScanMin.z; this.rChildPosition.z <= this.rScanMax.z; this.rChildPosition.z++) {
+            for (this.rChildPosition.y = this.rScanMin.y; this.rChildPosition.y <= this.rScanMax.y; this.rChildPosition.y++) {
+               if (!context.materialSpace.isInsideSpace(this.rChildPosition)) {
                   return false;
                }
 
-               if (!this.subPattern.matches(childContext)) {
+               if (!this.subPattern.matches(this.rChildContext)) {
                   return false;
                }
             }

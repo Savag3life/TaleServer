@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 public class DeployableTrapConfig extends DeployableAoeConfig {
+   @Nonnull
    public static final BuilderCodec<DeployableTrapConfig> CODEC = BuilderCodec.builder(
          DeployableTrapConfig.class, DeployableTrapConfig::new, DeployableAoeConfig.CODEC
       )
@@ -62,66 +63,69 @@ public class DeployableTrapConfig extends DeployableAoeConfig {
       @Nonnull Store<EntityStore> store,
       @Nonnull CommandBuffer<EntityStore> commandBuffer
    ) {
-      Vector3d pos = archetypeChunk.getComponent(index, TransformComponent.getComponentType()).getPosition();
-      World world = store.getExternalData().getWorld();
-      Ref<EntityStore> entityRef = archetypeChunk.getReferenceTo(index);
-      if (!deployableComponent.getOwner().isValid()) {
-         world.execute(() -> {
-            if (entityRef.isValid()) {
-               DespawnComponent despawn = store.ensureAndGetComponent(entityRef, DespawnComponent.getComponentType());
-               WorldTimeResource timeManager = commandBuffer.getResource(WorldTimeResource.getResourceType());
-               despawn.setDespawn(timeManager.getGameTime());
-            }
-         });
-      } else {
-         float radius = this.getRadius(store, deployableComponent.getSpawnInstant());
-         this.handleDebugGraphics(world, deployableComponent.getDebugColor(), pos, radius * 2.0F);
-         switch (deployableComponent.getFlag(DeployableComponent.DeployableFlag.STATE)) {
-            case 0:
-               deployableComponent.setFlag(DeployableComponent.DeployableFlag.STATE, 1);
-               break;
-            case 1:
-               deployableComponent.setFlag(DeployableComponent.DeployableFlag.STATE, 2);
-               playAnimation(store, entityRef, this, "Grow");
-               break;
-            case 2:
-               if (radius >= this.endRadius) {
-                  deployableComponent.setFlag(DeployableComponent.DeployableFlag.STATE, 3);
-                  playAnimation(store, entityRef, this, "Looping");
+      TransformComponent transformComponent = archetypeChunk.getComponent(index, TransformComponent.getComponentType());
+      if (transformComponent != null) {
+         Vector3d pos = transformComponent.getPosition();
+         World world = store.getExternalData().getWorld();
+         Ref<EntityStore> entityRef = archetypeChunk.getReferenceTo(index);
+         if (!deployableComponent.getOwner().isValid()) {
+            world.execute(() -> {
+               if (entityRef.isValid()) {
+                  DespawnComponent despawn = store.ensureAndGetComponent(entityRef, DespawnComponent.getComponentType());
+                  WorldTimeResource timeManager = commandBuffer.getResource(WorldTimeResource.getResourceType());
+                  despawn.setDespawn(timeManager.getGameTime());
                }
-         }
+            });
+         } else {
+            float radius = this.getRadius(store, deployableComponent.getSpawnInstant());
+            this.handleDebugGraphics(world, deployableComponent.getDebugColor(), pos, radius * 2.0F);
+            switch (deployableComponent.getFlag(DeployableComponent.DeployableFlag.STATE)) {
+               case 0:
+                  deployableComponent.setFlag(DeployableComponent.DeployableFlag.STATE, 1);
+                  break;
+               case 1:
+                  deployableComponent.setFlag(DeployableComponent.DeployableFlag.STATE, 2);
+                  playAnimation(store, entityRef, this, "Grow");
+                  break;
+               case 2:
+                  if (radius >= this.endRadius) {
+                     deployableComponent.setFlag(DeployableComponent.DeployableFlag.STATE, 3);
+                     playAnimation(store, entityRef, this, "Looping");
+                  }
+            }
 
-         Ref<EntityStore> trapRef = archetypeChunk.getReferenceTo(index);
-         deployableComponent.setTimeSinceLastAttack(deployableComponent.getTimeSinceLastAttack() + dt);
-         if (deployableComponent.getTimeSinceLastAttack() > this.damageInterval && this.isLive(store, deployableComponent)) {
-            deployableComponent.setTimeSinceLastAttack(0.0F);
-            this.handleDetection(store, commandBuffer, trapRef, deployableComponent, pos, radius, DamageCause.PHYSICAL);
+            Ref<EntityStore> trapRef = archetypeChunk.getReferenceTo(index);
+            deployableComponent.setTimeSinceLastAttack(deployableComponent.getTimeSinceLastAttack() + dt);
+            if (deployableComponent.getTimeSinceLastAttack() > this.damageInterval && this.isLive(store, deployableComponent)) {
+               deployableComponent.setTimeSinceLastAttack(0.0F);
+               this.handleDetection(store, commandBuffer, trapRef, deployableComponent, pos, radius, DamageCause.PHYSICAL);
+            }
          }
       }
    }
 
    @Override
    protected void handleDetection(
-      final Store<EntityStore> store,
-      final CommandBuffer<EntityStore> commandBuffer,
-      final Ref<EntityStore> deployableRef,
-      final DeployableComponent deployableComponent,
-      Vector3d position,
+      @Nonnull final Store<EntityStore> store,
+      @Nonnull final CommandBuffer<EntityStore> commandBuffer,
+      @Nonnull final Ref<EntityStore> deployableRef,
+      @Nonnull final DeployableComponent deployableComponent,
+      @Nonnull Vector3d position,
       float radius,
-      final DamageCause damageCause
+      @Nonnull final DamageCause damageCause
    ) {
       World world = store.getExternalData().getWorld();
       var consumer = new Consumer<Ref<EntityStore>>() {
-         public void accept(Ref<EntityStore> entityStoreRef) {
-            if (entityStoreRef != deployableRef) {
-               if (store.getComponent(entityStoreRef, DeployableComponent.getComponentType()) == null) {
-                  DeployableTrapConfig.this.attackTarget(entityStoreRef, deployableRef, damageCause, commandBuffer);
+         public void accept(@Nonnull Ref<EntityStore> ref) {
+            if (ref != deployableRef) {
+               if (store.getComponent(ref, DeployableComponent.getComponentType()) == null) {
+                  DeployableTrapConfig.this.attackTarget(ref, deployableRef, damageCause, commandBuffer);
                   if (DeployableTrapConfig.this.destroyOnTriggered && deployableComponent.getFlag(DeployableComponent.DeployableFlag.TRIGGERED) == 0) {
                      DeployableTrapConfig.this.onTriggered(store, deployableRef);
                      deployableComponent.setFlag(DeployableComponent.DeployableFlag.TRIGGERED, 1);
                   }
 
-                  DeployableTrapConfig.this.applyEffectToTarget(store, entityStoreRef);
+                  DeployableTrapConfig.this.applyEffectToTarget(store, ref);
                }
             }
          }

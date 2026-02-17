@@ -290,10 +290,9 @@ public class EntityChunk implements Component<ChunkStore> {
                   worldChunkComponent.markNeedsSaving();
                } else {
                   TransformComponent transformComponent = holder.getComponent(TransformComponent.getComponentType());
-
-                  assert transformComponent != null;
-
-                  transformComponent.setChunkLocation(ref, worldChunkComponent);
+                  if (transformComponent != null) {
+                     transformComponent.setChunkLocation(ref, worldChunkComponent);
+                  }
                }
             }
 

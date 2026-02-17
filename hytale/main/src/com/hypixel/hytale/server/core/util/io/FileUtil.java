@@ -4,6 +4,7 @@ import com.hypixel.hytale.sneakythrow.SneakyThrow;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
@@ -103,5 +104,28 @@ public class FileUtil {
             }
          }
       }
+   }
+
+   public static void writeStringAtomic(@Nonnull Path file, @Nonnull String content, boolean backup) throws IOException {
+      Path tmpPath = file.resolveSibling(file.getFileName() + ".tmp");
+      Path bakPath = file.resolveSibling(file.getFileName() + ".bak");
+      Files.writeString(tmpPath, content);
+      if (backup && Files.isRegularFile(file)) {
+         atomicMove(file, bakPath);
+      }
+
+      atomicMove(tmpPath, file);
+   }
+
+   public static void atomicMove(@Nonnull Path source, @Nonnull Path target) throws IOException {
+      try {
+         Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+      } catch (AtomicMoveNotSupportedException var3) {
+         Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+      }
+   }
+
+   public static void writeStringAtomic(@Nonnull Path file, @Nonnull String content) throws IOException {
+      writeStringAtomic(file, content, true);
    }
 }

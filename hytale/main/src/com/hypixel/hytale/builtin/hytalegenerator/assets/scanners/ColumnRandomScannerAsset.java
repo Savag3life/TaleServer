@@ -1,8 +1,7 @@
 package com.hypixel.hytale.builtin.hytalegenerator.assets.scanners;
 
 import com.hypixel.hytale.builtin.hytalegenerator.assets.ValidatorUtil;
-import com.hypixel.hytale.builtin.hytalegenerator.framework.interfaces.functions.BiDouble2DoubleFunction;
-import com.hypixel.hytale.builtin.hytalegenerator.referencebundle.BaseHeightReference;
+import com.hypixel.hytale.builtin.hytalegenerator.assets.framework.DecimalConstantsFrameworkAsset;
 import com.hypixel.hytale.builtin.hytalegenerator.scanners.ColumnRandomScanner;
 import com.hypixel.hytale.builtin.hytalegenerator.scanners.Scanner;
 import com.hypixel.hytale.builtin.hytalegenerator.seed.SeedBox;
@@ -10,10 +9,10 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.Validators;
-import com.hypixel.hytale.logger.HytaleLogger;
 import javax.annotation.Nonnull;
 
 public class ColumnRandomScannerAsset extends ScannerAsset {
+   @Nonnull
    public static final BuilderCodec<ColumnRandomScannerAsset> CODEC = BuilderCodec.builder(
          ColumnRandomScannerAsset.class, ColumnRandomScannerAsset::new, ScannerAsset.ABSTRACT_CODEC
       )
@@ -31,7 +30,7 @@ public class ColumnRandomScannerAsset extends ScannerAsset {
       .add()
       .append(new KeyedCodec<>("RelativeToPosition", Codec.BOOLEAN, false), (t, k) -> t.isRelativeToPosition = k, k -> k.isRelativeToPosition)
       .add()
-      .append(new KeyedCodec<>("BaseHeightName", Codec.STRING, false), (t, k) -> t.baseHeight = k, k -> k.baseHeight)
+      .append(new KeyedCodec<>("BaseHeightName", Codec.STRING, false), (t, k) -> t.baseHeightName = k, k -> k.baseHeightName)
       .add()
       .build();
    private int minY = 0;
@@ -40,7 +39,7 @@ public class ColumnRandomScannerAsset extends ScannerAsset {
    private String seed = "A";
    private String strategyName = "DART_THROW";
    private boolean isRelativeToPosition = false;
-   private String baseHeight = "";
+   private String baseHeightName = "";
 
    @Nonnull
    @Override
@@ -51,17 +50,14 @@ public class ColumnRandomScannerAsset extends ScannerAsset {
          SeedBox childSeed = argument.parentSeed.child(this.seed);
          ColumnRandomScanner.Strategy strategy = ColumnRandomScanner.Strategy.valueOf(this.strategyName);
          if (this.isRelativeToPosition) {
-            return new ColumnRandomScanner(this.minY, this.maxY, this.resultCap, childSeed.createSupplier().get(), strategy, true, null);
+            return new ColumnRandomScanner(this.minY, this.maxY, this.resultCap, childSeed.createSupplier().get(), strategy, true, 0.0);
          } else {
-            BaseHeightReference heightDataLayer = argument.referenceBundle.getLayerWithName(this.baseHeight, BaseHeightReference.class);
-            if (heightDataLayer == null) {
-               ((HytaleLogger.Api)HytaleLogger.getLogger().atConfig())
-                  .log("Couldn't find height data layer with name \"" + this.baseHeight + "\", defaulting to not using a bed.");
-               return new ColumnRandomScanner(this.minY, this.maxY, this.resultCap, childSeed.createSupplier().get(), strategy, false, null);
-            } else {
-               BiDouble2DoubleFunction baseHeightFunction = heightDataLayer.getHeightFunction();
-               return new ColumnRandomScanner(this.minY, this.maxY, this.resultCap, childSeed.createSupplier().get(), strategy, false, baseHeightFunction);
+            Double baseHeight = DecimalConstantsFrameworkAsset.Entries.get(this.baseHeightName, argument.referenceBundle);
+            if (baseHeight == null) {
+               baseHeight = 0.0;
             }
+
+            return new ColumnRandomScanner(this.minY, this.maxY, this.resultCap, childSeed.createSupplier().get(), strategy, false, baseHeight);
          }
       }
    }

@@ -12,6 +12,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import javax.annotation.Nonnull;
 
 public class ShellDensityAsset extends DensityAsset {
+   @Nonnull
    public static final BuilderCodec<ShellDensityAsset> CODEC = BuilderCodec.builder(
          ShellDensityAsset.class, ShellDensityAsset::new, DensityAsset.ABSTRACT_CODEC
       )
@@ -25,7 +26,7 @@ public class ShellDensityAsset extends DensityAsset {
       .add()
       .build();
    private Vector3d axis = new Vector3d(0.0, 0.0, 0.0);
-   private boolean isMirrored = false;
+   private boolean isMirrored;
    private CurveAsset angleCurveAsset = new ConstantCurveAsset();
    private CurveAsset distanceCurveAsset = new ConstantCurveAsset();
 

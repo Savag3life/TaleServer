@@ -10,7 +10,9 @@ import com.hypixel.hytale.server.core.codec.ProtocolCodecs;
 import javax.annotation.Nonnull;
 
 public class ConstantTintProviderAsset extends TintProviderAsset {
+   @Nonnull
    public static final Color DEFAULT_COLOR = ColorParseUtil.hexStringToColor("#FF0000");
+   @Nonnull
    public static final BuilderCodec<ConstantTintProviderAsset> CODEC = BuilderCodec.builder(
          ConstantTintProviderAsset.class, ConstantTintProviderAsset::new, TintProviderAsset.ABSTRACT_CODEC
       )

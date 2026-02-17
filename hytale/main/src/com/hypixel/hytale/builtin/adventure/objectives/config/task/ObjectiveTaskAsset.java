@@ -10,9 +10,12 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public abstract class ObjectiveTaskAsset {
+   @Nonnull
    public static final CodecMapCodec<ObjectiveTaskAsset> CODEC = new CodecMapCodec<>("Type");
+   @Nonnull
    public static final BuilderCodec<ObjectiveTaskAsset> BASE_CODEC = BuilderCodec.abstractBuilder(ObjectiveTaskAsset.class)
       .append(
          new KeyedCodec<>("DescriptionId", Codec.STRING),
@@ -27,12 +30,13 @@ public abstract class ObjectiveTaskAsset {
       )
       .add()
       .append(
-         new KeyedCodec<>("MapMarkers", new ArrayCodec<>(Vector3i.CODEC, Vector3i[]::new)),
-         (taskAsset, vector3is) -> taskAsset.mapMarkers = vector3is,
+         new KeyedCodec<>("MapMarkerPositions", new ArrayCodec<>(Vector3i.CODEC, Vector3i[]::new)),
+         (taskAsset, positions) -> taskAsset.mapMarkers = positions,
          taskAsset -> taskAsset.mapMarkers
       )
       .add()
       .build();
+   @Nonnull
    public static final String TASK_DESCRIPTION_KEY = "server.objectives.{0}.taskSet.{1}.task.{2}";
    protected String descriptionId;
    protected TaskConditionAsset[] taskConditions;
@@ -42,7 +46,6 @@ public abstract class ObjectiveTaskAsset {
    public ObjectiveTaskAsset(String descriptionId, TaskConditionAsset[] taskConditions, Vector3i[] mapMarkers) {
       this.descriptionId = descriptionId;
       this.taskConditions = taskConditions;
-      this.mapMarkers = mapMarkers;
    }
 
    protected ObjectiveTaskAsset() {
@@ -69,6 +72,7 @@ public abstract class ObjectiveTaskAsset {
       return this.taskConditions;
    }
 
+   @Nullable
    public Vector3i[] getMapMarkers() {
       return this.mapMarkers;
    }

@@ -43,12 +43,14 @@ public class WordList implements JsonAssetWithMap<String, DefaultAssetMap<String
       .afterDecode(WordList::processConfig)
       .build();
    private static AssetStore<String, WordList, DefaultAssetMap<String, WordList>> ASSET_STORE;
+   @Nonnull
    public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(WordList::getAssetStore));
    private static final WordList EMPTY = new WordList();
    protected AssetExtraInfo.Data data;
    protected String id;
    protected String[] translationKeys;
 
+   @Nonnull
    public static AssetStore<String, WordList, DefaultAssetMap<String, WordList>> getAssetStore() {
       if (ASSET_STORE == null) {
          ASSET_STORE = AssetRegistry.getAssetStore(WordList.class);

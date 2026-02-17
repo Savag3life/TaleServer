@@ -11,7 +11,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class MemoriesGameplayConfig {
+   @Nonnull
    public static final String ID = "Memories";
+   @Nonnull
    public static final BuilderCodec<MemoriesGameplayConfig> CODEC = BuilderCodec.builder(MemoriesGameplayConfig.class, MemoriesGameplayConfig::new)
       .appendInherited(
          new KeyedCodec<>("MemoriesAmountPerLevel", Codec.INT_ARRAY),

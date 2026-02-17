@@ -9,6 +9,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 public class ReachLocationTaskAsset extends ObjectiveTaskAsset {
+   @Nonnull
    public static final BuilderCodec<ReachLocationTaskAsset> CODEC = BuilderCodec.builder(ReachLocationTaskAsset.class, ReachLocationTaskAsset::new, BASE_CODEC)
       .append(
          new KeyedCodec<>("TargetLocation", Codec.STRING),

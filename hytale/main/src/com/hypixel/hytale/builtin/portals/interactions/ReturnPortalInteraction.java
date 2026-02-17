@@ -32,7 +32,9 @@ public class ReturnPortalInteraction extends SimpleBlockInteraction {
          ReturnPortalInteraction.class, ReturnPortalInteraction::new, SimpleBlockInteraction.CODEC
       )
       .build();
+   @Nonnull
    private static final Message MESSAGE_PORTALS_ATTUNING_TO_WORLD = Message.translation("server.portals.attuningToWorld");
+   @Nonnull
    private static final Message MESSAGE_PORTALS_DEVICE_NOT_IN_PORTAL_WORLD = Message.translation("server.portals.device.notInPortalWorld");
 
    @Override

@@ -1,13 +1,15 @@
 package com.hypixel.hytale.protocol.packets.player;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.PickupLocation;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
-public class SyncPlayerPreferences implements Packet {
+public class SyncPlayerPreferences implements Packet, ToServerPacket {
    public static final int PACKET_ID = 116;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 0;
@@ -36,6 +38,11 @@ public class SyncPlayerPreferences implements Packet {
    @Override
    public int getId() {
       return 116;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public SyncPlayerPreferences() {

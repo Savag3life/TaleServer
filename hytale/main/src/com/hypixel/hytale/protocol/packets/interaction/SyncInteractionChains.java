@@ -1,6 +1,9 @@
 package com.hypixel.hytale.protocol.packets.interaction;
 
+import com.hypixel.hytale.protocol.NetworkChannel;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
+import com.hypixel.hytale.protocol.ToServerPacket;
 import com.hypixel.hytale.protocol.io.ProtocolException;
 import com.hypixel.hytale.protocol.io.ValidationResult;
 import com.hypixel.hytale.protocol.io.VarInt;
@@ -8,7 +11,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.Arrays;
 import javax.annotation.Nonnull;
 
-public class SyncInteractionChains implements Packet {
+public class SyncInteractionChains implements Packet, ToServerPacket, ToClientPacket {
    public static final int PACKET_ID = 290;
    public static final boolean IS_COMPRESSED = false;
    public static final int NULLABLE_BIT_FIELD_SIZE = 0;
@@ -22,6 +25,11 @@ public class SyncInteractionChains implements Packet {
    @Override
    public int getId() {
       return 290;
+   }
+
+   @Override
+   public NetworkChannel getChannel() {
+      return NetworkChannel.Default;
    }
 
    public SyncInteractionChains() {

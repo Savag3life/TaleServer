@@ -26,11 +26,21 @@ import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.protocol.ComponentUpdate;
-import com.hypixel.hytale.protocol.ComponentUpdateType;
+import com.hypixel.hytale.protocol.EntityEffectsUpdate;
+import com.hypixel.hytale.protocol.EntityStatsUpdate;
 import com.hypixel.hytale.protocol.EntityUpdate;
-import com.hypixel.hytale.protocol.Equipment;
+import com.hypixel.hytale.protocol.EquipmentUpdate;
+import com.hypixel.hytale.protocol.IntangibleUpdate;
+import com.hypixel.hytale.protocol.InteractableUpdate;
+import com.hypixel.hytale.protocol.InvulnerableUpdate;
 import com.hypixel.hytale.protocol.ItemArmorSlot;
 import com.hypixel.hytale.protocol.ModelTransform;
+import com.hypixel.hytale.protocol.ModelUpdate;
+import com.hypixel.hytale.protocol.NameplateUpdate;
+import com.hypixel.hytale.protocol.PlayerSkinUpdate;
+import com.hypixel.hytale.protocol.PredictionUpdate;
+import com.hypixel.hytale.protocol.RespondToHitUpdate;
+import com.hypixel.hytale.protocol.TransformUpdate;
 import com.hypixel.hytale.protocol.packets.buildertools.BuilderToolsSetSoundSet;
 import com.hypixel.hytale.protocol.packets.entities.EntityUpdates;
 import com.hypixel.hytale.protocol.packets.inventory.SetActiveSlot;
@@ -575,49 +585,33 @@ public class PlayerSystems {
                   ObjectArrayList<ComponentUpdate> list = new ObjectArrayList();
                   Archetype<EntityStore> viewerArchetype = store.getArchetype(viewerRef);
                   if (viewerArchetype.contains(Interactable.getComponentType())) {
-                     ComponentUpdate update = new ComponentUpdate();
-                     update.type = ComponentUpdateType.Interactable;
-                     list.add(update);
+                     list.add(new InteractableUpdate());
                   }
 
                   if (viewerArchetype.contains(Intangible.getComponentType())) {
-                     ComponentUpdate update = new ComponentUpdate();
-                     update.type = ComponentUpdateType.Intangible;
-                     list.add(update);
+                     list.add(new IntangibleUpdate());
                   }
 
                   if (viewerArchetype.contains(Invulnerable.getComponentType())) {
-                     ComponentUpdate update = new ComponentUpdate();
-                     update.type = ComponentUpdateType.Invulnerable;
-                     list.add(update);
+                     list.add(new InvulnerableUpdate());
                   }
 
                   if (viewerArchetype.contains(RespondToHit.getComponentType())) {
-                     ComponentUpdate update = new ComponentUpdate();
-                     update.type = ComponentUpdateType.RespondToHit;
-                     list.add(update);
+                     list.add(new RespondToHitUpdate());
                   }
 
                   Nameplate nameplateComponent = store.getComponent(viewerRef, Nameplate.getComponentType());
                   if (nameplateComponent != null) {
-                     ComponentUpdate update = new ComponentUpdate();
-                     update.type = ComponentUpdateType.Nameplate;
-                     update.nameplate = new com.hypixel.hytale.protocol.Nameplate();
-                     update.nameplate.text = nameplateComponent.getText();
-                     list.add(update);
+                     list.add(new NameplateUpdate(nameplateComponent.getText()));
                   }
 
                   PredictedProjectile predictionComponent = store.getComponent(viewerRef, PredictedProjectile.getComponentType());
                   if (predictionComponent != null) {
-                     ComponentUpdate update = new ComponentUpdate();
-                     update.type = ComponentUpdateType.Prediction;
-                     update.predictionId = predictionComponent.getUuid();
-                     list.add(update);
+                     list.add(new PredictionUpdate(predictionComponent.getUuid()));
                   }
 
                   ModelComponent modelComponent = store.getComponent(viewerRef, ModelComponent.getComponentType());
-                  ComponentUpdate update = new ComponentUpdate();
-                  update.type = ComponentUpdateType.Model;
+                  ModelUpdate update = new ModelUpdate();
                   update.model = modelComponent != null ? modelComponent.getModel().toPacket() : null;
                   EntityScaleComponent entityScaleComponent = store.getComponent(viewerRef, EntityScaleComponent.getComponentType());
                   if (entityScaleComponent != null) {
@@ -625,19 +619,14 @@ public class PlayerSystems {
                   }
 
                   list.add(update);
-                  update = new ComponentUpdate();
-                  update.type = ComponentUpdateType.PlayerSkin;
                   PlayerSkinComponent playerSkinComponent = store.getComponent(viewerRef, PlayerSkinComponent.getComponentType());
-                  update.skin = playerSkinComponent != null ? playerSkinComponent.getPlayerSkin() : null;
-                  list.add(update);
+                  list.add(new PlayerSkinUpdate(playerSkinComponent != null ? playerSkinComponent.getPlayerSkin() : null));
                   Inventory inventory = playerComponent.getInventory();
-                  ComponentUpdate updatex = new ComponentUpdate();
-                  updatex.type = ComponentUpdateType.Equipment;
-                  updatex.equipment = new Equipment();
+                  EquipmentUpdate updatex = new EquipmentUpdate();
                   ItemContainer armor = inventory.getArmor();
-                  updatex.equipment.armorIds = new String[armor.getCapacity()];
-                  Arrays.fill(updatex.equipment.armorIds, "");
-                  armor.forEachWithMeta((slot, itemStack, armorIds) -> armorIds[slot] = itemStack.getItemId(), updatex.equipment.armorIds);
+                  updatex.armorIds = new String[armor.getCapacity()];
+                  Arrays.fill(updatex.armorIds, "");
+                  armor.forEachWithMeta((slot, itemStack, armorIds) -> armorIds[slot] = itemStack.getItemId(), updatex.armorIds);
                   PlayerSettings playerSettingsComponent = store.getComponent(viewerRef, PlayerSettings.getComponentType());
                   if (playerSettingsComponent != null) {
                      PlayerConfig.ArmorVisibilityOption armorVisibilityOption = store.getExternalData()
@@ -646,32 +635,31 @@ public class PlayerSystems {
                         .getPlayerConfig()
                         .getArmorVisibilityOption();
                      if (armorVisibilityOption.canHideHelmet() && playerSettingsComponent.hideHelmet()) {
-                        updatex.equipment.armorIds[ItemArmorSlot.Head.ordinal()] = "";
+                        updatex.armorIds[ItemArmorSlot.Head.ordinal()] = "";
                      }
 
                      if (armorVisibilityOption.canHideCuirass() && playerSettingsComponent.hideCuirass()) {
-                        updatex.equipment.armorIds[ItemArmorSlot.Chest.ordinal()] = "";
+                        updatex.armorIds[ItemArmorSlot.Chest.ordinal()] = "";
                      }
 
                      if (armorVisibilityOption.canHideGauntlets() && playerSettingsComponent.hideGauntlets()) {
-                        updatex.equipment.armorIds[ItemArmorSlot.Hands.ordinal()] = "";
+                        updatex.armorIds[ItemArmorSlot.Hands.ordinal()] = "";
                      }
 
                      if (armorVisibilityOption.canHidePants() && playerSettingsComponent.hidePants()) {
-                        updatex.equipment.armorIds[ItemArmorSlot.Legs.ordinal()] = "";
+                        updatex.armorIds[ItemArmorSlot.Legs.ordinal()] = "";
                      }
                   }
 
                   ItemStack itemInHand = inventory.getItemInHand();
-                  updatex.equipment.rightHandItemId = itemInHand != null ? itemInHand.getItemId() : "Empty";
+                  updatex.rightHandItemId = itemInHand != null ? itemInHand.getItemId() : "Empty";
                   ItemStack utilityItem = inventory.getUtilityItem();
-                  updatex.equipment.leftHandItemId = utilityItem != null ? utilityItem.getItemId() : "Empty";
+                  updatex.leftHandItemId = utilityItem != null ? utilityItem.getItemId() : "Empty";
                   list.add(updatex);
                   TransformComponent transformComponent = store.getComponent(viewerRef, TransformComponent.getComponentType());
                   HeadRotation headRotationComponent = store.getComponent(viewerRef, HeadRotation.getComponentType());
                   if (transformComponent != null && headRotationComponent != null) {
-                     ComponentUpdate updatexx = new ComponentUpdate();
-                     updatexx.type = ComponentUpdateType.Transform;
+                     TransformUpdate updatexx = new TransformUpdate();
                      updatexx.transform = new ModelTransform();
                      updatexx.transform.position = PositionUtil.toPositionPacket(transformComponent.getPosition());
                      updatexx.transform.bodyOrientation = PositionUtil.toDirectionPacket(transformComponent.getRotation());
@@ -681,18 +669,12 @@ public class PlayerSystems {
 
                   EffectControllerComponent effectControllerComponent = store.getComponent(viewerRef, EffectControllerComponent.getComponentType());
                   if (effectControllerComponent != null) {
-                     ComponentUpdate updatexx = new ComponentUpdate();
-                     updatexx.type = ComponentUpdateType.EntityEffects;
-                     updatexx.entityEffectUpdates = effectControllerComponent.createInitUpdates();
-                     list.add(updatexx);
+                     list.add(new EntityEffectsUpdate(effectControllerComponent.createInitUpdates()));
                   }
 
                   EntityStatMap statMapComponent = store.getComponent(viewerRef, EntityStatMap.getComponentType());
                   if (statMapComponent != null) {
-                     ComponentUpdate updatexx = new ComponentUpdate();
-                     updatexx.type = ComponentUpdateType.EntityStats;
-                     updatexx.entityStatUpdates = statMapComponent.createInitUpdate(true);
-                     list.add(updatexx);
+                     list.add(new EntityStatsUpdate(statMapComponent.createInitUpdate(true)));
                   }
 
                   entityUpdate.updates = (ComponentUpdate[])list.toArray(ComponentUpdate[]::new);
