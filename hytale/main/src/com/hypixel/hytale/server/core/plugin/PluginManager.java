@@ -52,7 +52,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -158,8 +157,8 @@ public class PluginManager {
          Path self;
          try {
             self = Paths.get(PluginManager.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-         } catch (URISyntaxException var30) {
-            throw new RuntimeException(var30);
+         } catch (URISyntaxException var28) {
+            throw new RuntimeException(var28);
          }
 
          this.loadPluginsFromDirectory(pending, self.getParent().resolve("builtin"), false, this.availablePlugins);
@@ -184,8 +183,8 @@ public class PluginManager {
 
                try {
                   this.validatePluginDeps(pendingLoadPlugin, pending);
-               } catch (MissingPluginDependencyException var29) {
-                  LOGGER.at(Level.SEVERE).log(var29.getMessage());
+               } catch (MissingPluginDependencyException var27) {
+                  LOGGER.at(Level.SEVERE).log(var27.getMessage());
                   iterator.remove();
                }
             }
@@ -196,15 +195,6 @@ public class PluginManager {
          if (this.hasOutdatedPlugins && System.getProperty("hytale.allow_outdated_mods") == null) {
             LOGGER.at(Level.SEVERE)
                .log("One or more plugins are targeting a different server version. It is recommended to update these plugins to ensure compatibility.");
-
-            try {
-               if (!Constants.SINGLEPLAYER) {
-                  Thread.sleep(Duration.ofSeconds(2L));
-               }
-            } catch (InterruptedException var32) {
-               throw new RuntimeException(var32);
-            }
-
             HytaleServer.get().getEventBus().registerGlobal(AddPlayerToWorldEvent.class, event -> {
                PlayerRef playerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
                Player player = event.getHolder().getComponent(Player.getComponentType());
@@ -237,16 +227,16 @@ public class PluginManager {
                   if (future != null) {
                      preLoadFutures.add(future);
                   }
-               } catch (ClassNotFoundException var26) {
-                  ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var26))
+               } catch (ClassNotFoundException var24) {
+                  ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var24))
                      .log("Failed to load plugin %s. Failed to find main class!", pendingLoadPlugin.getPath());
                   failedBootPlugins.add(pendingLoadPlugin.getIdentifier());
-               } catch (NoSuchMethodException var27) {
-                  ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var27))
+               } catch (NoSuchMethodException var25) {
+                  ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var25))
                      .log("Failed to load plugin %s. Requires default constructor!", pendingLoadPlugin.getPath());
                   failedBootPlugins.add(pendingLoadPlugin.getIdentifier());
-               } catch (Throwable var28) {
-                  ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var28)).log("Failed to load plugin %s", pendingLoadPlugin.getPath());
+               } catch (Throwable var26) {
+                  ((HytaleLogger.Api)LOGGER.at(Level.SEVERE).withCause(var26)).log("Failed to load plugin %s", pendingLoadPlugin.getPath());
                   failedBootPlugins.add(pendingLoadPlugin.getIdentifier());
                }
             }
@@ -256,10 +246,10 @@ public class PluginManager {
 
          if (!failedBootPlugins.isEmpty() && !Constants.shouldSkipModValidation()) {
             StringBuilder sb = new StringBuilder("Failed to boot the following plugins:\n");
-            ObjectListIterator var44 = failedBootPlugins.iterator();
+            ObjectListIterator var41 = failedBootPlugins.iterator();
 
-            while (var44.hasNext()) {
-               PluginIdentifier failed = (PluginIdentifier)var44.next();
+            while (var41.hasNext()) {
+               PluginIdentifier failed = (PluginIdentifier)var41.next();
                sb.append(" - ").append(failed).append('\n');
             }
 
