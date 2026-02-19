@@ -1,1 +1,9 @@
 hytale/versions/latest.jar filter=lfs diff=lfs merge=lfs -text
+hytale/versions/latest.jar.6 filter=lfs diff=lfs merge=lfs -text
+hytale/versions/latest.jar.7 filter=lfs diff=lfs merge=lfs -text
+hytale/versions/latest.jar.8 filter=lfs diff=lfs merge=lfs -text
+hytale/versions/latest.jar.1 filter=lfs diff=lfs merge=lfs -text
+hytale/versions/latest.jar.2 filter=lfs diff=lfs merge=lfs -text
+hytale/versions/latest.jar.3 filter=lfs diff=lfs merge=lfs -text
+hytale/versions/latest.jar.4 filter=lfs diff=lfs merge=lfs -text
+hytale/versions/latest.jar.5 filter=lfs diff=lfs merge=lfs -text
