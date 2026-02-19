@@ -17,7 +17,6 @@ import com.hypixel.hytale.common.util.PathUtil;
 import com.hypixel.hytale.common.util.java.ManifestUtil;
 import com.hypixel.hytale.event.EventPriority;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.Constants;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.HytaleServerConfig;
 import com.hypixel.hytale.server.core.Message;
@@ -54,7 +53,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -165,15 +163,6 @@ public class AssetModule extends JavaPlugin {
             this.getLogger()
                .at(Level.SEVERE)
                .log("One or more asset packs are targeting an older server version. It is recommended to update these plugins to ensure compatibility.");
-
-            try {
-               if (!Constants.SINGLEPLAYER) {
-                  Thread.sleep(Duration.ofSeconds(2L));
-               }
-            } catch (InterruptedException var9) {
-               throw new RuntimeException(var9);
-            }
-
             HytaleServer.get().getEventBus().registerGlobal(AddPlayerToWorldEvent.class, event -> {
                PlayerRef playerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
                Player player = event.getHolder().getComponent(Player.getComponentType());
